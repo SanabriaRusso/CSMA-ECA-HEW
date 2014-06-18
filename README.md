@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 CSMA/ECA Implementation
 ------------------------
 
@@ -10,3 +11,9 @@ Future plans include the incorporation of 802.11e QoS mechanisms and other PHY e
 [1]: http://arxiv.org/abs/1303.3734
 
 Luis.
+=======
+CSMA-ECA-HEW
+============
+
+Modelling of Carrier Sense Multiple Access with Enhanced Collision Avoidance for the upcoming High-Efficiency WLANs standard
+>>>>>>> 77576eeb04ac2c34143bfc1ce7b583e3af42d103
