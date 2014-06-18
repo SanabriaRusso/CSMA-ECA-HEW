@@ -1,0 +1,3 @@
+./COST/cxx Sim_SlottedCSMA.cc
+g++ -Wall -o Sim_SlottedCSMA Sim_SlottedCSMA.cxx
+
