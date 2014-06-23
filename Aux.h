@@ -10,6 +10,7 @@ struct Packet
 	double send_time; //time at which a packet is picked from the MAC queue
 	double queuing_time; //time at which the packet is deposited at end of the queue
 	int aggregation; //used whenever fairShare is activated
+	int accessCategory; // 0 = best-effort, 1 = background, 2 = video, 3 = voice
 };
 
 struct SLOT_notification

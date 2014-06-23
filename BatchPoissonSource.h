@@ -13,19 +13,33 @@ component BatchPoissonSource : public TypeII
 		outport void out(Packet &packet);	
 
 		// Timer
-		Timer <trigger_t> inter_packet_timer;
-		inport inline void new_packet(trigger_t& t);
+		Timer <trigger_t> inter_packet_timerBK;
+		Timer <trigger_t> inter_packet_timerBE;
+		Timer <trigger_t> inter_packet_timerVI;
+		Timer <trigger_t> inter_packet_timerVO;
+		
+		inport inline void new_packetBK(trigger_t& tBK);
+		inport inline void new_packetBE(trigger_t& tBE);
+		inport inline void new_packetVI	(trigger_t& tVI);
+		inport inline void new_packetVO(trigger_t& tVO);
 
 		BatchPoissonSource () { 
-			connect inter_packet_timer.to_component,new_packet; }
+			connect inter_packet_timerBK.to_component,new_packetBK;
+			connect inter_packet_timerBE.to_component,new_packetBE;
+			connect inter_packet_timerVI.to_component,new_packetVI;
+			connect inter_packet_timerVO.to_component,new_packetVO; }
 
 	public:
 		int L;
-		int seq;
-		double bandwidth; // Source Bandwidth
-		double packet_rate;
-		int MaxBatch;
-		int aggregation;
+		long int seqBK;
+		long int seqBE;
+		long int seqVI;
+		long int seqVO;
+		int MaxBatch;	
+		double packet_rateBK;
+		double packet_rateBE;
+		double packet_rateVI;
+		double packet_rateVO;
 	
 	public:
 		void Setup();
@@ -41,9 +55,17 @@ void BatchPoissonSource :: Setup()
 
 void BatchPoissonSource :: Start()
 {
-	packet_rate=bandwidth/(L*8);
-	inter_packet_timer.Set(Exponential(1/packet_rate));
-	seq=0;
+	inter_packet_timerBK.Set(Exponential(1/packet_rateBK));
+	seqBK = 0;
+	
+	inter_packet_timerBE.Set(Exponential(1/packet_rateBE));
+	seqBE = 0;
+		
+	inter_packet_timerVI.Set(Exponential(1/packet_rateVI));
+	seqVI = 0;
+	
+	inter_packet_timerVO.Set(Exponential(1/packet_rateVO));
+	seqVO = 0;	
 };
 	
 void BatchPoissonSource :: Stop()
@@ -51,29 +73,103 @@ void BatchPoissonSource :: Stop()
 
 };
 
-void BatchPoissonSource :: new_packet(trigger_t &)
+void BatchPoissonSource :: new_packetBK(trigger_t &)
 {
-	Packet packet;
+	Packet packetBK;
 
-	packet.L = L;
+	packetBK.L = L;
+	packetBK.accessCategory = 1;
 			
 	int RB = (int) Random(MaxBatch)+1;
 
 	for(int p=0; p < RB; p++)
 	{
-		packet.seq = seq;
-		packet.send_time = SimTime();
+		packetBK.seq = seqBK;
+		packetBK.send_time = SimTime();
 
-		out(packet);
+		out(packetBK);
 
-		seq++;
-		if(seq == MAXSEQ) seq = 0;
+		seqBK++;
+		//if(seqBK == MAXSEQ) seqBK = 0;
 
 	}
 	
-	inter_packet_timer.Set(SimTime()+Exponential(RB/packet_rate));	
+	inter_packet_timerBK.Set(SimTime()+Exponential(RB/packet_rateBK));	
 
 };
 
+void BatchPoissonSource :: new_packetBE(trigger_t &)
+{
+	Packet packetBE;
+	packetBE.accessCategory = 0;
 
+	packetBE.L = L;
+			
+	int RB = (int) Random(MaxBatch)+1;
+
+	for(int p=0; p < RB; p++)
+	{
+		packetBE.seq = seqBE;
+		packetBE.send_time = SimTime();
+
+		out(packetBE);
+
+		seqBE++;
+		//if(seqBE == MAXSEQ) seqBE = 0;
+
+	}
+	
+	inter_packet_timerBE.Set(SimTime()+Exponential(RB/packet_rateBE));
+
+};
+
+void BatchPoissonSource :: new_packetVI(trigger_t &)
+{
+	Packet packetVI;
+	packetVI.accessCategory = 2;
+
+	packetVI.L = L;
+			
+	int RB = (int) Random(MaxBatch)+1;
+
+	for(int p=0; p < RB; p++)
+	{
+		packetVI.seq = seqVI;
+		packetVI.send_time = SimTime();
+
+		out(packetVI);
+
+		seqVI++;
+		//if(seqVI == MAXSEQ) seqVI = 0;
+
+	}
+	
+	inter_packet_timerVI.Set(SimTime()+Exponential(RB/packet_rateVI));	
+
+};
+
+void BatchPoissonSource :: new_packetVO(trigger_t &)
+{
+	Packet packetVO;
+	packetVO.accessCategory = 3;
+
+	packetVO.L = L;
+			
+	int RB = (int) Random(MaxBatch)+1;
+
+	for(int p=0; p < RB; p++)
+	{
+		packetVO.seq = seqVO;
+		packetVO.send_time = SimTime();
+
+		out(packetVO);
+
+		seqVO++;
+		//if(seqVO == MAXSEQ) seqVO = 0;
+
+	}
+	
+	inter_packet_timerVO.Set(SimTime()+Exponential(RB/packet_rateVO));	
+
+};
 

@@ -1,4 +1,3 @@
-
 #ifndef _FIFO_QUEUE_
 #define _FIFO_QUEUE_
 
