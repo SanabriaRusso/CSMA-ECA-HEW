@@ -149,7 +149,10 @@ void STA :: in_slot(SLOT_notification &slot)
 	}
 	
 	
-	/*Checking availability for transmission.*/
+	/*Checking availability for transmission.
+	At this point, all the AC's backoff are generated, nevertheless there is still
+	to resolve the internal collision issue.*/
+	
 	int iterator = backoffCounters.size()-1;
 	for (auto rIterator = backoffCounters.rbegin(); rIterator < backoffCounters.rend(); rIterator++)
 	{
