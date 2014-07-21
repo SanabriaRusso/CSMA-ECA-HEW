@@ -141,7 +141,7 @@ void STA :: in_slot(SLOT_notification &slot)
 		case 1:
 			for (int i = 0; i < backoffCounters.size(); i++)
 			{
-				if (backoffCounters.at(i) == 0) //these category transmitted
+				if (backoffCounters.at(i) == 0) //this category transmitted
 				{
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
 				}
@@ -156,11 +156,11 @@ void STA :: in_slot(SLOT_notification &slot)
 	int iterator = backoffCounters.size()-1;
 	for (auto rIterator = backoffCounters.rbegin(); rIterator < backoffCounters.rend(); rIterator++)
 	{
-		if(*rIterator == 0)
+		if(*rIterator == 0) //if the AC is ready for transmission
 		{
-			cout << "Node #" << node_id << ", AC: " << iterator << " expired" <<endl;
+			//cout << "Node #" << node_id << ", AC: " << iterator << " expired" <<endl;
 			computeBackoff(backlogged.at(iterator), queuesSizes.at(iterator), iterator, stationStickiness.at(iterator), backoffStages.at(iterator), backoffCounters.at(iterator));
-			cout << "---New backoff " << backoffCounters.at(iterator) << endl;
+			//cout << "---New backoff " << backoffCounters.at(iterator) << endl;
 			break;
 		}
 		iterator--;

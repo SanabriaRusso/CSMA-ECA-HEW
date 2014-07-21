@@ -1288,6 +1288,7 @@ struct Packet
 	double send_time; 
 	double queuing_time; 
 	int aggregation; 
+	int accessCategory; 
 };
 
 struct SLOT_notification
@@ -1319,9 +1320,13 @@ struct SLOT_notification
 
 
 #line 1 "STA.h"
-#include <math.h>
+#include <time.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <math.h>
+#include <algorithm>
+#include <array>
 
 #line 1 "Aux.h"
 #ifndef _AUX_
@@ -1336,6 +1341,7 @@ struct Packet
 	double send_time; 
 	double queuing_time; 
 	int aggregation; 
+	int accessCategory; 
 };
 
 struct SLOT_notification
@@ -1347,11 +1353,10 @@ struct SLOT_notification
 #endif 
 
 
-#line 4 "STA.h"
+#line 8 "STA.h"
 
 
 #line 1 "FIFO.h"
-
 #ifndef _FIFO_QUEUE_
 #define _FIFO_QUEUE_
 
@@ -1401,54 +1406,77 @@ template <class DATATYPE> int FIFO <DATATYPE> :: QueueSize()
 
 #endif
 
-#line 5 "STA.h"
+#line 9 "STA.h"
 
 
-#line 1 "includes/backoff.hh"
-#include <time.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <math.h>
-#include <algorithm>
-
-#define CWMIN 16 //should be the same as ../STA.h
-
+#line 1 "includes/computeBackoff.hh"
 using namespace std;
 
-int backoff(int backoff_stage, int stickiness, float driftProbability){
+void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter){
 
-	int backoff_counter = 0;
+	int CWmin = 0;
 	
-	if(stickiness != 0){
-		backoff_counter = (int)(pow(2,backoff_stage)*CWMIN/2)-1;
-	}else{
-		backoff_counter = rand() % (int)(pow(2,backoff_stage)*CWMIN);
+	switch (AC){
+		case 0:
+			if(qSize > 0) CWmin = 16;
+			break;
+		case 1:
+			if(qSize > 0) CWmin = 16;
+			break;
+		case 2:
+			if(qSize > 0) CWmin = 8;
+			break;
+		case 3:
+			if(qSize > 0) CWmin = 4;
+			break;	
 	}
 	
-	
-	
-	
-	
-	
-	
-	if(driftProbability > 0){
-	    float slotDrift = rand() % 100 + 1;
-	    slotDrift/=100;
-	    
-	    if((backoff_counter > 0) && (slotDrift > 0) && (slotDrift <= driftProbability/2.))
-	    {
-	        backoff_counter--; 
-	        
-	    }else if((slotDrift > driftProbability/2.) && (slotDrift <= driftProbability))
-	    {
-	        backoff_counter++; 
-	        
-	    }
+	if(CWmin > 0)
+	{
+		if(stickiness != 0){
+			counter = (int)(pow(2,backoffStage)*CWmin/2)-1;
+		}else{
+			counter = rand() % (int)(pow(2,backoffStage)*CWmin);
+		}
+		backlog = 1;
+	}else
+	{
+		backlog = 0;
 	}
-	return (backoff_counter);
 }
-#line 6 "STA.h"
+#line 10 "STA.h"
+
+
+#line 1 "includes/selectMACProtocol.hh"
+using namespace std;
+
+
+
+void selectMACProtocol(const int &cut, const int &node_id, int &EDCA, int &hysteresis, int &fairShare, int &maxAggregation){
+
+	if(node_id < cut)
+	{
+		
+		EDCA = 1;
+		hysteresis = 0;
+		
+		if(maxAggregation > 0)
+		{
+			fairShare = 1;
+			
+		}else
+		{
+			fairShare = 0;
+			
+		}
+	}else
+	{
+		
+		EDCA = 0;
+	}
+}
+#line 11 "STA.h"
+
 
 
 
@@ -1458,22 +1486,25 @@ int backoff(int backoff_stage, int stickiness, float driftProbability){
 #define MAX_RET 6
 
 
+#define AC 4
+
+
 using namespace std;
 
 
-#line 106 "STA.h"
+#line 90 "STA.h"
 ;
 
 
-#line 169 "STA.h"
+#line 105 "STA.h"
 ;
 
 
-#line 228 "STA.h"
+#line 117 "STA.h"
 ;
 
 
-#line 441 "STA.h"
+#line 168 "STA.h"
 ;
 
 
@@ -1499,6 +1530,7 @@ struct Packet
 	double send_time; 
 	double queuing_time; 
 	int aggregation; 
+	int accessCategory; 
 };
 
 struct SLOT_notification
@@ -1516,22 +1548,32 @@ struct SLOT_notification
 #define MAXSEQ 1024
 
 
-#line 40 "BatchPoissonSource.h"
+#line 54 "BatchPoissonSource.h"
 ;
 
 
-#line 47 "BatchPoissonSource.h"
+#line 69 "BatchPoissonSource.h"
 ;
 	
 
-#line 52 "BatchPoissonSource.h"
+#line 74 "BatchPoissonSource.h"
 ;
 
 
-#line 76 "BatchPoissonSource.h"
+#line 99 "BatchPoissonSource.h"
 ;
 
 
+#line 124 "BatchPoissonSource.h"
+;
+
+
+#line 149 "BatchPoissonSource.h"
+;
+
+
+#line 174 "BatchPoissonSource.h"
+;
 
 
 #line 14 "Sim_SlottedCSMA.cc"
@@ -1586,19 +1628,19 @@ double stats(int successful_slots, int empty_slots, int collision_slots, int pay
 using namespace std;
 
 
-#line 108 "Sim_SlottedCSMA.cc"
+#line 104 "Sim_SlottedCSMA.cc"
 ;
 
 
-#line 113 "Sim_SlottedCSMA.cc"
+#line 109 "Sim_SlottedCSMA.cc"
 ;
 
 
-#line 335 "Sim_SlottedCSMA.cc"
+#line 127 "Sim_SlottedCSMA.cc"
 ;
 
 #include "compcxx_Sim_SlottedCSMA.h"
-class compcxx_Channel_6;/*template <class T> */
+class compcxx_Channel_9;/*template <class T> */
 #line 269 "./COST/cost.h"
 class compcxx_Timer_4 : public compcxx_component, public TimerBase
 {
@@ -1619,9 +1661,9 @@ class compcxx_Timer_4 : public compcxx_component, public TimerBase
  private:
   CostSimEng* m_simeng;
   event_t m_event;
-public:compcxx_Channel_6* p_compcxx_parent;};
+public:compcxx_Channel_9* p_compcxx_parent;};
 
-class compcxx_Channel_6;/*template <class T> */
+class compcxx_Channel_9;/*template <class T> */
 #line 269 "./COST/cost.h"
 class compcxx_Timer_3 : public compcxx_component, public TimerBase
 {
@@ -1642,9 +1684,9 @@ class compcxx_Timer_3 : public compcxx_component, public TimerBase
  private:
   CostSimEng* m_simeng;
   event_t m_event;
-public:compcxx_Channel_6* p_compcxx_parent;};
+public:compcxx_Channel_9* p_compcxx_parent;};
 
-class compcxx_Channel_6;/*template <class T> */
+class compcxx_Channel_9;/*template <class T> */
 #line 269 "./COST/cost.h"
 class compcxx_Timer_2 : public compcxx_component, public TimerBase
 {
@@ -1665,11 +1707,11 @@ class compcxx_Timer_2 : public compcxx_component, public TimerBase
  private:
   CostSimEng* m_simeng;
   event_t m_event;
-public:compcxx_Channel_6* p_compcxx_parent;};
+public:compcxx_Channel_9* p_compcxx_parent;};
 
 
 #line 23 "Channel.h"
-class compcxx_Channel_6 : public compcxx_component, public TypeII
+class compcxx_Channel_9 : public compcxx_component, public TypeII
 {
 
 	public:
@@ -1694,7 +1736,7 @@ class compcxx_Channel_6 : public compcxx_component, public TypeII
 		/*inport */inline void EndReceptionTime(trigger_t& t2);
 		/*inport */inline void Sampler(trigger_t& t3);
 
-		compcxx_Channel_6 () { 
+		compcxx_Channel_9 () { 
 			slot_time.p_compcxx_parent=this /*connect slot_time.to_component,*/; 
 			rx_time.p_compcxx_parent=this /*connect rx_time.to_component,*/;
 		    cpSampler.p_compcxx_parent=this /*connect cpSampler.to_component,*/; }
@@ -1718,7 +1760,30 @@ class compcxx_Channel_6 : public compcxx_component, public TypeII
 		long long int test;
 };
 
-class compcxx_BatchPoissonSource_8;/*template <class T> */
+class compcxx_BatchPoissonSource_11;/*template <class T> */
+#line 269 "./COST/cost.h"
+class compcxx_Timer_6 : public compcxx_component, public TimerBase
+{
+ public:
+  struct event_t : public CostEvent { trigger_t data; };
+  
+
+  compcxx_Timer_6() { m_simeng = CostSimEng::Instance(); m_event.active= false; }
+  inline void Set(trigger_t const &, double );
+  inline void Set(double );
+  inline double GetTime() { return m_event.time; }
+  inline bool Active() { return m_event.active; }
+  inline trigger_t & GetData() { return m_event.data; }
+  inline void SetData(trigger_t const &d) { m_event.data = d; }
+  void Cancel();
+  /*outport void to_component(trigger_t &)*/;
+  void activate(CostEvent*);
+ private:
+  CostSimEng* m_simeng;
+  event_t m_event;
+public:compcxx_BatchPoissonSource_11* p_compcxx_parent;};
+
+class compcxx_BatchPoissonSource_11;/*template <class T> */
 #line 269 "./COST/cost.h"
 class compcxx_Timer_5 : public compcxx_component, public TimerBase
 {
@@ -1739,30 +1804,90 @@ class compcxx_Timer_5 : public compcxx_component, public TimerBase
  private:
   CostSimEng* m_simeng;
   event_t m_event;
-public:compcxx_BatchPoissonSource_8* p_compcxx_parent;};
+public:compcxx_BatchPoissonSource_11* p_compcxx_parent;};
+
+class compcxx_BatchPoissonSource_11;/*template <class T> */
+#line 269 "./COST/cost.h"
+class compcxx_Timer_7 : public compcxx_component, public TimerBase
+{
+ public:
+  struct event_t : public CostEvent { trigger_t data; };
+  
+
+  compcxx_Timer_7() { m_simeng = CostSimEng::Instance(); m_event.active= false; }
+  inline void Set(trigger_t const &, double );
+  inline void Set(double );
+  inline double GetTime() { return m_event.time; }
+  inline bool Active() { return m_event.active; }
+  inline trigger_t & GetData() { return m_event.data; }
+  inline void SetData(trigger_t const &d) { m_event.data = d; }
+  void Cancel();
+  /*outport void to_component(trigger_t &)*/;
+  void activate(CostEvent*);
+ private:
+  CostSimEng* m_simeng;
+  event_t m_event;
+public:compcxx_BatchPoissonSource_11* p_compcxx_parent;};
+
+class compcxx_BatchPoissonSource_11;/*template <class T> */
+#line 269 "./COST/cost.h"
+class compcxx_Timer_8 : public compcxx_component, public TimerBase
+{
+ public:
+  struct event_t : public CostEvent { trigger_t data; };
+  
+
+  compcxx_Timer_8() { m_simeng = CostSimEng::Instance(); m_event.active= false; }
+  inline void Set(trigger_t const &, double );
+  inline void Set(double );
+  inline double GetTime() { return m_event.time; }
+  inline bool Active() { return m_event.active; }
+  inline trigger_t & GetData() { return m_event.data; }
+  inline void SetData(trigger_t const &d) { m_event.data = d; }
+  void Cancel();
+  /*outport void to_component(trigger_t &)*/;
+  void activate(CostEvent*);
+ private:
+  CostSimEng* m_simeng;
+  event_t m_event;
+public:compcxx_BatchPoissonSource_11* p_compcxx_parent;};
 
 
 #line 9 "BatchPoissonSource.h"
-class compcxx_BatchPoissonSource_8 : public compcxx_component, public TypeII
+class compcxx_BatchPoissonSource_11 : public compcxx_component, public TypeII
 {
 	public:
 		
 		class my_BatchPoissonSource_out_f_t:public compcxx_functor<BatchPoissonSource_out_f_t>{ public:void  operator() (Packet &packet) { for (unsigned int compcxx_i=1;compcxx_i<c.size();compcxx_i++)(c[compcxx_i]->*f[compcxx_i])(packet); return (c[0]->*f[0])(packet);};};my_BatchPoissonSource_out_f_t out_f;/*outport void out(Packet &packet)*/;	
 
 		
-		compcxx_Timer_5 /*<trigger_t> */inter_packet_timer;
-		/*inport */inline void new_packet(trigger_t& t);
+		compcxx_Timer_5 /*<trigger_t> */inter_packet_timerBK;
+		compcxx_Timer_6 /*<trigger_t> */inter_packet_timerBE;
+		compcxx_Timer_7 /*<trigger_t> */inter_packet_timerVI;
+		compcxx_Timer_8 /*<trigger_t> */inter_packet_timerVO;
+		
+		/*inport */inline void new_packetBK(trigger_t& tBK);
+		/*inport */inline void new_packetBE(trigger_t& tBE);
+		/*inport */inline void new_packetVI	(trigger_t& tVI);
+		/*inport */inline void new_packetVO(trigger_t& tVO);
 
-		compcxx_BatchPoissonSource_8 () { 
-			inter_packet_timer.p_compcxx_parent=this /*connect inter_packet_timer.to_component,*/; }
+		compcxx_BatchPoissonSource_11 () { 
+			inter_packet_timerBK.p_compcxx_parent=this /*connect inter_packet_timerBK.to_component,*/;
+			inter_packet_timerBE.p_compcxx_parent=this /*connect inter_packet_timerBE.to_component,*/;
+			inter_packet_timerVI.p_compcxx_parent=this /*connect inter_packet_timerVI.to_component,*/;
+			inter_packet_timerVO.p_compcxx_parent=this /*connect inter_packet_timerVO.to_component,*/; }
 
 	public:
 		int L;
-		int seq;
-		double bandwidth; 
-		double packet_rate;
-		int MaxBatch;
-		int aggregation;
+		long int seqBK;
+		long int seqBE;
+		long int seqVI;
+		long int seqVO;
+		int MaxBatch;	
+		double packet_rateBK;
+		double packet_rateBE;
+		double packet_rateVI;
+		double packet_rateVO;
 	
 	public:
 		void Setup();
@@ -1772,8 +1897,8 @@ class compcxx_BatchPoissonSource_8 : public compcxx_component, public TypeII
 };
 
 
-#line 17 "STA.h"
-class compcxx_STA_7 : public compcxx_component, public TypeII
+#line 26 "STA.h"
+class compcxx_STA_10 : public compcxx_component, public TypeII
 {
     public:
         void Setup();
@@ -1781,76 +1906,46 @@ class compcxx_STA_7 : public compcxx_component, public TypeII
         void Stop();
 
     public:
+    	
         int node_id;
         int K; 
         int system_stickiness; 
-        int station_stickiness;
+        std::array<int, AC> stationStickiness; 
         int hysteresis;
         int fairShare;
-	
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        double observed_slots;
-        double empty_slots;
-                                                                         
-        
-        double collisions;
-        double total_transmissions;
-        double successful_transmissions;
-        double droppedPackets; 
-        double packetDisposal;
-        double packetDisposalRET; 
-        double driftedSlots;
-
-        double incoming_packets;
-        double non_blocked_packets;
-        double blocked_packets;
-
-        double txDelay;
-        double throughput;
-        double staDelay; 
-        double blockingProbability;
-        
-        float slotDrift;
-        float driftProbability; 
-        
-        
-        int finalBackoffStage;
-        int qEmpty;
-        int qSize;
-        
         
         
         int cut;
-        int DCF;
+        int EDCA;
         
         
         int maxAggregation;
+        
+        
+        double incommingPackets;
+        std::array<double, AC> blockedPackets;
+        std::array<double, AC> queuesSizes;
 
     private:
-        int backoff_counter;
-        int backoff_stage;
-        int pickup_backoff_stage;
-        int previous_pickup_backoff_stage;
-        int backlogged;
+    	
 
-        int txAttempt;	
+        std::array<double, AC> backoffCounters;
+        std::array<int, AC> backoffStages;
+        
+        
 
-        Packet packet;
-        FIFO <Packet> MAC_queue;
+        int BE; 
+        int BK; 
+        int VI; 
+        int VO; 
+        
+        std::array<int,AC> backlogged; 
+
+		Packet packet;
+        FIFO <Packet> MACQueueBK;
+        FIFO <Packet> MACQueueBE;
+        FIFO <Packet> MACQueueVI;
+        FIFO <Packet> MACQueueVO;
 
     public:
         
@@ -1861,7 +1956,7 @@ class compcxx_STA_7 : public compcxx_component, public TypeII
 
 
 #line 19 "Sim_SlottedCSMA.cc"
-class compcxx_SlottedCSMA_9 : public compcxx_component, public CostSimEng
+class compcxx_SlottedCSMA_12 : public compcxx_component, public CostSimEng
 {
 	public:
 		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int hysteresis, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int simSeed);
@@ -1869,10 +1964,10 @@ class compcxx_SlottedCSMA_9 : public compcxx_component, public CostSimEng
 		void Start();		
 
 	public:
-		compcxx_Channel_6 channel;
+		compcxx_Channel_9 channel;
 
-		compcxx_array<compcxx_STA_7  >stas;
-		compcxx_array<compcxx_BatchPoissonSource_8  >sources;
+		compcxx_array<compcxx_STA_10  >stas;
+		compcxx_array<compcxx_BatchPoissonSource_11  >sources;
 
 	private:
 		int SimId;
@@ -2065,12 +2160,12 @@ class compcxx_SlottedCSMA_9 : public compcxx_component, public CostSimEng
 #line 46 "Channel.h"
 
 #line 72 "Channel.h"
-void compcxx_Channel_6 :: Setup()
+void compcxx_Channel_9 :: Setup()
 {
 
 }
 #line 77 "Channel.h"
-void compcxx_Channel_6 :: Start()
+void compcxx_Channel_9 :: Start()
 {
 	number_of_transmissions_in_current_slot = 0;
 	succ_tx_duration = 10E-3;
@@ -2102,7 +2197,7 @@ void compcxx_Channel_6 :: Start()
 
 }
 #line 109 "Channel.h"
-void compcxx_Channel_6 :: Stop()
+void compcxx_Channel_9 :: Stop()
 {
 	printf("\n\n");
 	printf("---- Channel ----\n");
@@ -2113,7 +2208,7 @@ void compcxx_Channel_6 :: Stop()
 	slotsInTime.close();
 }
 #line 120 "Channel.h"
-void compcxx_Channel_6 :: Sampler(trigger_t &)
+void compcxx_Channel_9 :: Sampler(trigger_t &)
 {
     
     
@@ -2131,7 +2226,7 @@ void compcxx_Channel_6 :: Sampler(trigger_t &)
 
 
 #line 136 "Channel.h"
-void compcxx_Channel_6 :: NewSlot(trigger_t &)
+void compcxx_Channel_9 :: NewSlot(trigger_t &)
 {
 	
 
@@ -2149,7 +2244,7 @@ void compcxx_Channel_6 :: NewSlot(trigger_t &)
 
 
 #line 152 "Channel.h"
-void compcxx_Channel_6 :: EndReceptionTime(trigger_t &)
+void compcxx_Channel_9 :: EndReceptionTime(trigger_t &)
 {
     
 	
@@ -2184,7 +2279,7 @@ void compcxx_Channel_6 :: EndReceptionTime(trigger_t &)
 
 
 #line 185 "Channel.h"
-void compcxx_Channel_6 :: in_packet(Packet &packet)
+void compcxx_Channel_9 :: in_packet(Packet &packet)
 {
 
 	if(packet.L > L_max) L_max = packet.L;
@@ -2212,6 +2307,63 @@ void compcxx_Channel_6 :: in_packet(Packet &packet)
 	
 	
 }
+
+
+#line 290 "./COST/cost.h"
+
+#line 290 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_6/*<trigger_t >*/::Set(trigger_t const & data, double time)
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.time = time;
+  m_event.data = data;
+  m_event.object = this;
+  m_event.active=true;
+  m_simeng->ScheduleEvent(&m_event);
+}
+
+
+#line 302 "./COST/cost.h"
+
+#line 302 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_6/*<trigger_t >*/::Set(double time)
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.time = time;
+  m_event.object = this;
+  m_event.active=true;
+  m_simeng->ScheduleEvent(&m_event);
+}
+
+
+#line 313 "./COST/cost.h"
+
+#line 313 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_6/*<trigger_t >*/::Cancel()
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.active = false;
+}
+
+
+#line 321 "./COST/cost.h"
+
+#line 321 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_6/*<trigger_t >*/::activate(CostEvent*e)
+{
+  assert(e==&m_event);
+  m_event.active=false;
+  (p_compcxx_parent->new_packetBE(m_event.data));
+}
+
+
 
 
 #line 290 "./COST/cost.h"
@@ -2265,414 +2417,399 @@ void compcxx_Channel_6 :: in_packet(Packet &packet)
 {
   assert(e==&m_event);
   m_event.active=false;
-  (p_compcxx_parent->new_packet(m_event.data));
+  (p_compcxx_parent->new_packetBK(m_event.data));
 }
 
 
 
 
-#line 17 "BatchPoissonSource.h"
+#line 290 "./COST/cost.h"
 
-#line 37 "BatchPoissonSource.h"
-void compcxx_BatchPoissonSource_8 :: Setup()
+#line 290 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_7/*<trigger_t >*/::Set(trigger_t const & data, double time)
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.time = time;
+  m_event.data = data;
+  m_event.object = this;
+  m_event.active=true;
+  m_simeng->ScheduleEvent(&m_event);
+}
+
+
+#line 302 "./COST/cost.h"
+
+#line 302 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_7/*<trigger_t >*/::Set(double time)
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.time = time;
+  m_event.object = this;
+  m_event.active=true;
+  m_simeng->ScheduleEvent(&m_event);
+}
+
+
+#line 313 "./COST/cost.h"
+
+#line 313 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_7/*<trigger_t >*/::Cancel()
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.active = false;
+}
+
+
+#line 321 "./COST/cost.h"
+
+#line 321 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_7/*<trigger_t >*/::activate(CostEvent*e)
+{
+  assert(e==&m_event);
+  m_event.active=false;
+  (p_compcxx_parent->new_packetVI(m_event.data));
+}
+
+
+
+
+#line 290 "./COST/cost.h"
+
+#line 290 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_8/*<trigger_t >*/::Set(trigger_t const & data, double time)
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.time = time;
+  m_event.data = data;
+  m_event.object = this;
+  m_event.active=true;
+  m_simeng->ScheduleEvent(&m_event);
+}
+
+
+#line 302 "./COST/cost.h"
+
+#line 302 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_8/*<trigger_t >*/::Set(double time)
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.time = time;
+  m_event.object = this;
+  m_event.active=true;
+  m_simeng->ScheduleEvent(&m_event);
+}
+
+
+#line 313 "./COST/cost.h"
+
+#line 313 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_8/*<trigger_t >*/::Cancel()
+{
+  if(m_event.active)
+    m_simeng->CancelEvent(&m_event);
+  m_event.active = false;
+}
+
+
+#line 321 "./COST/cost.h"
+
+#line 321 "./COST/cost.h"
+/*template <class T>
+*/void compcxx_Timer_8/*<trigger_t >*/::activate(CostEvent*e)
+{
+  assert(e==&m_event);
+  m_event.active=false;
+  (p_compcxx_parent->new_packetVO(m_event.data));
+}
+
+
+
+
+#line 21 "BatchPoissonSource.h"
+
+#line 22 "BatchPoissonSource.h"
+
+#line 23 "BatchPoissonSource.h"
+
+#line 24 "BatchPoissonSource.h"
+
+#line 51 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: Setup()
 {
 
 }
-#line 42 "BatchPoissonSource.h"
-void compcxx_BatchPoissonSource_8 :: Start()
+#line 56 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: Start()
 {
-	packet_rate=bandwidth/(L*8);
-	inter_packet_timer.Set(Exponential(1/packet_rate));
-	seq=0;
+	inter_packet_timerBK.Set(Exponential(1/packet_rateBK));
+	seqBK = 0;
+	
+	inter_packet_timerBE.Set(Exponential(1/packet_rateBE));
+	seqBE = 0;
+		
+	inter_packet_timerVI.Set(Exponential(1/packet_rateVI));
+	seqVI = 0;
+	
+	inter_packet_timerVO.Set(Exponential(1/packet_rateVO));
+	seqVO = 0;	
 }
-#line 49 "BatchPoissonSource.h"
-void compcxx_BatchPoissonSource_8 :: Stop()
+#line 71 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: Stop()
 {
 
 }
-#line 54 "BatchPoissonSource.h"
-void compcxx_BatchPoissonSource_8 :: new_packet(trigger_t &)
+#line 76 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: new_packetBK(trigger_t &)
 {
-	Packet packet;
+	Packet packetBK;
 
-	packet.L = L;
+	packetBK.L = L;
+	packetBK.accessCategory = 1;
 			
 	int RB = (int) Random(MaxBatch)+1;
 
 	for(int p=0; p < RB; p++)
 	{
-		packet.seq = seq;
-		packet.send_time = SimTime();
+		packetBK.seq = seqBK;
+		packetBK.send_time = SimTime();
 
-		(out_f(packet));
+		(out_f(packetBK));
 
-		seq++;
-		if(seq == MAXSEQ) seq = 0;
+		seqBK++;
+		
 
 	}
 	
-	inter_packet_timer.Set(SimTime()+Exponential(RB/packet_rate));	
+	inter_packet_timerBK.Set(SimTime()+Exponential(RB/packet_rateBK));	
 
 }
-#line 103 "STA.h"
-void compcxx_STA_7 :: Setup()
+#line 101 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: new_packetBE(trigger_t &)
 {
+	Packet packetBE;
+	packetBE.accessCategory = 0;
 
-}
-#line 108 "STA.h"
-void compcxx_STA_7 :: Start()
-{
-	if(node_id < cut)
+	packetBE.L = L;
+			
+	int RB = (int) Random(MaxBatch)+1;
+
+	for(int p=0; p < RB; p++)
 	{
+		packetBE.seq = seqBE;
+		packetBE.send_time = SimTime();
+
+		(out_f(packetBE));
+
+		seqBE++;
 		
-		DCF = 1;
-		system_stickiness = 0;
-		station_stickiness = 0;
-		hysteresis = 0;
+
+	}
+	
+	inter_packet_timerBE.Set(SimTime()+Exponential(RB/packet_rateBE));
+
+}
+#line 126 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: new_packetVI(trigger_t &)
+{
+	Packet packetVI;
+	packetVI.accessCategory = 2;
+
+	packetVI.L = L;
+			
+	int RB = (int) Random(MaxBatch)+1;
+
+	for(int p=0; p < RB; p++)
+	{
+		packetVI.seq = seqVI;
+		packetVI.send_time = SimTime();
+
+		(out_f(packetVI));
+
+		seqVI++;
 		
-		if(maxAggregation > 0)
-		{
-			fairShare = 1;
+
+	}
+	
+	inter_packet_timerVI.Set(SimTime()+Exponential(RB/packet_rateVI));	
+
+}
+#line 151 "BatchPoissonSource.h"
+void compcxx_BatchPoissonSource_11 :: new_packetVO(trigger_t &)
+{
+	Packet packetVO;
+	packetVO.accessCategory = 3;
+
+	packetVO.L = L;
 			
-		}else
-		{
-			fairShare = 0;
+	int RB = (int) Random(MaxBatch)+1;
+
+	for(int p=0; p < RB; p++)
+	{
+		packetVO.seq = seqVO;
+		packetVO.send_time = SimTime();
+
+		(out_f(packetVO));
+
+		seqVO++;
+		
+
+	}
+	
+	inter_packet_timerVO.Set(SimTime()+Exponential(RB/packet_rateVO));	
+
+}
+#line 82 "STA.h"
+void compcxx_STA_10 :: Setup()
+{
+
+	for(int i = 0; i < AC; i++)
+	{
+		computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+	}
+
+}
+#line 92 "STA.h"
+void compcxx_STA_10 :: Start()
+{
+	selectMACProtocol(cut, node_id, EDCA, hysteresis, fairShare, maxAggregation);
+	
+	
+
+	incommingPackets = 0;
+	
+	BE = 0;
+    BK = 1;
+    VI = 2;
+    VO = 3;
+	
+}
+#line 107 "STA.h"
+void compcxx_STA_10 :: Stop()
+{
+    
+
+
+
+
+
+    
+    
+}
+#line 119 "STA.h"
+void compcxx_STA_10 :: in_slot(SLOT_notification &slot)
+{	
+	switch(slot.status)
+	{
+		case 0:
 			
+			for(int i = 0; i < backlogged.size(); i++)
+			{
+				if(backlogged.at(i) == 0) 
+				{
+					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+					
+				}else 
+				{
+					if(backoffCounters.at(i) > 0)
+					{
+						
+						backoffCounters.at(i)--;
+					}
+				}
+			}
+			break;
+		case 1:
+			for (int i = 0; i < backoffCounters.size(); i++)
+			{
+				if (backoffCounters.at(i) == 0) 
+				{
+					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+				}
+			}
+	}
+	
+	
+	
+
+
+	
+	int iterator = backoffCounters.size()-1;
+	for (auto rIterator = backoffCounters.rbegin(); rIterator < backoffCounters.rend(); rIterator++)
+	{
+		if(*rIterator == 0)
+		{
+			cout << "Node #" << node_id << ", AC: " << iterator << " expired" <<endl;
+			computeBackoff(backlogged.at(iterator), queuesSizes.at(iterator), iterator, stationStickiness.at(iterator), backoffStages.at(iterator), backoffCounters.at(iterator));
+			cout << "---New backoff " << backoffCounters.at(iterator) << endl;
+			break;
 		}
-	}else
-	{
-		
-		DCF = 0;
+		iterator--;
 	}
-	
-    backoff_counter = (int)Random(pow(2,backoff_stage)*CWMIN);
-    backoff_stage = 0;
-    pickup_backoff_stage = 0;
-    previous_pickup_backoff_stage = 0;
-    packet.source = node_id;
-    packet.L = 1024;
-    packet.send_time = SimTime();
-    
-    observed_slots = 0;
-    empty_slots = 0;
-    
-    txAttempt = 0;
-    collisions = 0;
-    successful_transmissions = 0;
-    droppedPackets = 0;
-    packetDisposal = 0;
-    packetDisposalRET = 0;
-    total_transmissions = 0;
-
-    incoming_packets = 0;
-    non_blocked_packets = 0;
-    blocked_packets = 0;
-    blockingProbability = 0;
-
-    txDelay = 0;
-    
-    throughput = 0;
-    staDelay = 0;
-    
-    slotDrift = 0;
-    driftedSlots = 0;
-    
-    
-    finalBackoffStage = 0;
-    qEmpty = 0;
-    
 }
-#line 171 "STA.h"
-void compcxx_STA_7 :: Stop()
+#line 170 "STA.h"
+void compcxx_STA_10 :: in_packet(Packet &packet)
 {
+    incommingPackets++;
     
-    throughput = packet.L*8*(float)successful_transmissions / SimTime();
-    qSize = MAC_queue.QueueSize();
-    
-    blockingProbability = (float)blocked_packets / (float)incoming_packets;
-    
-    if(successful_transmissions > 0)
-    {
-    	staDelay = (float)txDelay / (float)successful_transmissions;
-    }else
-    {
-    	staDelay = 0;
-    }
-    
-    
-    finalBackoffStage = backoff_stage;
-    
-    
-    cout << endl;
-    cout << "--- Station " << node_id << " stats ---" << endl;
-    cout << "Total Transmissions:" << " " <<  total_transmissions << endl;
-    if(total_transmissions > 0)
-    {
-    	cout << "Collisions:" << " " << collisions << endl;
-    	cout << "Packets successfully sent:" << " " << successful_transmissions << endl;        
-    	cout << "*** DETAILED ***" << endl;
-    	cout << "TAU = " << (float)total_transmissions / (float)observed_slots << " |" << " p = " << (float)collisions / (float)total_transmissions << endl;
-    	cout << "Throughput of this station = " << throughput << "bps" << endl;
-    	cout << "Blocking Probability = " << blockingProbability << endl;
-    	cout << "Average Delay (queueing + service) = " << staDelay << endl;
-    	cout << endl;
-    }
-    
-    cout <<"-----Debug-----"<<endl;
-    if(DCF == 1)
-	{
-		
-		cout << "I am using DCF" << endl;	
-	}else
-	{
-		cout << "I am using something different" << endl;
-	}
-	cout << "Final backoff stage: " << finalBackoffStage << endl;
-    cout << "System stickiness: " << system_stickiness << endl;
-    cout << "Station stickiness: " << station_stickiness << endl;
-    cout << "Hysteresis: " << hysteresis << endl;
-    cout << "Fair Share: " << fairShare << endl;
-    if(qEmpty > 1)
-    {
-    	cout << "The queue emptied " << qEmpty <<" times" << endl;
-    }else
-    {
-    	cout << "Queue was always full" << endl;
-    }
-    
-}
-#line 230 "STA.h"
-void compcxx_STA_7 :: in_slot(SLOT_notification &slot)
-{
-    observed_slots++;
-    
-    
-
-    if (backlogged == 1)
-    {
-        if (slot.status == 0)
-        {
-            backoff_counter--;
-            empty_slots++;
-        }
-        if (slot.status == 1)
-        {             
-            if (backoff_counter == 0) 
-            {
-                
-                if(fairShare > 0)
-                {
-                	if(maxAggregation > 0)
-                	{
-                		packetDisposal = std::min((int)pow(2,MAXSTAGE),MAC_queue.QueueSize());
-                		successful_transmissions += packetDisposal;
-                		
-                		for(int i = 0; i < packetDisposal; i++)
-                		{
-                			txDelay += SimTime() - packet.queuing_time;
-                			MAC_queue.DelFirstPacket();
-                			if(i < packetDisposal-1) packet = MAC_queue.GetFirstPacket();
-                    	}
-                	}else
-                	{
-                		packetDisposal = std::min((int)pow(2,backoff_stage),MAC_queue.QueueSize());
-                		successful_transmissions += packetDisposal;
-                		
-                		
-                		for(int i = 0; i < packetDisposal; i++)
-                		{
-                			txDelay += SimTime() - packet.queuing_time;
-                			MAC_queue.DelFirstPacket();
-                			if(i < packetDisposal-1) packet = MAC_queue.GetFirstPacket();
-                    	}
-                	}
-                	packetDisposal = 0;
-                }else
-                {
-                    successful_transmissions++;
-                    txDelay += SimTime() - packet.queuing_time;
-                    MAC_queue.DelFirstPacket();
-                }
-                
-                txAttempt = 0;
-                
-                if(hysteresis == 0) backoff_stage = 0;
-                
-                
-                station_stickiness = system_stickiness;
-               
-                if (MAC_queue.QueueSize() == 0)
-                {
-                    backlogged = 0;
-                    backoff_stage = 0;
-                    qEmpty++;
-                }else
-                {
-                    packet = MAC_queue.GetFirstPacket(); 
-                    packet.send_time = SimTime();
-                    backoff_counter = backoff(backoff_stage, station_stickiness, driftProbability);
-                }
-                pickup_backoff_stage = backoff_stage;
-                previous_pickup_backoff_stage = 0;
-            }else
-            {
-                
-                
-                backoff_counter--;           
-            }
-            
-        }
-        
-        
-        
-        if (slot.status > 1)
-        {   
-            if (backoff_counter == 0) 
-            {
-                txAttempt++;
-                collisions++;
-                
-                if(system_stickiness > 0){ 
-                    station_stickiness = std::max(0, station_stickiness-1);
-                    if(station_stickiness == 0)
-                    {
-                        backoff_stage = std::min(backoff_stage+1,MAXSTAGE);
-                        backoff_counter = backoff(backoff_stage, station_stickiness, driftProbability);
-                    }else 
-                    {                       
-                        
-                        backoff_counter = backoff(backoff_stage, station_stickiness, driftProbability);
-                    }
-                }else
-                {
-                    backoff_stage = std::min(backoff_stage+1,MAXSTAGE);
-                    backoff_counter = backoff(backoff_stage, station_stickiness, driftProbability);
-                }
-                    
-                                                                  
-                
-                
-                if ((MAX_RET < txAttempt) && (txAttempt < (MAX_RET + MAXSTAGE + 1)))
-                {   
-                    
-                    if(hysteresis == 0) backoff_stage = 0;
-                    
-                    if(fairShare > 0){
-                    	if(maxAggregation > 0)
-                    	{
-                    		
-                    		packetDisposalRET = std::min((int)pow(2,MAXSTAGE),MAC_queue.QueueSize());
-                    		droppedPackets+=packetDisposalRET;
-                    		txAttempt = 0;
-                    		for(int i = 0; i < packetDisposalRET; i++)
-                    		{
-                    			MAC_queue.DelFirstPacket();
-                    		}
-                    	}else
-                    	{
-                    		if(previous_pickup_backoff_stage == 0) 
-                    		{
-                    			packetDisposalRET = std::min((int)pow(2,pickup_backoff_stage),MAC_queue.QueueSize());
-                    		}else
-                    		{         		
-                    			packetDisposalRET = std::min((int)(pow(2,pickup_backoff_stage)-pow(2,previous_pickup_backoff_stage)),MAC_queue.QueueSize());         		
-                    		}
-                    		droppedPackets+=packetDisposalRET;
-                    		for(int i = 0; i < packetDisposalRET; i++)
-                    		{
-                    			MAC_queue.DelFirstPacket();
-                    		}
-                    		previous_pickup_backoff_stage = pickup_backoff_stage;
-                 			pickup_backoff_stage = std::min(pickup_backoff_stage+1, MAXSTAGE);
-                    	}
-                    }else
-                    {
-                    	txAttempt = 0;
-                    	droppedPackets++;
-                    	MAC_queue.DelFirstPacket();
-                 	}
-                 	
-                 	if(MAC_queue.QueueSize() > 0)
-                 	{
-                 		
-                 		
-                 		
-                 		if((txAttempt == MAX_RET + MAXSTAGE) || (pickup_backoff_stage == MAXSTAGE))
-                 		{
-                 			MAC_queue.DelFirstPacket();
-                 			droppedPackets++;
-                 			txAttempt = 0;
-                 			packetDisposalRET = 0;
-                 		}
-                 		packet = MAC_queue.GetFirstPacket();
-                 		packet.send_time = SimTime();
-                 	}else
-                 	{
-                 		backlogged = 0;
-                 	}
-                }
-            }
-            else
-            {
-                
-                backoff_counter--;
-            }
-        }
-
-    }
-    
-    if (backlogged == 0)
-    {
-        if (MAC_queue.QueueSize() > 0)
-        {
-            backlogged = 1;
-            packet = MAC_queue.GetFirstPacket();
-            packet.send_time = SimTime();
-        }
-        
-    }
-    
-    
-    if ((backoff_counter == 0) && (backlogged == 1))
-    {
-        total_transmissions++;
-        if(fairShare > 0)
-        {
-        	if(maxAggregation > 0)
-        	{
-        		packet.aggregation = std::min((int)pow(2,MAXSTAGE),MAC_queue.QueueSize());
-        	}else
-        	{
-        		packet.aggregation = std::min((int)pow(2,backoff_stage),MAC_queue.QueueSize());
-        	}
-        }else
-        {
-            packet.aggregation = 1;
-        }
-        
-        (out_packet_f(packet));
-    }
-    
-}
-#line 443 "STA.h"
-void compcxx_STA_7 :: in_packet(Packet &packet)
-{
-    incoming_packets++;
-
-    if (MAC_queue.QueueSize() < K)
-    {
-        non_blocked_packets++;
-        packet.queuing_time = SimTime();
-        MAC_queue.PutPacket(packet);
-    }else
-    {
-        blocked_packets++;
+    switch (packet.accessCategory){
+    	case 0:
+    		if(MACQueueBE.QueueSize() < K)
+    		{
+    			MACQueueBE.PutPacket(packet);
+    			queuesSizes.at(packet.accessCategory) = MACQueueBE.QueueSize();
+    		}else
+    		{
+    			blockedPackets.at(BE)++;
+    		}
+    		break;
+    	case 1:
+    		if(MACQueueBK.QueueSize() < K)
+    		{
+    			MACQueueBK.PutPacket(packet);
+    			queuesSizes.at(packet.accessCategory) = MACQueueBK.QueueSize();
+    		}else
+    		{
+    			blockedPackets.at(BK)++;
+    		}
+    		break;
+    	case 2:
+    		if(MACQueueVI.QueueSize() < K)
+    		{
+    			MACQueueVI.PutPacket(packet);
+    			queuesSizes.at(packet.accessCategory) = MACQueueVI.QueueSize();
+    		}else
+    		{
+    			blockedPackets.at(VI)++;
+    		}
+    		break;
+    	case 3:
+    		if(MACQueueVO.QueueSize() < K)
+    		{
+    			MACQueueVO.PutPacket(packet);
+    			queuesSizes.at(packet.accessCategory) = MACQueueVI.QueueSize();
+    		}else
+    		{
+    			blockedPackets.at(VO)++;
+    		}
+    		break;
     }
 }
 
 
 #line 44 "Sim_SlottedCSMA.cc"
-void compcxx_SlottedCSMA_9 :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int hysteresis, int fairShare, float channelErrors, float slotDrift, float percentageDCF, int maxAggregation, int simSeed)
+void compcxx_SlottedCSMA_12 :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int hysteresis, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int simSeed)
 {
 	SimId = Sim_Id;
 	Nodes = NumNodes;
@@ -2688,18 +2825,13 @@ void compcxx_SlottedCSMA_9 :: Setup(int Sim_Id, int NumNodes, int PacketLength, 
 
 	
 	
-	cut = NumNodes * percentageDCF;
+	cut = NumNodes * percentageEDCA;
 	decimalCut = modf(cut, &intCut);
 	
 	if(decimalCut > 0.5)
 	{
 		intCut++;	
 	}
-		
-	
-
-
-	
 	
 	for(int n=0;n<NumNodes;n++)
 	{
@@ -2707,27 +2839,28 @@ void compcxx_SlottedCSMA_9 :: Setup(int Sim_Id, int NumNodes, int PacketLength, 
 		stas[n].node_id = n;
 		stas[n].K = 1000;
 		stas[n].system_stickiness = Stickiness;
-		stas[n].station_stickiness = 0;
 		stas[n].hysteresis = hysteresis;
 		stas[n].fairShare = fairShare;
-		stas[n].driftProbability = slotDrift;
+		
 		stas[n].cut = intCut;     
 		stas[n].maxAggregation = maxAggregation;
 
 
 		
-		sources[n].bandwidth = Bandwidth;
 		sources[n].L = PacketLength;
+		sources[n].packet_rateBK = Bandwidth/PacketLength;
+		sources[n].packet_rateBE = Bandwidth/PacketLength;
+		sources[n].packet_rateVI = (Bandwidth/2)/PacketLength;
+		sources[n].packet_rateVO = (Bandwidth/4)/PacketLength;
 		sources[n].MaxBatch = Batch;
 	}
 	
 	
 	for(int n=0;n<NumNodes;n++)
 	{
-        channel.out_slot[n].Connect(stas[n],(compcxx_component::Channel_out_slot_f_t)&compcxx_STA_7::in_slot) /*connect channel.out_slot[n],stas[n].in_slot*/;
-		stas[n].out_packet_f.Connect(channel,(compcxx_component::STA_out_packet_f_t)&compcxx_Channel_6::in_packet) /*connect stas[n].out_packet,channel.in_packet*/;
-		sources[n].out_f.Connect(stas[n],(compcxx_component::BatchPoissonSource_out_f_t)&compcxx_STA_7::in_packet) /*connect sources[n].out,stas[n].in_packet*/;
-
+        channel.out_slot[n].Connect(stas[n],(compcxx_component::Channel_out_slot_f_t)&compcxx_STA_10::in_slot) /*connect channel.out_slot[n],stas[n].in_slot*/;
+		stas[n].out_packet_f.Connect(channel,(compcxx_component::STA_out_packet_f_t)&compcxx_Channel_9::in_packet) /*connect stas[n].out_packet,channel.in_packet*/;
+		sources[n].out_f.Connect(stas[n],(compcxx_component::BatchPoissonSource_out_f_t)&compcxx_STA_10::in_packet) /*connect sources[n].out,stas[n].in_packet*/;
 	}
 
 
@@ -2737,231 +2870,27 @@ void compcxx_SlottedCSMA_9 :: Setup(int Sim_Id, int NumNodes, int PacketLength, 
 		
 
 }
-#line 110 "Sim_SlottedCSMA.cc"
-void compcxx_SlottedCSMA_9 :: Start()
+#line 106 "Sim_SlottedCSMA.cc"
+void compcxx_SlottedCSMA_12 :: Start()
 {
-	printf("--------------- SlottedCSMA ---------------\n");
+	printf("--------------- CSMA/ECA ---------------\n");
 }
-#line 115 "Sim_SlottedCSMA.cc"
-void compcxx_SlottedCSMA_9 :: Stop()
+#line 111 "Sim_SlottedCSMA.cc"
+void compcxx_SlottedCSMA_12 :: Stop()
 {
-	double p_res = 0;
-	double delay_res = 0;
 	
-	double overall_successful_tx = 0;
-	double overall_collisions = 0;
-	double overall_empty = 0;
-	double total_slots = 0;
-	double overall_successful_tx_slots = 0;
-	double driftedSlots = 0;
-	double tx_slots = 0;
-	double overall_throughput = 0;
 	
+	
+	
+	
+	cout << "--- Overall Statistics ---" << endl << endl;
 	
 
-	double avg_tau = 0;
-	double std_tau = 0;
-	
-	double stas_throughput [Nodes];
-	double stas_throughputDCF [Nodes];
-	double stas_throughputECA [Nodes];
-	double accumThroughputDCF = 0;
-	double accumThroughputECA = 0;
-	
-	int DCFStas = 0;
-	int ECAStas = 0;
-	
-	double fairness_index = 0;
-	double systemTXDelay = 0.0;
-	double systemAvgBlockingProbability = 0;
-	
-	double avgBackoffStage = 0;
-	double accumaltedDroppedPackets = 0;
-	double avgFinalQSize = 0;
-	double QEmpties = 0; 
 
-	
-	for(int n=0;n<Nodes;n++)
-	{
-	    avg_tau += ((float)stas[n].total_transmissions / (float)stas[n].observed_slots);
-	    driftedSlots += stas[n].driftedSlots;
-	    tx_slots += stas[n].total_transmissions;
-	    overall_successful_tx+=stas[n].successful_transmissions;
-	    avgBackoffStage += stas[n].finalBackoffStage;
-	}
-	overall_collisions = channel.collision_slots;
-	overall_empty = channel.empty_slots;
-	total_slots = channel.total_slots;
-	overall_successful_tx_slots = channel.succesful_slots;
-	driftedSlots /= tx_slots;
 
-	p_res /= Nodes;
-	delay_res /= Nodes;
-	
-	avg_tau /= Nodes;
-	
-	
-	avgBackoffStage /= Nodes;
-	cout << endl;
-	
-	
-	
-	
-	
-	
-	ofstream staStatistics;
-	staStatistics.open("Results/multiStation.txt", ios::app);
-	
-	for(int i=0; i<Nodes; i++)
-	{
-	    std_tau += pow(avg_tau - ((float)stas[i].total_transmissions / (float)stas[i].observed_slots),2);
-	    stas_throughput[i] = stas[i].throughput;
-	    systemTXDelay += stas[i].staDelay;
-	    
-	    
-	    
-	    
-	    QEmpties += stas[i].qEmpty;
-	    
-	    
-	    if(stas[i].DCF > 0)
-	    {
-	    	stas_throughputDCF[i] = stas[i].throughput;
-	    	stas_throughputECA[i] = 0;
-	    	DCFStas++;
-	    }else
-	    {
-	    	stas_throughputECA[i] = stas[i].throughput;
-	    	stas_throughputDCF[i] = 0;
-	    	ECAStas++;
-	    }
-	    accumThroughputDCF += stas_throughputDCF[i];
-	    accumThroughputECA += stas_throughputECA[i];
-	    accumaltedDroppedPackets += stas[i].droppedPackets;
-	    avgFinalQSize += stas[i].qSize;
-	    
-	    
-	    if(stas[i].incoming_packets == stas[i].successful_transmissions + stas[i].blocked_packets + stas[i].qSize + stas[i].droppedPackets)
-	    {	
-	    	cout << "Station " << i << ": is alright" << endl;
-	    }else
-	    {
-	    	cout << "Station " << i << ": differs in " << stas[i].incoming_packets - (stas[i].successful_transmissions + stas[i].blocked_packets + stas[i].qSize + stas[i].droppedPackets) << endl;
-	    }
-	    
-	    
-	    systemAvgBlockingProbability += stas[i].blockingProbability;
-	    
-	    
-	    
-	    
-	    
-		staStatistics << i << " " << stas[i].throughput << " " << stas[i].collisions / stas[i].total_transmissions << " " << stas[i].total_transmissions / stas[i].observed_slots << " " << stas[i].staDelay << " " << stas[i].qEmpty << " " << stas[i].qSize << " " << stas[i].finalBackoffStage << " " << stas[i].droppedPackets << endl;
-	}
-	
-	std_tau = pow((1.0/Nodes) * (float)std_tau, 0.5);
-	
-	systemTXDelay /= Nodes;
-	
-	systemAvgBlockingProbability /= Nodes;
-	avgFinalQSize /= Nodes;
-	
-	
-	double fair_numerator, fair_denominator;
-	
-	fair_numerator = 0;
-	fair_denominator = 0;
-	
-	
-	for(int k = 0; k < Nodes; k++)
-	{
-	    fair_numerator += stas_throughput[k];
-	    fair_denominator += pow(stas_throughput[k],2);        
-	}
-	
-	fairness_index = (pow(fair_numerator,2)) / (Nodes*fair_denominator);
-	
-	
-	overall_throughput = (channel.totalBitsSent)/SimTime();
 
-	ofstream statistics;
-	statistics.open("Results/multiSim.txt", ios::app);
-	statistics << Nodes << " " << overall_throughput << " " << overall_collisions / total_slots  << " " << fairness_index  << " " << Bandwidth_ << " " << systemTXDelay << " " << avgBackoffStage << " "; 
-	if(DCFStas > 0){ 
-	    statistics << accumThroughputDCF/DCFStas;
-	}else
-	{
-	    statistics << accumThroughputDCF;
-	}statistics << " ";
-	if(ECAStas > 0){ 
-	    statistics << accumThroughputECA/ECAStas;
-	}else
-	{
-	    statistics << accumThroughputECA;
-	}statistics << " " << fair_numerator << " ";
-	
-	statistics << systemAvgBlockingProbability << " " << accumaltedDroppedPackets/Nodes << " " << overall_successful_tx_slots << " " << overall_collisions << " " << overall_empty << " " << total_slots << " " << avg_tau  << " " << avgFinalQSize << " " << QEmpties << endl;
-	
-	cout << endl << endl;
-	
-	
-	
-	
-	
-	cout << "--- Overall Statistics ---" << endl;
-	cout << "Average TAU = " << avg_tau << endl;
-	cout << "Standard Deviation = " << (double)std_tau << endl;
-	cout << "Overall Throughput = " << overall_throughput << endl;
-	
-	
-	if((fair_numerator != (accumThroughputDCF + accumThroughputECA)) && (fair_numerator - (accumThroughputDCF+accumThroughputECA) > 1))
-	{
-		cout << "Error gathering the throughput of each station" << endl;
-		cout << "Total: " << fair_numerator << " DCF: " << accumThroughputDCF << ", ECA: " << accumThroughputECA << ", diferring in: " << fair_numerator - (accumThroughputDCF+accumThroughputECA) << endl;
-	}
-	
-	cout << "Jain's Fairness Index = " << fairness_index << endl;
-	cout << "Overall average system TX delay = " << systemTXDelay << endl;
-	cout << "Percentage of drifted slots = " << driftedSlots*100 << "%" << endl << endl;
-	
-	
-	cout << "***Debugg***" << endl;
-	cout << "Average backoff stage [0-5]: " << avgBackoffStage << endl;
-	cout << "Average number of dropped packets: " << accumaltedDroppedPackets/Nodes << endl;
-	cout << "Average blocking proability: " << systemAvgBlockingProbability << endl;
-	cout << "Number of times each MAC queue emptied: " << QEmpties << endl;
-	cout << "Slot drift probability: " << drift*100 << "%" << endl;
-	cout << "Sx Slots: " << overall_successful_tx_slots << endl;
-	cout << "Collision Slots: " << overall_collisions << endl;
-	cout << "Empty Slots: " << overall_empty << endl;
-	cout << "Total Slots: " << total_slots << endl;
-	if(total_slots != (overall_successful_tx_slots+overall_collisions+overall_empty))
-	{
-	    cout << "They differ by: " << fabs(total_slots - (overall_successful_tx_slots+overall_collisions+overall_empty)) << endl;    
-	}else
-	{
-	    cout << "Total Slots = Sucessful + Collision + Empty" << endl;
-	}
-	
-	cout << "Total bits sent: " << channel.totalBitsSent << " if divided by " << SimTime() << "seconds of simulation, equals = " << (channel.totalBitsSent)/SimTime() << endl << endl;
 
-	cout << "---Debugging the mixed scenario---" << endl;
-	cout << "There are: " << DCFStas << " stations with DCF and: " << ECAStas << " with CSMA/ECA." << endl;
-	if(Nodes != (DCFStas + ECAStas)) cout << "Miscount of stations" << endl;
-	
-	
-	if(ECAStas == 0) ECAStas = 1;
-	if(DCFStas == 0) DCFStas = 1;
-	cout << "The average throughput of DCF stations is: " << accumThroughputDCF/DCFStas << "bps" << endl;
-	cout << "The average throughput of Full CSMA/ECA staions is: " << accumThroughputECA/ECAStas << "bps" << endl;
-	if((accumThroughputECA == 0) || (accumThroughputDCF == 0))
-	{
-		cout << "Some stations received no throughput, so the CSMA/ECA / CSMA/CA cannot be computed" << endl;
-	}else
-	{
-		cout << "CSMA/ECA / CSMA/CA ratio: " << (accumThroughputECA/ECAStas)/(accumThroughputDCF/DCFStas) << endl;
-	}
-	
+
 
 }int main(int argc, char *argv[])
 {
@@ -2976,7 +2905,7 @@ void compcxx_SlottedCSMA_9 :: Stop()
 	int fairShare;
 	float channelErrors;
 	float slotDrift;
-	float percentageDCF;
+	float percentageEDCA;
 	int maxAggregation;
 	int simSeed;
 	
@@ -2992,19 +2921,19 @@ void compcxx_SlottedCSMA_9 :: Stop()
 				cout << "------------" << endl;
 				cout << "Cheatsheet:" << endl;
 				cout << "------------" << endl;
-				cout << "(0)./XXXX (1)SimTime (2)NumNodes (3)PacketLength (4)Bandwidth (5)Batch (6)Stickiness (7)hysteresis (8)fairShare (9)channelErrors (10)slotDrift (11)percentageOfDCF (12)maxAggregation (13)simSeed" << endl << endl;;
+				cout << "(0)./XXXX (1)SimTime (2)NumNodes (3)PacketLength (4)Bandwidth (5)Batch (6)Stickiness (7)hysteresis (8)fairShare (9)channelErrors (10)slotDrift (11)percentageOfEDCA (12)maxAggregation (13)simSeed" << endl << endl;;
 				cout << "0) ./XXX: Name of executable file" << endl;
 				cout << "1) SimTime: simulation time in seconds" << endl;
 				cout << "2) NumNodes: number of contenders" << endl;
 				cout << "3) PacketLength: length of the packet in bytes" << endl;
-				cout << "4) Bandwidth: number of bits per second generated by the source. With 802.11n and DCF, 10e6 < is considered an unsaturated environment." << endl;
+				cout << "4) Bandwidth: number of bits per second generated by the source. With 802.11n and EDCA, 10e6 < is considered an unsaturated environment." << endl;
 				cout << "5) Batch: how many packets are put in the contenders queue. Used to simulate burst traffic. Usually set to 1" << endl;
 				cout << "6) Stickiness: activates CSMA/ECA. Nodes pick a deterministic backoff (0=off, 1=on)" << endl;
 				cout << "7) Hysteresis: nodes do not reset their backoff stage after successful transmissions (0=off, 1=on)" << endl;
 				cout << "8) FairShare: nodes at backoff stage k, attempt the transmission of 2^k packets (0=off, 1=on)" << endl;
 				cout << "9) ChannelErrors: channel errors probability [0,1]" << endl;
 				cout << "10) SlotDrift: probability of miscounting passing empty slots [0,1]" << endl;
-				cout << "11) PercetageDCF: percentage of nodes running DCF. Used to simulate CSMA/ECA and CSMA/CA mixed scenarios [0,1]" << endl;
+				cout << "11) PercetageEDCA: percentage of nodes running EDCA. Used to simulate CSMA/ECA and CSMA/CA mixed scenarios [0,1]" << endl;
 				cout << "12) MaxAggregation: nodes use maximum aggregation when attempting transmission (0=off, 1=on)" << endl;
 				cout << "13) SimSeed: simulation seed used to generate random numbers. If testing results, repeat simulations with different seeds everytime" << endl << endl;
 				return(0);
@@ -3018,10 +2947,10 @@ void compcxx_SlottedCSMA_9 :: Stop()
 		}else
 		{
 			cout << "Executed with default values shown below" << endl;
-			cout << "./XXXX SimTime [10] NumNodes [10] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfDCF [1] maxAggregation [0] simSeed [0]" << endl;
+			cout << "./XXXX SimTime [10] NumNodes [10] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
 			MaxSimIter = 1;
-			SimTime = 10;
-			NumNodes = 10;
+			SimTime = 0.01;
+			NumNodes = 1;
 			PacketLength = 1024;
 			Bandwidth = 65e6;
 			Batch = 1; 
@@ -3030,7 +2959,7 @@ void compcxx_SlottedCSMA_9 :: Stop()
 			fairShare = 0; 
 			channelErrors = 0; 
 			slotDrift = 0; 
-			percentageDCF = 1; 
+			percentageEDCA = 1; 
 			maxAggregation = 0;
 			simSeed = 0; 
 		}
@@ -3047,7 +2976,7 @@ void compcxx_SlottedCSMA_9 :: Stop()
 		fairShare = atoi(argv[8]); 
 		channelErrors = atof(argv[9]); 
 		slotDrift = atof(argv[10]); 
-		percentageDCF = atof(argv[11]); 
+		percentageEDCA = atof(argv[11]); 
 		maxAggregation = atoi(argv[12]); 
 		simSeed = atof(argv[13]); 
 	}
@@ -3073,9 +3002,9 @@ void compcxx_SlottedCSMA_9 :: Stop()
 		cout << "####################### CSMA/CA #######################" << endl;
 	}
 	
-	if(percentageDCF > 0) cout << "####################### Mixed setup " << percentageDCF*100 << "% DCF #######################" << endl;
+	if(percentageEDCA > 0) cout << "####################### Mixed setup " << percentageEDCA*100 << "% EDCA #######################" << endl;
 		
-	compcxx_SlottedCSMA_9 test;
+	compcxx_SlottedCSMA_12 test;
 
 	
 	
@@ -3083,7 +3012,7 @@ void compcxx_SlottedCSMA_9 :: Stop()
 		
 	test.StopTime(SimTime);
 
-	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, hysteresis, fairShare, channelErrors, slotDrift, percentageDCF, maxAggregation, simSeed);
+	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, hysteresis, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, simSeed);
 	
 	test.Run();
 
