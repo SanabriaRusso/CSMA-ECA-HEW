@@ -21,9 +21,11 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 	
 	if(CWmin > 0)
 	{
-		if(stickiness != 0){
+		if(stickiness != 0)
+		{
 			counter = (int)(pow(2,backoffStage)*CWmin/2)-1;
-		}else{
+		}else
+		{
 			counter = rand() % (int)(pow(2,backoffStage)*CWmin);
 		}
 		backlog = 1;

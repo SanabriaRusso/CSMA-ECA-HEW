@@ -9,7 +9,7 @@
 #include "FIFO.h"
 #include "includes/computeBackoff.hh"
 #include "includes/selectMACProtocol.hh"
-//#include "includes/resolveInternalCollision.hh"
+#include "includes/resolveInternalCollision.hh"
 
 //#define CWMIN 16 //to comply with 802.11n it should 16. Was 32 for 802.11b.
 #define MAXSTAGE 5
@@ -63,6 +63,7 @@ component STA : public TypeII
         int BK; //Background
         int VI; //Video
         int VO; //Voice
+        int ACToTx; //to dertermine which AC is to transmit in case of an internal collision
         
         std::array<int,AC> backlogged; //whether or not the station has something to transmit on an AC
 
@@ -101,6 +102,7 @@ void STA :: Start()
     BK = 1;
     VI = 2;
     VO = 3;
+    ACToTx = 0;
 	
 };
 
@@ -144,27 +146,29 @@ void STA :: in_slot(SLOT_notification &slot)
 				if (backoffCounters.at(i) == 0) //this category transmitted
 				{
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+                    //cout << "STA-" << node_id << ": AC: " << i << " transmitted. New backoff: " << backoffCounters.at(i) << endl;
 				}
 			}
+            break;
+        default: //it is set to default to mean a number other than 0 or 1
+            for (int i = 0; i < backoffCounters.size(); i++)
+            {
+                if (backoffCounters.at(i) == 0) //to modify the colliding AC backoff parameters
+                {
+                    stationStickiness.at(i) = max((stationStickiness.at(i) - 1), 0);
+                    backoffStages.at(i) = min(backoffStages.at(i) + 1, MAXSTAGE);
+                    computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+                    //cout << "STA-" << node_id << ": AC: " << i << " collided. New backoff: " << backoffCounters.at(i) << endl;
+
+                }
+            }
 	}
 	
 	
-	/*Checking availability for transmission.
-	At this point, all the AC's backoff are generated, nevertheless there is still
-	to resolve the internal collision issue.*/
-	
-	int iterator = backoffCounters.size()-1;
-	for (auto rIterator = backoffCounters.rbegin(); rIterator < backoffCounters.rend(); rIterator++)
-	{
-		if(*rIterator == 0) //if the AC is ready for transmission
-		{
-			//cout << "Node #" << node_id << ", AC: " << iterator << " expired" <<endl;
-			computeBackoff(backlogged.at(iterator), queuesSizes.at(iterator), iterator, stationStickiness.at(iterator), backoffStages.at(iterator), backoffCounters.at(iterator));
-			//cout << "---New backoff " << backoffCounters.at(iterator) << endl;
-			break;
-		}
-		iterator--;
-	}
+	//Checking availability for transmission
+	ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
+    cout << "To transmit: " << ACToTx << endl;
+
 };
 
 void STA :: in_packet(Packet &packet)
