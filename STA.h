@@ -56,6 +56,7 @@ component STA : public TypeII
 
         //Transmissions statistics
         std::array<double,AC> transmissions = {};
+        std::array<double,AC> interTxTimes = {}; //Time between successful transmissions
 
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
@@ -105,13 +106,12 @@ void STA :: Start()
 	/*Initializing variables and arrays to avoid warning regarding
 	in-class initialization of non-static data members*/
 	incommingPackets = 0;
-	
-    //Setting the default aggregation parameter for the first packet transmission
-    packet.aggregation = 1;
 
     for(int i = 0; i < superPacket.size(); i++)
     {
         superPacket.at(i).contention_time = SimTime();
+        //Setting the default aggregation parameter for the first packet transmission
+        superPacket.at(i).aggregation = 1;
     }
 
 
@@ -162,18 +162,18 @@ void STA :: in_slot(SLOT_notification &slot)
 			{
 				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted the last packet
 				{
+                    //Gathering statistics from last transmission
+                    interTxTimes.at(i) += SimTime() - superPacket.at(i).contention_time;
+
                     //Erasing the packet(s) that was(were) sent
-                    erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, packet);
+                    erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i));
                     
                     //If there is another packet waiting in the transmission queue, pick it and start contention
 
                     /*****NEW PACKET IS PICKED************
                     **************************************/
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-                    if(backlogged.at(i) > 0)
-                    {
-                        packet = pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO);
-                    } 
+                    if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO);
                     break;
 				}
 			}

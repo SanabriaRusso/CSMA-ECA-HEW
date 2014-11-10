@@ -1,6 +1,6 @@
 #include "../Aux.h"
 
-Packet pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC> &superPacket, FIFO <Packet> &MACQueueBK, FIFO <Packet> &MACQueueBE, FIFO <Packet> &MACQueueVI, FIFO <Packet> &MACQueueVO)
+void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC> &superPacket, FIFO <Packet> &MACQueueBK, FIFO <Packet> &MACQueueBE, FIFO <Packet> &MACQueueVI, FIFO <Packet> &MACQueueVO)
 {
 	Packet packet;
 	switch(accessCategory)
@@ -21,6 +21,4 @@ Packet pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,A
 	}
 	packet.contention_time = pickupTime;
 	superPacket.at(accessCategory).contention_time = packet.contention_time;
-	packet.accessCategory = accessCategory;
-	
 }
