@@ -126,6 +126,11 @@ void STA :: Start()
 void STA :: Stop()
 {
 
+    for(auto it = interTxTimes.begin(); it != interTxTimes.end(); it++)
+    {
+        cout << "Total interTxTimes for AC " << std::distance(interTxTimes.begin(),it) << ": " << *it/transmissions.at(std::distance(interTxTimes.begin(),it)) << endl;
+    }
+
     /*cout << "Debug Queue" << endl;
     cout << "Node #" << node_id << endl;
     cout << "\tAC 0: " << MACQueueBE.QueueSize() << endl;

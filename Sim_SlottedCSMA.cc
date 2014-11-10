@@ -117,6 +117,8 @@ void SlottedCSMA :: Stop()
 	
 	array<double,AC> overallTx = {};
 
+	cout << endl;
+
 	cout << "--- Overall Statistics ---" << endl << endl;
 	for(int i = 0; i < Nodes; i++)
 	{
