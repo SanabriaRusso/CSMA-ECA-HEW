@@ -11,10 +11,10 @@
 #define SIFS 10E-6
 #define L_ack 112*/
 
-//Complying with 802.11n
-#define SLOT 16e-06
-#define DIFS 34e-06
-#define SIFS 9e-06
+//Complying with 802.11n at 2.4 GHz
+#define SLOT 9e-06 // was 16e-06
+#define DIFS 28e-06 // was 34e-06
+#define SIFS 10e-06 // was9e-06
 #define LDBPS 256
 #define TSYM 4e-06
 			
@@ -111,7 +111,7 @@ void Channel :: Stop()
 	printf("\n\n");
 	printf("---- Channel ----\n");
 	printf("Slot Status Probabilities (channel point of view): Empty = %e, Succesful = %e, Collision = %e \n",empty_slots/total_slots,succesful_slots/total_slots,collision_slots/total_slots);
-	printf("Total packets sent to the Channel: %d", (int)succesful_slots);
+	printf("Total packets sent to the Channel: %d\n", (int)succesful_slots);
 	printf("\n\n");
 	
 	slotsInTime.close();
@@ -202,6 +202,7 @@ void Channel :: in_packet(Packet &packet)
 	}
 	
 	succ_tx_duration = 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
+
 	
 	collision_duration = succ_tx_duration;
 	

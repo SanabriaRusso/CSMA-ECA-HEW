@@ -115,15 +115,24 @@ void SlottedCSMA :: Stop()
 	//---------Presentation when simulation ends--------------------//
 	//--------------------------------------------------------------//
 	
+	std:array<double,AC> overallTx = {};
+
 	cout << "--- Overall Statistics ---" << endl << endl;
-	/*for(int i = 0; i < Nodes; i++)
+	for(int i = 0; i < Nodes; i++)
 	{
-		cout << "Node #" << i << endl;
-		cout << "---Background AC: " << sources[i].seqBK << " packets" << endl;
-		cout << "---Best-effort AC: " << sources[i].seqBE << " packets" << endl;
-		cout << "---Video AC: " << sources[i].seqVI << " packets" << endl;
-		cout << "---Voice AC: " << sources[i].seqVO << " packets" << endl;
-	}*/
+		for(auto it = stas[i].transmissions.begin(); it != stas[i].transmissions.end(); it++)
+		{
+			overallTx.at(std::distance(stas[i].transmissions.begin(),it)) += *it;
+		}
+	}
+
+	cout << "1. Total transmissions: " << endl;
+
+	for(auto it = overallTx.begin(); it != overallTx.end(); it++)
+	{
+		cout << "\tAC " << std::distance(overallTx.begin(),it) << ": " << *it << endl;
+	}
+
 };
 
 int main(int argc, char *argv[])

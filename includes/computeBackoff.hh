@@ -16,6 +16,8 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 			break;
 		case 3:
 			if(qSize > 0) CWmin = 4;
+			break;
+		default:
 			break;	
 	}
 	
@@ -32,5 +34,8 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 	}else
 	{
 		backlog = 0;
+		backoffStage = 0;
+		counter = 0;
+		cout << "\tAC " << AC << " has an empty queue" << endl;
 	}
 }

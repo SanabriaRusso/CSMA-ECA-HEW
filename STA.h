@@ -51,11 +51,14 @@ component STA : public TypeII
         std::array<double, AC> blockedPackets;
         std::array<double, AC> queuesSizes;
 
+        //Transmissions statistics
+        std::array<double,AC> transmissions = {};
+
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
     	ACs priorities, meaning: 0 = BE, 1 = BK, 2 = VI, 3 = VO*/
-        std::array<double, AC> backoffCounters;
-        std::array<int, AC> backoffStages;
+        std::array<double, AC> backoffCounters = {};
+        std::array<int, AC> backoffStages = {};
         
         /*For better understanding, the ACs are defined as constants for navigating
         the arrays*/
@@ -65,7 +68,7 @@ component STA : public TypeII
         int VO; //Voice
         int ACToTx; //to dertermine which AC is to transmit in case of an internal collision
         
-        std::array<int,AC> backlogged; //whether or not the station has something to transmit on an AC
+        std::array<int,AC> backlogged = {}; //whether or not the station has something to transmit on an AC (0 no, 1 yes)
 
 		Packet packet;
         FIFO <Packet> MACQueueBK;
@@ -86,7 +89,7 @@ void STA :: Setup()
 	for(int i = 0; i < AC; i++)
 	{
 		computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-	}
+    }
 
 };
 
@@ -108,12 +111,13 @@ void STA :: Start()
 
 void STA :: Stop()
 {
-    /*cout << "Debug Queue" << endl;
+
+    cout << "Debug Queue" << endl;
     cout << "Node #" << node_id << endl;
-    cout << "---BE: " << MACQueueBE.QueueSize() << endl;
-    cout << "---BK: " << MACQueueBK.QueueSize() << endl;
-    cout << "---VI: " << MACQueueVI.QueueSize() << endl;
-    cout << "---VO: " << MACQueueVO.QueueSize() << endl << endl;*/
+    cout << "\tAC 0: " << MACQueueBE.QueueSize() << endl;
+    cout << "\tAC 1: " << MACQueueBK.QueueSize() << endl;
+    cout << "\tAC 2: " << MACQueueVI.QueueSize() << endl;
+    cout << "\tAC 3: " << MACQueueVO.QueueSize() << endl << endl;
     
     
 };
@@ -128,6 +132,7 @@ void STA :: in_slot(SLOT_notification &slot)
 			{
 				if(backlogged.at(i) == 0) //if the AC is not backlogged
 				{
+                    //Attempting to generate backoff counter if any packet arrives at the AC queue
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
 					//cout << "Node #" << node_id << ", counter #" << i << ": " << backoffCounters.at(i) << endl;
 				}else //if the AC has something to transmit
@@ -166,7 +171,13 @@ void STA :: in_slot(SLOT_notification &slot)
 	
 	
 	//Checking availability for transmission
-	ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
+    cout << "STA-" << node_id << endl;
+    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
+    if(ACToTx >= 0) transmissions.at(ACToTx)++;
+    for(auto it = backoffStages.begin(); it != backoffStages.end(); it++)
+    {
+        cout << "Stage for AC " << std::distance(backoffStages.begin(),it) << " :" << *it << endl;
+    }
     
 
 };
