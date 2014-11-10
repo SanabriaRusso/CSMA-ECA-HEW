@@ -4,8 +4,6 @@
 #define AC 4
 #define MAXSTAGE 5
 
-using namespace std;
-
 int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC> &qSizes, std::array<int,AC> &stickiness, std::array<int,AC> &stages, std::array<double,AC> &counters){
 
 	int iterator = counters.size() - 1;

@@ -11,6 +11,7 @@
 #include "includes/selectMACProtocol.hh"
 #include "includes/resolveInternalCollision.hh"
 #include "includes/preparePacketForTransmission.hh"
+#include "includes/erasePacketsFromQueue.hh"
 
 //#define CWMIN 16 //to comply with 802.11n it should 16. Was 32 for 802.11b.
 #define MAXSTAGE 5
@@ -147,8 +148,10 @@ void STA :: in_slot(SLOT_notification &slot)
 		case 1:
 			for (int i = 0; i < backoffCounters.size(); i++)
 			{
-				if (backoffCounters.at(i) == 0) //this category transmitted
+				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted
 				{
+                    //Erasing the packet(s) that was(were) sent
+                    erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, packet);
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
 				}
 			}

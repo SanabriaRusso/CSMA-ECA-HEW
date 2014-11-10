@@ -115,7 +115,7 @@ void SlottedCSMA :: Stop()
 	//---------Presentation when simulation ends--------------------//
 	//--------------------------------------------------------------//
 	
-	std:array<double,AC> overallTx = {};
+	array<double,AC> overallTx = {};
 
 	cout << "--- Overall Statistics ---" << endl << endl;
 	for(int i = 0; i < Nodes; i++)
