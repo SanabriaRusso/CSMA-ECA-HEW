@@ -167,7 +167,7 @@ void STA :: in_slot(SLOT_notification &slot)
 	
 	//Checking availability for transmission
 	ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
-    cout << "To transmit: " << ACToTx << endl;
+    
 
 };
 
