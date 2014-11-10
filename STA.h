@@ -148,11 +148,13 @@ void STA :: in_slot(SLOT_notification &slot)
 		case 1:
 			for (int i = 0; i < backoffCounters.size(); i++)
 			{
-				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted
+				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted the last packet
 				{
                     //Erasing the packet(s) that was(were) sent
                     erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, packet);
+                    //If there is another packet waiting in the transmission queue, pick it and start contention
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+                    break;
 				}
 			}
             break;
