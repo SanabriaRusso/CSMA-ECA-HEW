@@ -76,6 +76,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		//stas[n].driftProbability = slotDrift;
 		stas[n].cut = intCut;     
 		stas[n].maxAggregation = maxAggregation;
+		stas[n].L = PacketLength;
 
 
 		// Traffic Source

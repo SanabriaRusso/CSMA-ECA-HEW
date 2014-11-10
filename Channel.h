@@ -54,8 +54,8 @@ component Channel : public TypeII
 		double number_of_transmissions_in_current_slot;
 		double succ_tx_duration, collision_duration; // Depends on the packet(s) size(s)
 		double empty_slot_duration;
-		double L_max;
 		double TBack;
+		double L_max;
 		int MAC_H, PCLP_PREAMBLE, PCLP_HEADER;
 		int aggregation;
 		float errorProbability;
@@ -113,6 +113,8 @@ void Channel :: Stop()
 	printf("Slot Status Probabilities (channel point of view): Empty = %e, Succesful = %e, Collision = %e \n",empty_slots/total_slots,succesful_slots/total_slots,collision_slots/total_slots);
 	printf("Total packets sent to the Channel: %d\n", (int)succesful_slots);
 	printf("\n\n");
+
+
 	
 	slotsInTime.close();
 };
@@ -171,6 +173,7 @@ void Channel :: EndReceptionTime(trigger_t &)
 	}
 		
 	total_slots++; //Just to control that total = empty + successful + collisions
+	
 	
 	//Used to plot slots vs. collision probability
 	

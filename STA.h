@@ -48,6 +48,7 @@ component STA : public TypeII
         
         //aggregation settings
         int maxAggregation;
+        int L; //length of packet
         
         //Source and Queue management
         double incommingPackets;
@@ -56,7 +57,7 @@ component STA : public TypeII
 
         //Transmissions statistics
         std::array<double,AC> transmissions = {};
-        std::array<double,AC> interTxTimes = {}; //Time between successful transmissions
+        std::array<double,AC> successfulTx = {}; //successful transmissions per AC
 
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
@@ -112,6 +113,7 @@ void STA :: Start()
         superPacket.at(i).contention_time = SimTime();
         //Setting the default aggregation parameter for the first packet transmission
         superPacket.at(i).aggregation = 1;
+        superPacket.at(i).L = L;
     }
 
 
@@ -126,9 +128,10 @@ void STA :: Start()
 void STA :: Stop()
 {
 
-    for(auto it = interTxTimes.begin(); it != interTxTimes.end(); it++)
+    for(auto it = successfulTx.begin(); it != successfulTx.end(); it++)
     {
-        cout << "Total interTxTimes for AC " << std::distance(interTxTimes.begin(),it) << ": " << *it/transmissions.at(std::distance(interTxTimes.begin(),it)) << endl;
+        cout << "Total successfulTx for AC " << std::distance(successfulTx.begin(),it) << ": " 
+        << *it << endl;
     }
 
     /*cout << "Debug Queue" << endl;
@@ -168,7 +171,7 @@ void STA :: in_slot(SLOT_notification &slot)
 				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted the last packet
 				{
                     //Gathering statistics from last transmission
-                    interTxTimes.at(i) += SimTime() - superPacket.at(i).contention_time;
+                    successfulTx.at(i) += superPacket.at(i).aggregation;
 
                     //Erasing the packet(s) that was(were) sent
                     erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i));
