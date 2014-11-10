@@ -12,6 +12,7 @@
 #include "includes/resolveInternalCollision.hh"
 #include "includes/preparePacketForTransmission.hh"
 #include "includes/erasePacketsFromQueue.hh"
+#include "includes/pickNewPacket.hh"
 
 //#define CWMIN 16 //to comply with 802.11n it should 16. Was 32 for 802.11b.
 #define MAXSTAGE 5
@@ -50,8 +51,8 @@ component STA : public TypeII
         
         //Source and Queue management
         double incommingPackets;
-        std::array<double, AC> blockedPackets;
-        std::array<double, AC> queuesSizes;
+        std::array<double,AC> blockedPackets;
+        std::array<double,AC> queuesSizes;
 
         //Transmissions statistics
         std::array<double,AC> transmissions = {};
@@ -72,7 +73,9 @@ component STA : public TypeII
         
         std::array<int,AC> backlogged = {}; //whether or not the station has something to transmit on an AC (0 no, 1 yes)
 
-		Packet packet;
+		Packet packet; //individual packets
+        std::array<Packet,AC> superPacket = {}; //an abstract packet composed of #AC packets. This structure helps at keeping track of AC-related timers
+        
         FIFO <Packet> MACQueueBK;
         FIFO <Packet> MACQueueBE;
         FIFO <Packet> MACQueueVI;
@@ -103,6 +106,15 @@ void STA :: Start()
 	in-class initialization of non-static data members*/
 	incommingPackets = 0;
 	
+    //Setting the default aggregation parameter for the first packet transmission
+    packet.aggregation = 1;
+
+    for(int i = 0; i < superPacket.size(); i++)
+    {
+        superPacket.at(i).contention_time = SimTime();
+    }
+
+
 	BE = 0;
     BK = 1;
     VI = 2;
@@ -152,8 +164,16 @@ void STA :: in_slot(SLOT_notification &slot)
 				{
                     //Erasing the packet(s) that was(were) sent
                     erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, packet);
+                    
                     //If there is another packet waiting in the transmission queue, pick it and start contention
+
+                    /*****NEW PACKET IS PICKED************
+                    **************************************/
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+                    if(backlogged.at(i) > 0)
+                    {
+                        packet = pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO);
+                    } 
                     break;
 				}
 			}
@@ -179,7 +199,7 @@ void STA :: in_slot(SLOT_notification &slot)
     ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
     
     if(ACToTx >= 0){
-        preparePacketForTransmission(ACToTx, SimTime(), packet);
+        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket);
         transmissions.at(ACToTx)++;
         out_packet(packet);
     }

@@ -36,6 +36,6 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 		backlog = 0;
 		backoffStage = 0;
 		counter = 0;
-		cout << "\tAC " << AC << " has an empty queue" << endl;
+		//cout << "\tAC " << AC << " has an empty queue" << endl;
 	}
 }

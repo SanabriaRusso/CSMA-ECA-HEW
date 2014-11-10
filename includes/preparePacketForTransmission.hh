@@ -4,9 +4,10 @@
 #define AC 4
 #define MAXSTAGE 5
 
-void preparePacketForTransmission(int acToTx, double txTime, Packet &packet)
+Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet,AC> &superPacket)
 {
-	packet.tx_time = txTime;
-	packet.accessCategory = acToTx;
+	superPacket.at(acToTx).tx_time = txTime;
+	superPacket.at(acToTx).accessCategory = acToTx;
 
+	return(superPacket.at(acToTx));
 }
