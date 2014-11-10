@@ -10,6 +10,7 @@
 #include "includes/computeBackoff.hh"
 #include "includes/selectMACProtocol.hh"
 #include "includes/resolveInternalCollision.hh"
+#include "includes/preparePacketForTransmission.hh"
 
 //#define CWMIN 16 //to comply with 802.11n it should 16. Was 32 for 802.11b.
 #define MAXSTAGE 5
@@ -112,12 +113,12 @@ void STA :: Start()
 void STA :: Stop()
 {
 
-    cout << "Debug Queue" << endl;
+    /*cout << "Debug Queue" << endl;
     cout << "Node #" << node_id << endl;
     cout << "\tAC 0: " << MACQueueBE.QueueSize() << endl;
     cout << "\tAC 1: " << MACQueueBK.QueueSize() << endl;
     cout << "\tAC 2: " << MACQueueVI.QueueSize() << endl;
-    cout << "\tAC 3: " << MACQueueVO.QueueSize() << endl << endl;
+    cout << "\tAC 3: " << MACQueueVO.QueueSize() << endl << endl;*/
     
     
 };
@@ -134,12 +135,10 @@ void STA :: in_slot(SLOT_notification &slot)
 				{
                     //Attempting to generate backoff counter if any packet arrives at the AC queue
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-					//cout << "Node #" << node_id << ", counter #" << i << ": " << backoffCounters.at(i) << endl;
 				}else //if the AC has something to transmit
 				{
 					if(backoffCounters.at(i) > 0)
 					{
-						//cout << "Node #" << node_id << ", counter #" << i << ": " << backoffCounters.at(i) << endl;
 						backoffCounters.at(i)--;
 					}
 				}
@@ -151,7 +150,6 @@ void STA :: in_slot(SLOT_notification &slot)
 				if (backoffCounters.at(i) == 0) //this category transmitted
 				{
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-                    //cout << "STA-" << node_id << ": AC: " << i << " transmitted. New backoff: " << backoffCounters.at(i) << endl;
 				}
 			}
             break;
@@ -163,20 +161,22 @@ void STA :: in_slot(SLOT_notification &slot)
                     stationStickiness.at(i) = max((stationStickiness.at(i) - 1), 0);
                     backoffStages.at(i) = min(backoffStages.at(i) + 1, MAXSTAGE);
                     computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-                    //cout << "STA-" << node_id << ": AC: " << i << " collided. New backoff: " << backoffCounters.at(i) << endl;
 
                 }
             }
 	}
 	
-	
-	//Checking availability for transmission
-    cout << "STA-" << node_id << endl;
+	//**********************************************
+	//****Checking availability for transmission****
+    //**********************************************
+    //cout << "STA-" << node_id << endl;
+
     ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
-    if(ACToTx >= 0) transmissions.at(ACToTx)++;
-    for(auto it = backoffStages.begin(); it != backoffStages.end(); it++)
-    {
-        cout << "Stage for AC " << std::distance(backoffStages.begin(),it) << " :" << *it << endl;
+    
+    if(ACToTx >= 0){
+        preparePacketForTransmission(ACToTx, SimTime(), packet);
+        transmissions.at(ACToTx)++;
+        out_packet(packet);
     }
     
 

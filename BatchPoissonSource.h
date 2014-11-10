@@ -85,7 +85,7 @@ void BatchPoissonSource :: new_packetBK(trigger_t &)
 	for(int p=0; p < RB; p++)
 	{
 		packetBK.seq = seqBK;
-		packetBK.send_time = SimTime();
+		packetBK.queuing_time = SimTime();
 
 		out(packetBK);
 
@@ -110,7 +110,7 @@ void BatchPoissonSource :: new_packetBE(trigger_t &)
 	for(int p=0; p < RB; p++)
 	{
 		packetBE.seq = seqBE;
-		packetBE.send_time = SimTime();
+		packetBE.queuing_time = SimTime();
 
 		out(packetBE);
 
@@ -135,7 +135,7 @@ void BatchPoissonSource :: new_packetVI(trigger_t &)
 	for(int p=0; p < RB; p++)
 	{
 		packetVI.seq = seqVI;
-		packetVI.send_time = SimTime();
+		packetVI.queuing_time = SimTime();
 
 		out(packetVI);
 
@@ -160,7 +160,7 @@ void BatchPoissonSource :: new_packetVO(trigger_t &)
 	for(int p=0; p < RB; p++)
 	{
 		packetVO.seq = seqVO;
-		packetVO.send_time = SimTime();
+		packetVO.queuing_time = SimTime();
 
 		out(packetVO);
 
