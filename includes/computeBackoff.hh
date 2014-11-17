@@ -1,6 +1,6 @@
 using namespace std;
 
-void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter){
+void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter, int &system_stickiness){
 
 	int CWmin = 0;
 
@@ -38,6 +38,7 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 		backlog = 0;
 		backoffStage = 0;
 		counter = 0;
+		stickiness = system_stickiness;
 		//cout << "\tAC " << AC << " has an empty queue" << endl;
 	}
 }

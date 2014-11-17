@@ -119,8 +119,9 @@ void SlottedCSMA :: Stop()
 	array<double,AC> overallTx = {};
 
 	cout << endl;
-
-	cout << "--- Overall Statistics ---" << endl << endl;
+	cout << "---------------------------"<< endl;
+	cout << "--- Overall Statistics ----" << endl;
+	cout << "---------------------------"<< endl;
 	for(int i = 0; i < Nodes; i++)
 	{
 		for(auto it = stas[i].transmissions.begin(); it != stas[i].transmissions.end(); it++)
@@ -196,11 +197,11 @@ int main(int argc, char *argv[])
 			cout << "./XXXX SimTime [10] NumNodes [10] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
 			MaxSimIter = 1;
 			SimTime = 10;
-			NumNodes = 1;
+			NumNodes = 2;
 			PacketLength = 1024;
 			Bandwidth = 65e6;
 			Batch = 1; // =1
-			Stickiness = 1; // 0 = EDCA, up to 2.
+			Stickiness = 2; // 0 = EDCA, up to 2.
 			hysteresis = 1; //keep the current BO stage, until queue's empty
 			fairShare = 1; //0 = EDCA, 1 = CSMA-ECA
 			channelErrors = 0; // float 0-1

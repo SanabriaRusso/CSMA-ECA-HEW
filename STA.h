@@ -93,11 +93,6 @@ component STA : public TypeII
 void STA :: Setup()
 {
 
-	for(int i = 0; i < AC; i++)
-	{
-		computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-    }
-
 };
 
 void STA :: Start()
@@ -122,16 +117,42 @@ void STA :: Start()
     VI = 2;
     VO = 3;
     ACToTx = 0;
+
+    for(int i = 0; i < AC; i++)
+    {
+        stationStickiness.at(i) = system_stickiness; //Could individual AC stickiness parameter be interesting?
+        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
+    }
 	
 };
 
 void STA :: Stop()
 {
-
-    for(auto it = successfulTx.begin(); it != successfulTx.end(); it++)
+    cout << "**Node-" << node_id << "**" <<endl;
+    for(int it = 0; it < AC; it++)
     {
-        cout << "Total successfulTx for AC " << std::distance(successfulTx.begin(),it) << ": " 
-        << *it << endl;
+        cout << "AC " << it << endl;
+        cout << "\t- Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
+        cout << "\t- Total successfulTx for AC " << it << ": " << successfulTx.at(it) << endl;
+        switch(it)
+        {
+            case 0:
+                    cout << "\t- Queue AC 0: " << MACQueueBE.QueueSize() << endl;
+                    break;
+            case 1:
+                    cout << "\t- Queue AC 1: " << MACQueueBK.QueueSize() << endl;
+                    break;
+            case 2:
+                    cout << "\t- Queue AC 2: " << MACQueueVI.QueueSize() << endl; 
+                    break;
+            case 3:
+                    cout << "\t- Queue AC 3: " << MACQueueVO.QueueSize() << endl << endl;
+                    break;
+            default:
+                    break;
+
+        }
+
     }
 
     /*cout << "Debug Queue" << endl;
@@ -166,11 +187,6 @@ void STA :: in_slot(SLOT_notification &slot)
 			{
 				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted the last packet
 				{
-                    
-
-
-
-
                     //Gathering statistics from last transmission
                     successfulTx.at(i) += superPacket.at(i).aggregation;
 
@@ -181,8 +197,12 @@ void STA :: in_slot(SLOT_notification &slot)
 
                     /*****NEW PACKET IS PICKED************
                     **************************************/
-					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+                    stationStickiness.at(i) = system_stickiness;
+					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
                     if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO);
+
+                    cout << "\n" << "\tNew backoff: " << backoffCounters.at(i) << endl;
+
                     break;
 				}
 			}
@@ -194,7 +214,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 {
                     stationStickiness.at(i) = max((stationStickiness.at(i) - 1), 0);
                     backoffStages.at(i) = min(backoffStages.at(i) + 1, MAXSTAGE);
-                    computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
+                    computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
 
                 }
             }
@@ -205,7 +225,7 @@ void STA :: in_slot(SLOT_notification &slot)
     //**********************************************
     //cout << "STA-" << node_id << endl;
 
-    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters);
+    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters, system_stickiness);
     
     if(ACToTx >= 0){
         packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket);
