@@ -56,14 +56,18 @@ component STA : public TypeII
         std::array<double,AC> queuesSizes;
 
         //Transmissions statistics
-        std::array<double,AC> transmissions = {};
-        std::array<double,AC> successfulTx = {}; //successful transmissions per AC
+        std::array<double,AC> transmissions;
+        std::array<double,AC> successfulTx; //successful transmissions per AC
+        double overallSxTx;
+
+        //Time statistics
+        std::array<double,AC> accumTimeBetweenSxTx;
 
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
     	ACs priorities, meaning: 0 = BE, 1 = BK, 2 = VI, 3 = VO*/
-        std::array<double, AC> backoffCounters = {};
-        std::array<int, AC> backoffStages = {};
+        std::array<double, AC> backoffCounters;
+        std::array<int, AC> backoffStages;
         
         /*For better understanding, the ACs are defined as constants for navigating
         the arrays*/
@@ -73,10 +77,10 @@ component STA : public TypeII
         int VO; //Voice
         int ACToTx; //to dertermine which AC is to transmit in case of an internal collision
         
-        std::array<int,AC> backlogged = {}; //whether or not the station has something to transmit on an AC (0 no, 1 yes)
+        std::array<int,AC> backlogged; //whether or not the station has something to transmit on an AC (0 no, 1 yes)
 
 		Packet packet; //individual packets
-        std::array<Packet,AC> superPacket = {}; //an abstract packet composed of #AC packets. This structure helps at keeping track of AC-related timers
+        std::array<Packet,AC> superPacket; //an abstract packet composed of #AC packets. This structure helps at keeping track of AC-related timers
         
         FIFO <Packet> MACQueueBK;
         FIFO <Packet> MACQueueBE;
@@ -132,8 +136,11 @@ void STA :: Stop()
     for(int it = 0; it < AC; it++)
     {
         cout << "AC " << it << endl;
-        cout << "\t- Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
+        cout << "\t- Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
         cout << "\t- Total successfulTx for AC " << it << ": " << successfulTx.at(it) << endl;
+        overallSxTx += successfulTx.at(it);
+        cout << "\t- Time between successful transmissions for AC " << it << ": " << accumTimeBetweenSxTx.at(it) / successfulTx.at(it) << endl;
+
         switch(it)
         {
             case 0:
@@ -155,12 +162,7 @@ void STA :: Stop()
 
     }
 
-    /*cout << "Debug Queue" << endl;
-    cout << "Node #" << node_id << endl;
-    cout << "\tAC 0: " << MACQueueBE.QueueSize() << endl;
-    cout << "\tAC 1: " << MACQueueBK.QueueSize() << endl;
-    cout << "\tAC 2: " << MACQueueVI.QueueSize() << endl;
-    cout << "\tAC 3: " << MACQueueVO.QueueSize() << endl << endl;*/
+    cout << "- Overall transmitted packets: " << overallSxTx << endl;
     
     
 };
@@ -189,6 +191,8 @@ void STA :: in_slot(SLOT_notification &slot)
 				{
                     //Gathering statistics from last transmission
                     successfulTx.at(i) += superPacket.at(i).aggregation;
+                    accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
+                    //cout << accumTimeBetweenSxTx.at(i) << endl;
 
                     //Erasing the packet(s) that was(were) sent
                     erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i));
@@ -197,11 +201,9 @@ void STA :: in_slot(SLOT_notification &slot)
 
                     /*****NEW PACKET IS PICKED************
                     **************************************/
-                    stationStickiness.at(i) = system_stickiness;
+                    stationStickiness.at(i) = system_stickiness; //Resetting the stickiness after a successful transmission
 					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
                     if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO);
-
-                    cout << "\n" << "\tNew backoff: " << backoffCounters.at(i) << endl;
 
                     break;
 				}
