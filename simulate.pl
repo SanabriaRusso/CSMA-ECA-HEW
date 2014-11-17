@@ -3,6 +3,11 @@
 use warnings;
 use strict;
 
+
+chomp($ARGV[0]);
+( ($ARGV[0] eq '-h') or ($ARGV[0] eq '--help') or ($ARGV[0] eq 'help') or ($ARGV[0] eq 'h') ) and goto EXITNOW;
+
+
 my $rep = $ARGV[0];
 my $time = $ARGV[1];
 my $Nmax = $ARGV[2];
@@ -48,12 +53,18 @@ foreach my $i ($Nmin .. $Nmax){
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $hysteresis $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
 		print @command, "\n";
 		system(@command);
-		($? == -1) and 	print ("\n\n\t******Execution failed\n\t\tQuitting iterations\n") and goto FAILURE;
+		($? == -1) and 	print ("\n\n******Execution failed\n\tQuitting iterations\n") and goto FAILURE;
 	}
 }
 
+
 FAILURE:
-print "\t\t\tExecution finished\n"
+print "\tExecution finished\n";
+
+EXITNOW:
+print "******Help\n";
+print "ARGV. field:\n";
+print "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Bandwidth 5. ECA\n";
 
 
 
