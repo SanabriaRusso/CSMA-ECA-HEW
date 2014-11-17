@@ -59,6 +59,8 @@ component STA : public TypeII
         std::array<double,AC> transmissions;
         std::array<double,AC> successfulTx; //successful transmissions per AC
         double overallSxTx;
+        std::array<double,AC> overallACThroughput;
+        double overallThroughput;
 
         //Time statistics
         std::array<double,AC> accumTimeBetweenSxTx;
@@ -138,6 +140,10 @@ void STA :: Stop()
         cout << "AC " << it << endl;
         cout << "\t- Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
         cout << "\t- Total successfulTx for AC " << it << ": " << successfulTx.at(it) << endl;
+        
+        overallACThroughput.at(it) = (successfulTx.at(it) * L * 8.)/SimTime();
+        cout << "\t- Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
+        
         overallSxTx += successfulTx.at(it);
         cout << "\t- Time between successful transmissions for AC " << it << ": " << accumTimeBetweenSxTx.at(it) / successfulTx.at(it) << endl;
 
@@ -161,8 +167,10 @@ void STA :: Stop()
         }
 
     }
-
-    cout << "- Overall transmitted packets: " << overallSxTx << endl;
+    cout << "- Overall successful transmissions: " << overallSxTx << endl;
+    
+    overallThroughput = (overallSxTx * L * 8.) / SimTime();
+    cout << "- Overall throughput for this station: " << overallThroughput << endl;
     
     
 };

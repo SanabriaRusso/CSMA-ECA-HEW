@@ -106,7 +106,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 void SlottedCSMA :: Start()
 {
-	printf("--------------- CSMA/ECA ---------------\n");
+	printf("--------------- Starting ---------------\n");
 };
 
 void SlottedCSMA :: Stop()
@@ -136,6 +136,23 @@ void SlottedCSMA :: Stop()
 	{
 		cout << "\tAC " << std::distance(overallTx.begin(),it) << ": " << *it << endl;
 	}
+
+
+	//--------------------------------------------------------------//
+	//-------------------Writing the results------------------------//
+	//--------------------------------------------------------------//
+
+	double avgThroughput = 0.0;
+
+	for (int i = 0; i < Nodes; i++){
+		avgThroughput += stas[i].overallThroughput;
+	}
+
+	ofstream file;
+	file.open("Results/output.txt", ios::app);
+	file << "#1. Nodes 2. AvgThroughput" << endl;
+	file << Nodes << " " << avgThroughput << endl;
+
 
 };
 
@@ -194,19 +211,19 @@ int main(int argc, char *argv[])
 		}else
 		{
 			cout << "Executed with default values shown below" << endl;
-			cout << "./XXXX SimTime [10] NumNodes [10] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
+			cout << "./XXXX SimTime [10] NumNodes [1] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
 			MaxSimIter = 1;
 			SimTime = 10;
 			NumNodes = 1;
 			PacketLength = 1024;
 			Bandwidth = 65e6;
 			Batch = 1; // =1
-			Stickiness = 1; // 0 = EDCA, up to 2.
-			hysteresis = 1; //keep the current BO stage, until queue's empty
-			fairShare = 1; //0 = EDCA, 1 = CSMA-ECA
+			Stickiness = 0; // 0 = EDCA, up to 2.
+			hysteresis = 0; //keep the current BO stage, until queue's empty
+			fairShare = 0; //0 = EDCA, 1 = CSMA-ECA
 			channelErrors = 0; // float 0-1
 			slotDrift = 0; // // float 0-1
-			percentageEDCA = 0; // // float 0-1
+			percentageEDCA = 1; // // float 0-1
 			maxAggregation = 0;
 			simSeed = 0; //Simulation seed
 		}
@@ -228,7 +245,7 @@ int main(int argc, char *argv[])
 		simSeed = atof(argv[13]); //Simulation seed
 	}
 
-	printf("####################### Simulation (Seed: %d) #######################\n",simSeed);
+	printf("\n####################### Simulation (Seed: %d) #######################\n",simSeed);
 	if(Stickiness > 0)
 	{
 		if(hysteresis > 0)

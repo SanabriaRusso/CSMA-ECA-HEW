@@ -5,7 +5,7 @@ use strict;
 
 
 chomp($ARGV[0]);
-( ($ARGV[0] eq '-h') or ($ARGV[0] eq '--help') or ($ARGV[0] eq 'help') or ($ARGV[0] eq 'h') ) and goto EXITNOW;
+( ($ARGV[0] eq '-h') or ($ARGV[0] eq '--help') or ($ARGV[0] eq 'help') or ($ARGV[0] eq 'h') ) and goto HELP;
 
 
 my $rep = $ARGV[0];
@@ -53,18 +53,19 @@ foreach my $i ($Nmin .. $Nmax){
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $hysteresis $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
 		print @command, "\n";
 		system(@command);
-		($? == -1) and 	print ("\n\n******Execution failed\n\tQuitting iterations\n") and goto FAILURE;
+		($? == -1) and 	print ("\n\n******Execution failed\n\tQuitting iterations\n") and goto EXITNOW;
 	}
 }
 
 
-FAILURE:
-print "\tExecution finished\n";
-
 EXITNOW:
+(print "\tExecution finished ($?)\n") and exit();
+
+HELP:
 print "******Help\n";
 print "ARGV. field:\n";
 print "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Bandwidth 5. ECA\n";
+exit()
 
 
 
