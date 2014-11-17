@@ -3,19 +3,21 @@ using namespace std;
 void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter){
 
 	int CWmin = 0;
+
+	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	
 	switch (AC){
 		case 0:
-			if(qSize > 0) CWmin = 16;
+			if(qSize > 0) CWmin = 32;
 			break;
 		case 1:
-			if(qSize > 0) CWmin = 16;
+			if(qSize > 0) CWmin = 32;
 			break;
 		case 2:
-			if(qSize > 0) CWmin = 8;
+			if(qSize > 0) CWmin = 16;
 			break;
 		case 3:
-			if(qSize > 0) CWmin = 4;
+			if(qSize > 0) CWmin = 8;
 			break;
 		default:
 			break;	

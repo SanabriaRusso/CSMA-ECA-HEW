@@ -152,11 +152,7 @@ void STA :: in_slot(SLOT_notification &slot)
 			//Important to remember: 0 = BE, 1 = BK, 2 = VI, 3 = VO
 			for(int i = 0; i < backlogged.size(); i++)
 			{
-				if(backlogged.at(i) == 0) //if the AC is not backlogged
-				{
-                    //Attempting to generate backoff counter if any packet arrives at the AC queue
-					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i));
-				}else //if the AC has something to transmit
+				if(backlogged.at(i) != 0) //if the AC has something to transmit
 				{
 					if(backoffCounters.at(i) > 0)
 					{
@@ -170,6 +166,11 @@ void STA :: in_slot(SLOT_notification &slot)
 			{
 				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted the last packet
 				{
+                    
+
+
+
+
                     //Gathering statistics from last transmission
                     successfulTx.at(i) += superPacket.at(i).aggregation;
 
@@ -218,6 +219,8 @@ void STA :: in_slot(SLOT_notification &slot)
 void STA :: in_packet(Packet &packet)
 {
     incommingPackets++;
+
+    backlogged.at(packet.accessCategory) = 1;
     
     switch (packet.accessCategory){
     	case 0:

@@ -12,6 +12,8 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
 
 	for (auto rIterator = counters.rbegin(); rIterator < counters.rend(); rIterator++) //a reverse iteration over the arrays
 	{
+		//Checks if an AC is backlogged AND its backoff counter expired
+		//Because it's going backwards, it just need to find the firts (highes priority) one.
 		if((backlogg.at(iterator) == 1) && (*rIterator == 0))
 		{
 			acToTx = iterator;
@@ -20,6 +22,8 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
 		iterator--;
 	}
 
+
+	//Checks if there are any other ACs with an expired backoff. If so, they are treated as internal collisions
 	for(int i = 0; i < iterator; i++)
 	{
 		if((backlogg.at(i) == 1) && (counters.at(i) == 0))
