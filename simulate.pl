@@ -3,10 +3,18 @@
 use warnings;
 use strict;
 
+die ("Getting out. You need some parameters, i.e.: --help\n") if (not exists $ARGV[0]);
 
 chomp($ARGV[0]);
-( ($ARGV[0] eq '-h') or ($ARGV[0] eq '--help') or ($ARGV[0] eq 'help') or ($ARGV[0] eq 'h') ) and goto HELP;
 
+my %help = (
+				help		=> 1,
+				'-h'		=> 1,
+				'--help'	=> 1
+			);
+
+die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Bandwidth 5. ECA\n") 
+	if (exists $help{$ARGV[0]});
 
 my $rep = $ARGV[0];
 my $time = $ARGV[1];
@@ -47,25 +55,17 @@ if ($? == -1){
 }
 
 
-foreach my $i ($Nmin .. $Nmax){
-	foreach my $j (1 .. $rep){
+OUTTER: foreach my $i ($Nmin .. $Nmax){
+	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $hysteresis $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
 		print @command, "\n";
 		system(@command);
-		($? == -1) and 	print ("\n\n******Execution failed\n\tQuitting iterations\n") and goto EXITNOW;
+		($? == -1) and 	print ("\n\n******Execution failed\n\tQuitting iterations\n") and last OUTTER;
 	}
 }
 
 
-EXITNOW:
-(print "\tExecution finished ($?)\n") and exit();
-
-HELP:
-print "******Help\n";
-print "ARGV. field:\n";
-print "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Bandwidth 5. ECA\n";
-exit()
 
 
 
