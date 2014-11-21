@@ -29,15 +29,15 @@ my $drift = 0;
 my $EDCA = 0;
 my $maxAggregation = 0;
 
+my $hysteresis = 0;
+my $fairShare = 0;
+
 print ("Going to simulate:\n");
 if ($Nmax == $Nmin){
 	print ("\t$rep repetitions of $time seconds, ", $Nmin, " stations, $bandwidth Mbps and ECA $ECA.\n\n\n");	
 }else{
 	print ("\t$rep repetitions of $time seconds, ", ($Nmax - $Nmin), " stations, $bandwidth Mbps and ECA $ECA.\n\n\n");
 }
-
-my $hysteresis = 0;
-my $fairShare = 0;
 
 if ($ECA == 1){
 	$hysteresis = 1;
@@ -46,13 +46,8 @@ if ($ECA == 1){
 
 my $compile = './build_local';
 my @command;
-
 system($compile);
-if ($? == -1){
-	print "Command failed\n";
-}else{
-	print ("\n\nCompilation compleated (", $?, ")\n\n");
-}
+die "Command failed\n" if ($? != 0);
 
 
 OUTTER: foreach my $i ($Nmin .. $Nmax){
@@ -61,12 +56,14 @@ OUTTER: foreach my $i ($Nmin .. $Nmax){
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $hysteresis $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
 		print @command, "\n";
 		system(@command);
-		($? == -1) and 	print ("\n\n******Execution failed\n\tQuitting iterations\n") and last OUTTER;
+		(print ("\n\n********Execution failed\n\tQuitting iterations\n") and last OUTTER) if ($? != 0);
 	}
 }
 
 
-
-
-
-
+#Calling the parser
+my $parserFile = 'process.pl';
+my $dataFile = 'Results/output.txt';
+my @parseCommand = ("perl $parserFile $dataFile");
+system(@parseCommand);
+(print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
