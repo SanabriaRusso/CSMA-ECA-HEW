@@ -62,6 +62,13 @@ component STA : public TypeII
         std::array<double,AC> overallACThroughput;
         double overallThroughput;
 
+        //Collision stsatistics
+        double totalRetransmissions;
+        std::array<double,AC> totalACRet;
+        std::array<int,AC> retAttemptAC;
+        double totalDropped;
+        std::array<double,AC> droppedAC;
+
         //Time statistics
         std::array<double,AC> accumTimeBetweenSxTx;
 
@@ -71,6 +78,9 @@ component STA : public TypeII
         std::array<double, AC> backoffCounters;
         std::array<int, AC> backoffStages;
         
+        //Transmission private statistics
+        int transmitted;    //0 -> no, 1 -> yes.
+
         /*For better understanding, the ACs are defined as constants for navigating
         the arrays*/
         int BE; //Best-effort
@@ -122,27 +132,35 @@ void STA :: Start()
     BK = 1;
     VI = 2;
     VO = 3;
-    ACToTx = 0;
+    ACToTx = -1;
+    transmitted = 0;
 
     for(int i = 0; i < AC; i++)
     {
         stationStickiness.at(i) = system_stickiness; //Could individual AC stickiness parameter be interesting?
-        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
+        droppedAC.at(i) = 0;
+        backlogged.at(i) = 0;
+        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id);
     }
 	
 };
 
 void STA :: Stop()
 {
-    cout << "**Node-" << node_id << "**" <<endl;
+    cout << "\n***Node-" << node_id << "**" <<endl;
     for(int it = 0; it < AC; it++)
     {
         cout << "AC " << it << endl;
-        cout << "\t- Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
-        cout << "\t- Total successfulTx for AC " << it << ": " << successfulTx.at(it) << endl;
+        cout << "\t* Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
+        cout << "\t+ Total successfulTx for AC " << it << ": " << successfulTx.at(it) << endl;
         
-        overallACThroughput.at(it) = (successfulTx.at(it) * L * 8.)/SimTime();
-        cout << "\t- Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
+        if(successfulTx.at(it) > 0){
+            overallACThroughput.at(it) = (successfulTx.at(it) * L * 8.)/SimTime();
+        }else
+        {
+            overallACThroughput.at(it) = 0.0;
+        }
+        cout << "\t+ Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
         
         overallSxTx += successfulTx.at(it);
         cout << "\t- Time between successful transmissions for AC " << it << ": " << accumTimeBetweenSxTx.at(it) / successfulTx.at(it) << endl;
@@ -150,27 +168,37 @@ void STA :: Stop()
         switch(it)
         {
             case 0:
-                    cout << "\t- Queue AC 0: " << MACQueueBE.QueueSize() << endl;
+                    cout << "\t* Queue AC 0: " << MACQueueBE.QueueSize() << endl;
                     break;
             case 1:
-                    cout << "\t- Queue AC 1: " << MACQueueBK.QueueSize() << endl;
+                    cout << "\t* Queue AC 1: " << MACQueueBK.QueueSize() << endl;
                     break;
             case 2:
-                    cout << "\t- Queue AC 2: " << MACQueueVI.QueueSize() << endl; 
+                    cout << "\t* Queue AC 2: " << MACQueueVI.QueueSize() << endl; 
                     break;
             case 3:
-                    cout << "\t- Queue AC 3: " << MACQueueVO.QueueSize() << endl << endl;
+                    cout << "\t* Queue AC 3: " << MACQueueVO.QueueSize() << endl;
                     break;
             default:
                     break;
 
         }
 
+        totalRetransmissions += totalACRet.at(it);
+        cout << "\t- Total Retransmissions for AC " << it << ": " << totalACRet.at(it) << endl;
+
+        totalDropped += droppedAC.at(it);
+        cout << "\t- Total Dropped due to retransmissions for AC " << it << ": " << droppedAC.at(it) << endl;
+
     }
-    cout << "- Overall successful transmissions: " << overallSxTx << endl;
+    cout << "+ Overall successful transmissions: " << overallSxTx << endl;
     
     overallThroughput = (overallSxTx * L * 8.) / SimTime();
-    cout << "- Overall throughput for this station: " << overallThroughput << endl;
+    cout << "+ Overall throughput for this station: " << overallThroughput << endl;
+
+    cout << "- Overall retransmissions: " << totalRetransmissions << endl;
+
+    cout << "- Overall dropped due to RET: " << totalDropped << endl;
     
     
 };
@@ -193,40 +221,66 @@ void STA :: in_slot(SLOT_notification &slot)
 			}
 			break;
 		case 1:
-			for (int i = 0; i < backoffCounters.size(); i++)
-			{
-				if( (backoffCounters.at(i) == 0) && (packet.accessCategory == ACToTx) )//this category transmitted the last packet
-				{
-                    //Gathering statistics from last transmission
-                    successfulTx.at(i) += superPacket.at(i).aggregation;
-                    accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
-                    //cout << accumTimeBetweenSxTx.at(i) << endl;
-
-                    //Erasing the packet(s) that was(were) sent
-                    erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i));
-                    
-                    //If there is another packet waiting in the transmission queue, pick it and start contention
-
-                    /*****NEW PACKET IS PICKED************
-                    **************************************/
-                    stationStickiness.at(i) = system_stickiness; //Resetting the stickiness after a successful transmission
-					computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
-                    if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO);
-
-                    break;
-				}
-			}
-            break;
-        default: //it is set to default to mean a number other than 0 or 1
-            for (int i = 0; i < backoffCounters.size(); i++)
+            if(transmitted == 1)
             {
-                if (backoffCounters.at(i) == 0) //to modify the colliding AC backoff parameters
+                for (int i = 0; i < backoffCounters.size(); i++)
                 {
-                    stationStickiness.at(i) = max((stationStickiness.at(i) - 1), 0);
-                    backoffStages.at(i) = min(backoffStages.at(i) + 1, MAXSTAGE);
-                    computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness);
+				    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//this category transmitted the last packet
+				    {
+                        //Gathering statistics from last transmission
+                        successfulTx.at(i) += superPacket.at(i).aggregation;
+                        accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
+                        //cout << accumTimeBetweenSxTx.at(i) << endl;
 
+                        //Erasing the packet(s) that was(were) sent
+                        erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), node_id);
+                    
+                        //If there is another packet waiting in the transmission queue, pick it and start contention
+
+                        /*****NEW PACKET IS PICKED************
+                        **************************************/
+                        stationStickiness.at(i) = system_stickiness; //Resetting the stickiness after a successful transmission
+                        backoffStages.at(i) = 0;                     //Resetting the backoffstage of the transmitting AC
+                        retAttemptAC.at(i) = 0;                      //Resetting the retransmission attempt counter
+                        transmitted = 0;                             //Also resetting the transmitted flag
+
+                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id);
+                        if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
+                        break;
+				    }
                 }
+			}
+        default: //it is set to default to mean a number other than 0 or 1
+            if (transmitted == 1)
+            {
+                for (int i = 0; i < backoffCounters.size(); i++)
+                {
+                    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//to modify the colliding AC backoff parameters
+                    {
+                        //Retransmission metrics
+                        totalACRet.at(i)++;
+                        if(retAttemptAC.at(i) == MAX_RET)
+                        {
+                            erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), node_id);
+                            droppedAC.at(i)++;
+                            stationStickiness.at(i) = system_stickiness;
+                            //JUST FOR EDCA
+                            backoffStages.at(i) = 0;
+                            //JUST FOR EDCA
+                        }else
+                        {
+                            //cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
+                            stationStickiness.at(i) = max((stationStickiness.at(i) - 1), 0);
+                            backoffStages.at(i) = min((backoffStages.at(i) + 1), MAXSTAGE);
+                            retAttemptAC.at(i)++;
+                        }
+                        //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
+                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id);
+                        transmitted = 0;
+                        break;
+                    }
+                }
+                
             }
 	}
 	
@@ -235,11 +289,13 @@ void STA :: in_slot(SLOT_notification &slot)
     //**********************************************
     //cout << "STA-" << node_id << endl;
 
-    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters, system_stickiness);
+    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters, system_stickiness, node_id);
     
     if(ACToTx >= 0){
-        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket);
+        //cout << "(" << SimTime() << ") +++Station: " << node_id << ": transmitted AC: " << ACToTx << endl;
+        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id);
         transmissions.at(ACToTx)++;
+        transmitted = 1;
         out_packet(packet);
     }
     
@@ -251,13 +307,15 @@ void STA :: in_packet(Packet &packet)
     incommingPackets++;
 
     backlogged.at(packet.accessCategory) = 1;
+
+    //cout << "STA " << node_id << ": received a packet for category " << packet.accessCategory << endl;
     
     switch (packet.accessCategory){
     	case 0:
     		if(MACQueueBE.QueueSize() < K)
     		{
     			MACQueueBE.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = MACQueueBE.QueueSize();
+    			queuesSizes.at(packet.accessCategory) = (int)MACQueueBE.QueueSize();
     		}else
     		{
     			blockedPackets.at(BE)++;
@@ -267,7 +325,7 @@ void STA :: in_packet(Packet &packet)
     		if(MACQueueBK.QueueSize() < K)
     		{
     			MACQueueBK.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = MACQueueBK.QueueSize();
+    			queuesSizes.at(packet.accessCategory) = (int)MACQueueBK.QueueSize();
     		}else
     		{
     			blockedPackets.at(BK)++;
@@ -277,7 +335,7 @@ void STA :: in_packet(Packet &packet)
     		if(MACQueueVI.QueueSize() < K)
     		{
     			MACQueueVI.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = MACQueueVI.QueueSize();
+    			queuesSizes.at(packet.accessCategory) = (int)MACQueueVI.QueueSize();
     		}else
     		{
     			blockedPackets.at(VI)++;
@@ -286,9 +344,9 @@ void STA :: in_packet(Packet &packet)
     	case 3:
     		if(MACQueueVO.QueueSize() < K)
     		{
-    			MACQueueVO.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = MACQueueVI.QueueSize();
-    		}else
+                MACQueueVO.PutPacket(packet);
+    			queuesSizes.at(packet.accessCategory) = (int)MACQueueVO.QueueSize();
+            }else
     		{
     			blockedPackets.at(VO)++;
     		}

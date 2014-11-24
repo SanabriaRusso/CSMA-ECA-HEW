@@ -54,7 +54,9 @@ OUTTER: foreach my $i ($Nmin .. $Nmax){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $hysteresis $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
-		print @command, "\n";
+		print ("\n\n****Node #$i of $Nmax ($?).\n");
+		print ("****Iteration #$j of $rep.\n");
+		print ("**** @command\n");
 		system(@command);
 		(print ("\n\n********Execution failed\n\tQuitting iterations\n") and last OUTTER) if ($? != 0);
 	}

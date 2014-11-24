@@ -154,7 +154,8 @@ void Channel :: NewSlot(trigger_t &)
 void Channel :: EndReceptionTime(trigger_t &)
 {
     //Slots are different than frames. We can transmit multiple frames in one long slot through aggregation
-	
+
+
 	if(number_of_transmissions_in_current_slot==0) 
 	{
 		slot_time.Set(SimTime()+SLOT);
@@ -187,6 +188,7 @@ void Channel :: EndReceptionTime(trigger_t &)
 
 void Channel :: in_packet(Packet &packet)
 {
+	//cout << "Received Packet from node: " << packet.source << endl;
 
 	if(packet.L > L_max) L_max = packet.L;
 	

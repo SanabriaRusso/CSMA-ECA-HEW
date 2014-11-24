@@ -1,11 +1,11 @@
 using namespace std;
 
-void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter, int &system_stickiness){
+void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter, int &system_stickiness, int id){
 
 	int CWmin = 0;
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-	
+
 	switch (AC){
 		case 0:
 			if(qSize > 0) CWmin = 32;
@@ -25,6 +25,7 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 	
 	if(CWmin > 0)
 	{
+		//cout << "Node " << id << " Old counter: " << counter << endl;
 		if(stickiness != 0)
 		{
 			counter = (int)(pow(2,backoffStage)*CWmin/2)-1;
@@ -33,6 +34,7 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 			counter = rand() % (int)(pow(2,backoffStage)*CWmin);
 		}
 		backlog = 1;
+		//cout << "Node " << id << " New counter: " << counter << endl;
 	}else
 	{
 		backlog = 0;

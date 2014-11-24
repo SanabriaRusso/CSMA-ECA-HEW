@@ -55,16 +55,16 @@ void BatchPoissonSource :: Setup()
 
 void BatchPoissonSource :: Start()
 {
-	inter_packet_timerBK.Set(Exponential(1/packet_rateBK));
+	if(packet_rateBK > 0) inter_packet_timerBK.Set(Exponential(1/packet_rateBK));
 	seqBK = 0;
 	
-	inter_packet_timerBE.Set(Exponential(1/packet_rateBE));
+	if(packet_rateBE > 0) inter_packet_timerBE.Set(Exponential(1/packet_rateBE));
 	seqBE = 0;
 		
-	inter_packet_timerVI.Set(Exponential(1/packet_rateVI));
+	if(packet_rateVI > 0) inter_packet_timerVI.Set(Exponential(1/packet_rateVI));
 	seqVI = 0;
 	
-	inter_packet_timerVO.Set(Exponential(1/packet_rateVO));
+	if(packet_rateVO > 0) inter_packet_timerVO.Set(Exponential(1/packet_rateVO));
 	seqVO = 0;	
 };
 	
@@ -90,7 +90,6 @@ void BatchPoissonSource :: new_packetBK(trigger_t &)
 		out(packetBK);
 
 		seqBK++;
-		//if(seqBK == MAXSEQ) seqBK = 0;
 
 	}
 	
@@ -115,7 +114,6 @@ void BatchPoissonSource :: new_packetBE(trigger_t &)
 		out(packetBE);
 
 		seqBE++;
-		//if(seqBE == MAXSEQ) seqBE = 0;
 
 	}
 	
@@ -140,7 +138,6 @@ void BatchPoissonSource :: new_packetVI(trigger_t &)
 		out(packetVI);
 
 		seqVI++;
-		//if(seqVI == MAXSEQ) seqVI = 0;
 
 	}
 	
@@ -165,7 +162,6 @@ void BatchPoissonSource :: new_packetVO(trigger_t &)
 		out(packetVO);
 
 		seqVO++;
-		//if(seqVO == MAXSEQ) seqVO = 0;
 
 	}
 	

@@ -85,6 +85,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		sources[n].packet_rateBE = Bandwidth/PacketLength;
 		sources[n].packet_rateVI = (Bandwidth/2)/PacketLength;
 		sources[n].packet_rateVO = (Bandwidth/4)/PacketLength;
+
 		sources[n].MaxBatch = Batch;
 	}
 	
@@ -106,52 +107,103 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 void SlottedCSMA :: Start()
 {
-	printf("--------------- Starting ---------------\n");
+	cout << ("--------------- Starting ---------------") << endl;
 };
 
 void SlottedCSMA :: Stop()
 {
 	
 	//--------------------------------------------------------------//
+	//-------------------Writing the results------------------------//
+	//--------------------------------------------------------------//
+
+	//CLI output variables
+	array <double,AC> avgACthroughput = {};
+	double avgThroughput = 0.0;
+
+	array <double,AC> overallSxTx = {};
+	double totalSxTx = 0.0;
+
+	array <double,AC> overallTx = {};
+	double totalTx = 0.0;
+	array <double,AC> totalACRet = {};
+	double totalRetransmissions = 0.0;
+
+	array <double,AC> droppedAC = {};
+	double totalDropped = 0.0;
+
+
+	for (int i = 0; i < Nodes; i++){
+		for (int j = 0; j < AC; j++){
+			//#1 Throughput
+			avgThroughput += stas[i].overallACThroughput.at(j);
+			avgACthroughput.at(j) += stas[i].overallACThroughput.at(j);
+
+			totalSxTx += (stas[i].successfulTx.at(j));
+			overallSxTx.at(j) += (stas[i].successfulTx.at(j));
+			
+			totalTx += (stas[i].transmissions.at(j));
+			overallTx.at(j) += (stas[i].transmissions.at(j));
+
+			totalRetransmissions += (stas[i].totalACRet.at(j));
+			totalACRet.at(j) += (stas[i].totalACRet.at(j));
+
+			totalDropped += (stas[i].droppedAC.at(j));
+			droppedAC.at(j) += (stas[i].droppedAC.at(j));
+		}
+	}
+
+	ofstream file;
+	file.open("Results/output.txt", ios::app);
+	file << "#1. Nodes 2. avgThroughput 3. avgBEThroughput 4.avgBKThroughput 5. avgVIThroughput "
+		<< "6. avgVOThroughput" << endl;
+	
+	file << Nodes << " " << avgThroughput << " ";
+	//Printing AC related metrics
+	for (int i = 0; i < AC; i++){
+		file << avgACthroughput.at(i) << " ";
+	}
+	file << endl;
+
+
+	//--------------------------------------------------------------//
 	//---------Presentation when simulation ends--------------------//
 	//--------------------------------------------------------------//
 	
-	array<double,AC> overallTx = {};
+
+
 
 	cout << endl;
 	cout << "---------------------------"<< endl;
 	cout << "--- Overall Statistics ----" << endl;
 	cout << "---------------------------"<< endl;
-	for(int i = 0; i < Nodes; i++)
+
+	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (Mbps): " << avgThroughput << endl;
+	for(int i = 0; i < AC; i++)
 	{
-		for(auto it = stas[i].transmissions.begin(); it != stas[i].transmissions.end(); it++)
-		{
-			overallTx.at(std::distance(stas[i].transmissions.begin(),it)) += *it;
-		}
+		cout << "\tAC " << i << ": " << overallTx.at(i) << ". Total Throughput for AC (Mbps): " 
+			<< avgACthroughput.at(i) << endl;;
+
 	}
 
-	cout << "1. Total transmissions: " << endl;
+	cout << "\n2. Total Retransmissions: " << totalRetransmissions << ". Retransmitted / Transmitted ratio: " 
+		<< totalRetransmissions / totalTx << endl;
 
-	for(auto it = overallTx.begin(); it != overallTx.end(); it++)
+	for(int i = 0; i < AC; i++)
 	{
-		cout << "\tAC " << std::distance(overallTx.begin(),it) << ": " << *it << endl;
+		cout << "\tAC " << i << ": " << totalACRet.at(i) << ". Retransmitted AC / Total Transmitted: " 
+			<< totalACRet.at(i) / totalTx << endl;
+
 	}
 
+	cout << "\n3. Total Dropped packets due to RET " << totalDropped << ". Dropped / SxSent ratio: "
+		<< totalDropped / totalSxTx << endl;
 
-	//--------------------------------------------------------------//
-	//-------------------Writing the results------------------------//
-	//--------------------------------------------------------------//
-
-	double avgThroughput = 0.0;
-
-	for (int i = 0; i < Nodes; i++){
-		avgThroughput += stas[i].overallThroughput;
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " << i << ": " << droppedAC.at(i) << ". Dropped AC / SxSent ratio: "
+			<< droppedAC.at(i) / totalSxTx << endl;
 	}
-
-	ofstream file;
-	file.open("Results/output.txt", ios::app);
-	file << "#1. Nodes 2. AvgThroughput" << endl;
-	file << Nodes << " " << avgThroughput << endl;
 
 
 };
@@ -211,10 +263,10 @@ int main(int argc, char *argv[])
 		}else
 		{
 			cout << "Executed with default values shown below" << endl;
-			cout << "./XXXX SimTime [10] NumNodes [1] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
+			cout << "./XXXX SimTime [10] NumNodes [2] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] hysteresis [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
 			MaxSimIter = 1;
 			SimTime = 10;
-			NumNodes = 1;
+			NumNodes = 30;
 			PacketLength = 1024;
 			Bandwidth = 65e6;
 			Batch = 1; // =1
@@ -225,7 +277,7 @@ int main(int argc, char *argv[])
 			slotDrift = 0; // // float 0-1
 			percentageEDCA = 1; // // float 0-1
 			maxAggregation = 0;
-			simSeed = 0; //Simulation seed
+			simSeed = 2234; //Simulation seed
 		}
 	}else
 	{
