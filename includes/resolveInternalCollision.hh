@@ -4,11 +4,13 @@
 #define AC 4
 #define MAXSTAGE 5
 
-int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC> &qSizes, std::array<int,AC> &stickiness, std::array<int,AC> &stages, std::array<double,AC> &counters, int system_stickiness, int id){
+int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC> &qSizes, 
+	std::array<int,AC> &stickiness, std::array<int,AC> &stages, std::array<double,AC> &counters, 
+	int system_stickiness, int id, std::array<double,AC> &totalInternalACCol){
 
 	int iterator = counters.size() - 1;
 	int acToTx = -1;
-	//int internalCollision = 0;
+	int sx = 0;	//as needed by computeBackoff
 
 	for (auto rIterator = counters.rbegin(); rIterator < counters.rend(); rIterator++) //a reverse iteration over the arrays
 	{
@@ -28,12 +30,14 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
 	{
 		if((backlogg.at(i) == 1) && (counters.at(i) == 0))
 		{
-			//cout << "Colliding with " << acToTx << ": " << i << " with counter: " << counters.at(i) << " and stage: " << stages.at(i);
+			//cout << "Colliding with " << acToTx << ": " << i << " with counter: " << counters.at(i) << " and stage: " << stages.at(i) << endl;
 			stickiness.at(i) = std::max((int) stickiness.at(i) - 1, 0);
             stages.at(i) = std::min((int)stages.at(i) + 1, MAXSTAGE);
-			computeBackoff(backlogg.at(i), qSizes.at(i), i, stickiness.at(i), stages.at(i), counters.at(i), system_stickiness, id);
+            sx = 0;
+            //cout << "STA-" << id << ": internalCollision: " << acToTx << " and " << i << endl;
+			computeBackoff(backlogg.at(i), qSizes.at(i), i, stickiness.at(i), stages.at(i), counters.at(i), system_stickiness, id, sx);
 			//cout << ". New counter for AC " << i << ": " << counters.at(i) << ", new stage: " << stages.at(i) << endl;
-			//internalCollision = 1;
+			totalInternalACCol.at(i)++;		
 		}
 	}
 

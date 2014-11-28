@@ -1,6 +1,6 @@
 using namespace std;
 
-void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter, int &system_stickiness, int id){
+void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter, int &system_stickiness, int id, int sx){
 
 	int CWmin = 0;
 
@@ -25,13 +25,13 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 	
 	if(CWmin > 0)
 	{
-		//cout << "Node " << id << " Old counter: " << counter << endl;
-		if(stickiness != 0)
+		//cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
+		if((sx == 1) && (stickiness != 0))
 		{
 			counter = (int)(pow(2,backoffStage)*CWmin/2)-1;
 		}else
 		{
-			counter = rand() % (int)(pow(2,backoffStage)*CWmin);
+			counter = rand() % (int) ( (pow(2,backoffStage) *CWmin) - 1 );
 		}
 		backlog = 1;
 		//cout << "Node " << id << " New counter: " << counter << endl;

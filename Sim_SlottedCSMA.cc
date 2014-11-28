@@ -118,8 +118,8 @@ void SlottedCSMA :: Stop()
 	//--------------------------------------------------------------//
 
 	//CLI output variables
-	array <double,AC> avgACthroughput = {};
-	double avgThroughput = 0.0;
+	array <double,AC> totalACthroughput = {};
+	double totalThroughput = 0.0;
 
 	array <double,AC> overallSxTx = {};
 	double totalSxTx = 0.0;
@@ -129,6 +129,12 @@ void SlottedCSMA :: Stop()
 	array <double,AC> totalACRet = {};
 	double totalRetransmissions = 0.0;
 
+	array <double,AC> totalACCol = {};
+	double totalCol = 0.0;
+
+	array <double,AC> totalIntACCol = {};
+	double totalIntCol = 0.0;
+
 	array <double,AC> droppedAC = {};
 	double totalDropped = 0.0;
 
@@ -136,8 +142,8 @@ void SlottedCSMA :: Stop()
 	for (int i = 0; i < Nodes; i++){
 		for (int j = 0; j < AC; j++){
 			//#1 Throughput
-			avgThroughput += stas[i].overallACThroughput.at(j);
-			avgACthroughput.at(j) += stas[i].overallACThroughput.at(j);
+			totalThroughput += stas[i].overallACThroughput.at(j);
+			totalACthroughput.at(j) += stas[i].overallACThroughput.at(j);
 
 			totalSxTx += (stas[i].successfulTx.at(j));
 			overallSxTx.at(j) += (stas[i].successfulTx.at(j));
@@ -148,6 +154,12 @@ void SlottedCSMA :: Stop()
 			totalRetransmissions += (stas[i].totalACRet.at(j));
 			totalACRet.at(j) += (stas[i].totalACRet.at(j));
 
+			totalCol += (stas[i].totalACCollisions.at(j));
+			totalACCol.at(j) += (stas[i].totalACCollisions.at(j));
+
+			totalIntCol += (stas[i].totalInternalACCol.at(j));
+			totalIntACCol.at(j) += (stas[i].totalInternalACCol.at(j));
+
 			totalDropped += (stas[i].droppedAC.at(j));
 			droppedAC.at(j) += (stas[i].droppedAC.at(j));
 		}
@@ -155,14 +167,30 @@ void SlottedCSMA :: Stop()
 
 	ofstream file;
 	file.open("Results/output.txt", ios::app);
-	file << "#1. Nodes 2. avgThroughput 3. avgBEThroughput 4.avgBKThroughput 5. avgVIThroughput "
-		<< "6. avgVOThroughput" << endl;
+	file << "#1. Nodes 2. totalThroughput 3. totalBEThroughput 4. totalBKThroughput 5. totalVIThroughput " << endl;
+	file << "#6. totalVOThroughput 7. totalCollisions 8. totalBECollisions 9. totalBKCollisions" << endl;
+	file << "#10. totalVICollisions 11. TotalVOCollisions 12. totalInternalCollisions" << endl;
+	file << "#13. totalBEIntCol 14. totalBKIntCol 15. totalVIIntCol 16. totalVOIntCol" << endl;
 	
-	file << Nodes << " " << avgThroughput << " ";
+	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
+	//3 - 6
 	for (int i = 0; i < AC; i++){
-		file << avgACthroughput.at(i) << " ";
+		file << totalACthroughput.at(i) << " ";
 	}
+
+	//7-11
+	file << totalCol << " ";
+	for (int i = 0; i < AC; i++){
+		file << totalACCol.at(i) << " ";
+	}
+
+	//12-16
+	file << totalIntCol << " ";
+	for (int i = 0; i < AC; i++){
+		file << totalIntACCol.at(i) << " ";
+	}
+
 	file << endl;
 
 
@@ -178,15 +206,30 @@ void SlottedCSMA :: Stop()
 	cout << "--- Overall Statistics ----" << endl;
 	cout << "---------------------------"<< endl;
 
-	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (Mbps): " << avgThroughput << endl;
+	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (Mbps): " << totalThroughput << endl;
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << overallTx.at(i) << ". Total Throughput for AC (Mbps): " 
-			<< avgACthroughput.at(i) << endl;;
+			<< totalACthroughput.at(i) << endl;;
 
 	}
 
-	cout << "\n2. Total Retransmissions: " << totalRetransmissions << ". Retransmitted / Transmitted ratio: " 
+
+	cout << "\n2. Total Collisions: " << totalCol << ". Collisions / Transmitted ratio: " 
+		<< totalCol / totalTx << endl;
+	cout << "2.1 Total Internal Collisions: " << totalIntCol << ". Internal Collisions + Collisions: "
+		<< totalIntCol + totalCol << endl;
+
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " << i << ": " << totalACCol.at(i) << ". Collisions AC / Total Transmitted: " 
+			<< totalACCol.at(i) / totalTx << endl;
+		cout << "\tInternal Collisions: " << totalIntACCol.at(i) << ". Internal Collisions AC + Collisions AC: "
+			<< totalIntACCol.at(i) + totalACCol.at(i) << endl << endl;
+
+	}
+
+	cout << "\n3. Total Retransmissions: " << totalRetransmissions << ". Retransmitted / Transmitted ratio: " 
 		<< totalRetransmissions / totalTx << endl;
 
 	for(int i = 0; i < AC; i++)
@@ -196,7 +239,7 @@ void SlottedCSMA :: Stop()
 
 	}
 
-	cout << "\n3. Total Dropped packets due to RET " << totalDropped << ". Dropped / SxSent ratio: "
+	cout << "\n4. Total Dropped packets due to RET " << totalDropped << ". Dropped / SxSent ratio: "
 		<< totalDropped / totalSxTx << endl;
 
 	for(int i = 0; i < AC; i++)

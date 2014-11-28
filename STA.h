@@ -63,6 +63,12 @@ component STA : public TypeII
         double overallThroughput;
 
         //Collision stsatistics
+        double totalCollisions;
+        std::array<double,AC> totalACCollisions;
+
+        double totalInternalCol;
+        std::array<double,AC> totalInternalACCol;
+
         double totalRetransmissions;
         std::array<double,AC> totalACRet;
         std::array<int,AC> retAttemptAC;
@@ -80,6 +86,7 @@ component STA : public TypeII
         
         //Transmission private statistics
         int transmitted;    //0 -> no, 1 -> yes.
+        int sx;             //0 -> no, 1 -> yes.
 
         /*For better understanding, the ACs are defined as constants for navigating
         the arrays*/
@@ -134,13 +141,14 @@ void STA :: Start()
     VO = 3;
     ACToTx = -1;
     transmitted = 0;
+    sx = 0;
 
     for(int i = 0; i < AC; i++)
     {
         stationStickiness.at(i) = system_stickiness; //Could individual AC stickiness parameter be interesting?
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
-        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id);
+        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx);
     }
 	
 };
@@ -184,6 +192,11 @@ void STA :: Stop()
 
         }
 
+        totalCollisions += totalACCollisions.at(it);
+        totalInternalCol += totalInternalACCol.at(it);
+        cout << "\t- Total Collisions for AC " << it << ": " << totalACCollisions.at(it) << endl;
+        cout << "\t\t- Total Internal Collisions for AC " << it << ": " << totalInternalACCol.at(it) << endl;
+
         totalRetransmissions += totalACRet.at(it);
         cout << "\t- Total Retransmissions for AC " << it << ": " << totalACRet.at(it) << endl;
 
@@ -195,6 +208,8 @@ void STA :: Stop()
     
     overallThroughput = (overallSxTx * L * 8.) / SimTime();
     cout << "+ Overall throughput for this station: " << overallThroughput << endl;
+
+    cout << "- Overal Collisions for this station: " << totalCollisions << endl;
 
     cout << "- Overall retransmissions: " << totalRetransmissions << endl;
 
@@ -211,12 +226,9 @@ void STA :: in_slot(SLOT_notification &slot)
 			//Important to remember: 0 = BE, 1 = BK, 2 = VI, 3 = VO
 			for(int i = 0; i < backlogged.size(); i++)
 			{
-				if(backlogged.at(i) != 0) //if the AC has something to transmit
+				if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
 				{
-					if(backoffCounters.at(i) > 0)
-					{
-						backoffCounters.at(i)--;
-					}
+					backoffCounters.at(i)--;
 				}
 			}
 			break;
@@ -229,6 +241,7 @@ void STA :: in_slot(SLOT_notification &slot)
 				    {
                         //Gathering statistics from last transmission
                         successfulTx.at(i) += superPacket.at(i).aggregation;
+                        sx = 1;
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
                         //cout << accumTimeBetweenSxTx.at(i) << endl;
 
@@ -244,12 +257,22 @@ void STA :: in_slot(SLOT_notification &slot)
                         retAttemptAC.at(i) = 0;                      //Resetting the retransmission attempt counter
                         transmitted = 0;                             //Also resetting the transmitted flag
 
-                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id);
+                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx);
                         if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
                         break;
 				    }
                 }
-			}
+			}else
+            {
+                for(int i = 0; i < backlogged.size(); i++)
+                {
+                    if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
+                    {
+                        backoffCounters.at(i)--;
+                    }
+                }
+                break;
+            }
         default: //it is set to default to mean a number other than 0 or 1
             if (transmitted == 1)
             {
@@ -257,6 +280,8 @@ void STA :: in_slot(SLOT_notification &slot)
                 {
                     if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//to modify the colliding AC backoff parameters
                     {
+                        //Collision metrics
+                        totalACCollisions.at(i)++;
                         //Retransmission metrics
                         totalACRet.at(i)++;
                         if(retAttemptAC.at(i) == MAX_RET)
@@ -275,12 +300,23 @@ void STA :: in_slot(SLOT_notification &slot)
                             retAttemptAC.at(i)++;
                         }
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
-                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id);
+                        sx = 0;
+                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx);
                         transmitted = 0;
                         break;
                     }
                 }
                 
+            }else
+            {
+                for(int i = 0; i < backlogged.size(); i++)
+                {
+                    if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
+                    {
+                        backoffCounters.at(i)--;
+                    }
+                }
+                break;
             }
 	}
 	
@@ -289,7 +325,8 @@ void STA :: in_slot(SLOT_notification &slot)
     //**********************************************
     //cout << "STA-" << node_id << endl;
 
-    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, backoffStages, backoffCounters, system_stickiness, node_id);
+    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, 
+        backoffStages, backoffCounters, system_stickiness, node_id, totalInternalACCol);
     
     if(ACToTx >= 0){
         //cout << "(" << SimTime() << ") +++Station: " << node_id << ": transmitted AC: " << ACToTx << endl;
