@@ -33,7 +33,14 @@ while (my $row = <$fh>)
 open(my $fw, ">", $outputFile)
     or die "Could not open write file $outputFile $!";
 
-print $fw "#1 Nodes, #2 AvgThroughput, #3 std\n";
+
+print $fw 
+("#1 Nodes,             #2 AvgThroughput,               #4 totalBEThroughput, 
+#6 totalBKThroughput,   #8 totalVIThroughput,           #10 totalVOThroughput,
+#12 totalCollisions,    #14 totalBECollisions,          #16 totalBKCollisions,
+#18 totalVICollisions,  #20 TotalVOCollisions,          #22 totalInternalCollisions,    
+#24 totalBEIntCol,      #26 totalBKIntCol,              #28 totalVIIntCol,
+#30 totalVOIntCol\n");
 
 OUTTER: foreach($lowNodes .. $highNodes)
 {

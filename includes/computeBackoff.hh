@@ -8,10 +8,10 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 
 	switch (AC){
 		case 0:
-			if(qSize > 0) CWmin = 32;
+			if(qSize > 0) CWmin = 64;
 			break;
 		case 1:
-			if(qSize > 0) CWmin = 32;
+			if(qSize > 0) CWmin = 64;
 			break;
 		case 2:
 			if(qSize > 0) CWmin = 16;
@@ -26,12 +26,12 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 	if(CWmin > 0)
 	{
 		//cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
-		if((sx == 1) && (stickiness != 0))
+		if((sx == 1) && (stickiness > 0))
 		{
-			counter = (int)(pow(2,backoffStage)*CWmin/2)-1;
+			counter = (int)(pow(2,backoffStage)*CWmin/2);
 		}else
 		{
-			counter = rand() % (int) ( (pow(2,backoffStage) *CWmin) - 1 );
+			counter = rand() % (int) ( (pow(2,backoffStage) *CWmin));
 		}
 		backlog = 1;
 		//cout << "Node " << id << " New counter: " << counter << endl;

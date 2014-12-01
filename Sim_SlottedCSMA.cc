@@ -81,10 +81,14 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 		// Traffic Source
 		sources[n].L = PacketLength;
-		sources[n].packet_rateBK = Bandwidth/PacketLength;
 		sources[n].packet_rateBE = Bandwidth/PacketLength;
+		sources[n].packet_rateBK = Bandwidth/PacketLength;
 		sources[n].packet_rateVI = (Bandwidth/2)/PacketLength;
 		sources[n].packet_rateVO = (Bandwidth/4)/PacketLength;
+		/*
+		sources[n].packet_rateBK = Bandwidth/PacketLength;
+		
+		sources[n].packet_rateVO = (Bandwidth/4)/PacketLength;*/
 
 		sources[n].MaxBatch = Batch;
 	}

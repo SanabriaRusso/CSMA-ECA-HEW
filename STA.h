@@ -229,6 +229,7 @@ void STA :: in_slot(SLOT_notification &slot)
 				if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
 				{
 					backoffCounters.at(i)--;
+                    //cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
 				}
 			}
 			break;
@@ -243,7 +244,8 @@ void STA :: in_slot(SLOT_notification &slot)
                         successfulTx.at(i) += superPacket.at(i).aggregation;
                         sx = 1;
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
-                        //cout << accumTimeBetweenSxTx.at(i) << endl;
+
+                        //cout << "STA-" << node_id << ": AC: " << i << ". Transmitted" << endl;
 
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), node_id);
@@ -269,6 +271,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
                     {
                         backoffCounters.at(i)--;
+                        //cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
                     }
                 }
                 break;
@@ -295,6 +298,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
 
+                            retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
+
                         }else
                         {
                             //cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
@@ -317,6 +322,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
                     {
                         backoffCounters.at(i)--;
+                        //cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
                     }
                 }
                 break;
@@ -329,8 +335,30 @@ void STA :: in_slot(SLOT_notification &slot)
     //cout << "STA-" << node_id << endl;
 
     ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, 
-        backoffStages, backoffCounters, system_stickiness, node_id, totalInternalACCol);
-    
+        backoffStages, backoffCounters, system_stickiness, node_id, totalInternalACCol, retAttemptAC, 
+        SimTime());
+
+    //Fix any dropping of packets due to internal collisions
+    for(int i = 0; i < retAttemptAC.size(); i++)
+    {
+        if(retAttemptAC.at(i) == MAX_RET)
+        {
+            erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), node_id);
+            droppedAC.at(i)++;
+            stationStickiness.at(i) = system_stickiness;
+            //JUST FOR EDCA
+            backoffStages.at(i) = 0;
+            //JUST FOR EDCA
+
+            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
+
+            retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
+
+        }
+
+    }
+
+    //Attempting transmission if any available
     if(ACToTx >= 0){
         //cout << "(" << SimTime() << ") +++Station: " << node_id << ": transmitted AC: " << ACToTx << endl;
         packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id);

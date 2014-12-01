@@ -1,7 +1,9 @@
+#include "../Aux.h"
+
 using namespace std;
 
-void erasePacketsFromQueue(FIFO <Packet> &MACQueueBK, FIFO <Packet> &MACQueueBE, FIFO <Packet> &MACQueueVI, FIFO <Packet> &MACQueueVO, Packet &packet, int id)
-
+void erasePacketsFromQueue(FIFO <Packet> &MACQueueBK, FIFO <Packet> &MACQueueBE, FIFO <Packet> &MACQueueVI, 
+    FIFO <Packet> &MACQueueVO, Packet &packet, int id)
 {
     int packetDisposal = 0;
 

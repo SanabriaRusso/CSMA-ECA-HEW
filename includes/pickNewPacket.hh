@@ -1,6 +1,8 @@
 #include "../Aux.h"
+#define AC 4
 
-void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC> &superPacket, FIFO <Packet> &MACQueueBK, FIFO <Packet> &MACQueueBE, FIFO <Packet> &MACQueueVI, FIFO <Packet> &MACQueueVO, int id)
+void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC> &superPacket, FIFO <Packet> &MACQueueBK, 
+	FIFO <Packet> &MACQueueBE, FIFO <Packet> &MACQueueVI, FIFO <Packet> &MACQueueVO, int id)
 {
 	Packet packet;
 	switch(accessCategory)
