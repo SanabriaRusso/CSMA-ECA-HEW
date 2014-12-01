@@ -30,7 +30,7 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
 	{
 		if((backlogg.at(i) == 1) && (counters.at(i) == 0))
 		{
-			//cout << "Colliding with " << acToTx << ": " << i << " with counter: " << counters.at(i) << " and stage: " << stages.at(i) << endl;
+			cout << "Colliding with " << acToTx << ": " << i << " with counter: " << counters.at(i) << " and stage: " << stages.at(i) << endl;
 			stickiness.at(i) = std::max((int) stickiness.at(i) - 1, 0);
             stages.at(i) = std::min((int)stages.at(i) + 1, MAXSTAGE);
             sx = 0;
@@ -40,8 +40,6 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
 			totalInternalACCol.at(i)++;		
 		}
 	}
-
-	//if((acToTx >= 0) && (internalCollision == 0)) cout << "Transmitting AC " << acToTx << " witout internal collisions" <<endl;
 
 	return(acToTx);
 	

@@ -252,10 +252,10 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         /*****NEW PACKET IS PICKED************
                         **************************************/
-                        stationStickiness.at(i) = system_stickiness; //Resetting the stickiness after a successful transmission
-                        backoffStages.at(i) = 0;                     //Resetting the backoffstage of the transmitting AC
-                        retAttemptAC.at(i) = 0;                      //Resetting the retransmission attempt counter
-                        transmitted = 0;                             //Also resetting the transmitted flag
+                        stationStickiness.at(i) = system_stickiness;            //Resetting the stickiness after a successful transmission
+                        if(system_stickiness == 0) backoffStages.at(i) = 0;     //Resetting the backoffstage of the transmitting AC
+                        retAttemptAC.at(i) = 0;                                 //Resetting the retransmission attempt counter
+                        transmitted = 0;                                        //Also resetting the transmitted flag
 
                         computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx);
                         if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
@@ -292,6 +292,9 @@ void STA :: in_slot(SLOT_notification &slot)
                             //JUST FOR EDCA
                             backoffStages.at(i) = 0;
                             //JUST FOR EDCA
+
+                            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
+
                         }else
                         {
                             //cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
