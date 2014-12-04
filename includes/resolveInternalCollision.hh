@@ -4,7 +4,7 @@
 #define AC 4
 #define MAXSTAGE 5
 
-int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC> &qSizes, 
+int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<FIFO <Packet>, AC> &Queues, 
 	std::array<int,AC> &stickiness, std::array<int,AC> &stages, std::array<double,AC> &counters, 
 	int system_stickiness, int id, std::array<double,AC> &totalInternalACCol, std::array<int,AC> &retAttemptAC,
 	double simTime, int EDCA){
@@ -38,7 +38,7 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
             stages.at(i) = std::min((int)stages.at(i) + 1, MAXSTAGE);
             sx = 0;
             //cout << "STA-" << id << ": internalCollision: " << acToTx << " and " << i << endl;
-			computeBackoff(backlogg.at(i), qSizes.at(i), i, stickiness.at(i), stages.at(i), 
+			computeBackoff(backlogg.at(i), Queues.at(i), i, stickiness.at(i), stages.at(i), 
 				counters.at(i), system_stickiness, id, sx, EDCA);
 			//cout << ". New counter for AC " << i << ": " << counters.at(i) << ", new stage: " << stages.at(i) << endl;
 			totalInternalACCol.at(i)++;

@@ -102,10 +102,13 @@ component STA : public TypeII
 		Packet packet; //individual packets
         std::array<Packet,AC> superPacket; //an abstract packet composed of #AC packets. This structure helps at keeping track of AC-related timers
         
-        FIFO <Packet> MACQueueBK;
+        std::array<FIFO <Packet>, AC> Queues;
+        FIFO <Packet> Q;
+
+        /*FIFO <Packet> MACQueueBK;
         FIFO <Packet> MACQueueBE;
         FIFO <Packet> MACQueueVI;
-        FIFO <Packet> MACQueueVO;
+        FIFO <Packet> MACQueueVO;*/
 
     public:
         //Connections
@@ -152,7 +155,8 @@ void STA :: Start()
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
         backoffStages.at(i) = 0;
-        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+        Queues.at(i) = Q;
+        computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
             backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
     }
 	
@@ -179,28 +183,32 @@ void STA :: Stop()
         cout << "\t- Time between successful transmissions for AC " << it << ": " << 
         accumTimeBetweenSxTx.at(it) / successfulTx.at(it) << endl;
 
-        switch(it)
-        {
-            case 0:
-                    packetsInQueue.at(it) += MACQueueBE.QueueSize();
-                    cout << "\t* Queue AC 0: " << packetsInQueue.at(it) << endl;
-                    break;
-            case 1:
-                    packetsInQueue.at(it) += MACQueueBK.QueueSize();
-                    cout << "\t* Queue AC 1: " << packetsInQueue.at(it) << endl;
-                    break;
-            case 2:
-                    packetsInQueue.at(it) += MACQueueVI.QueueSize();
-                    cout << "\t* Queue AC 2: " << packetsInQueue.at(it) << endl; 
-                    break;
-            case 3:
-                    packetsInQueue.at(it) += MACQueueVO.QueueSize();
-                    cout << "\t* Queue AC 3: " << packetsInQueue.at(it) << endl;
-                    break;
-            default:
-                    break;
+        packetsInQueue.at(it) = Queues.at(it).QueueSize();
+        cout << "\t* Queue AC " << it << ": " << packetsInQueue.at(it) << endl;
 
-        }
+        // switch(it)
+        // {
+        //     case 0:
+        //             packetsInQueue.at(it) += MACQueueBE.QueueSize();
+        //             cout << "\t* Queue AC 0: " << packetsInQueue.at(it) << endl;
+        //             cout << "\t* Alternative 0: " << Queues.at(it).QueueSize() << endl;
+        //             break;
+        //     case 1:
+        //             packetsInQueue.at(it) += MACQueueBK.QueueSize();
+        //             cout << "\t* Queue AC 1: " << packetsInQueue.at(it) << endl;
+        //             break;
+        //     case 2:
+        //             packetsInQueue.at(it) += MACQueueVI.QueueSize();
+        //             cout << "\t* Queue AC 2: " << packetsInQueue.at(it) << endl; 
+        //             break;
+        //     case 3:
+        //             packetsInQueue.at(it) += MACQueueVO.QueueSize();
+        //             cout << "\t* Queue AC 3: " << packetsInQueue.at(it) << endl;
+        //             break;
+        //     default:
+        //             break;
+
+        //}
 
         totalCollisions += totalACCollisions.at(it);
         totalInternalCol += totalInternalACCol.at(it);
@@ -271,10 +279,9 @@ void STA :: in_slot(SLOT_notification &slot)
                         //cout << "STA-" << node_id << ": AC: " << i << ". Transmitted" << endl;
 
                         //Erasing the packet(s) that was(were) sent
-                        //if(packet.accessCategory == 3) cout << MACQueueVO.QueueSize() << endl;
-                        erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), 
-                            node_id, backlogged.at(i));
-                        //if(packet.accessCategory == 3) cout << MACQueueVO.QueueSize() << endl;
+                        //erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), 
+                            //node_id, backlogged.at(i));
+                        erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i));
                     
                         //If there is another packet waiting in the transmission queue, pick it and start contention
 
@@ -286,10 +293,9 @@ void STA :: in_slot(SLOT_notification &slot)
                         transmitted = 0;                                        //Also resetting the transmitted flag
 
                         //cout << "+++Tx" << endl;
-                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), 
+                        computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                             backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
-                        if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, 
-                            MACQueueVI, MACQueueVO, node_id);
+                        if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id);
                         break;
 				    }
                 }
@@ -318,16 +324,16 @@ void STA :: in_slot(SLOT_notification &slot)
                         totalACRet.at(i)++;
                         if(retAttemptAC.at(i) == MAX_RET)
                         {
-                            erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), 
-                                node_id, backlogged.at(i));
+                            // erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), 
+                            //     node_id, backlogged.at(i));
+                            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i));
                             droppedAC.at(i)++;
                             stationStickiness.at(i) = system_stickiness;
                             //JUST FOR EDCA
                             backoffStages.at(i) = 0;
                             //JUST FOR EDCA
 
-                            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), 
-                                superPacket, MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, node_id);
+                            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id);
 
                             retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
 
@@ -341,7 +347,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
                         sx = 0;
                         //cout << "--Tx" << endl;
-                        computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), 
+                        computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                             backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
                         transmitted = 0;
                         break;
@@ -367,7 +373,7 @@ void STA :: in_slot(SLOT_notification &slot)
     //**********************************************
     //cout << "STA-" << node_id << endl;
 
-    ACToTx = resolveInternalCollision(backlogged, queuesSizes, stationStickiness, 
+    ACToTx = resolveInternalCollision(backlogged, Queues, stationStickiness, 
         backoffStages, backoffCounters, system_stickiness, node_id, totalInternalACCol, retAttemptAC, 
         SimTime(), EDCA);
 
@@ -376,17 +382,17 @@ void STA :: in_slot(SLOT_notification &slot)
     {
         if(retAttemptAC.at(i) == MAX_RET)
         {
-            erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), 
-                node_id, backlogged.at(i));
+            // erasePacketsFromQueue(MACQueueBK, MACQueueBE, MACQueueVI, MACQueueVO, superPacket.at(i), 
+            //     node_id, backlogged.at(i));
+            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i));
             droppedAC.at(i)++;
             stationStickiness.at(i) = system_stickiness;
             //JUST FOR EDCA
             backoffStages.at(i) = 0;
             //JUST FOR EDCA
 
-            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, MACQueueBK, MACQueueBE, 
-                MACQueueVI, MACQueueVO, node_id);
-            computeBackoff(backlogged.at(i), queuesSizes.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id);
+            computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
                 backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
 
             retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
@@ -412,11 +418,11 @@ void STA :: in_packet(Packet &packet)
     incommingPackets++;
 
     backlogged.at(packet.accessCategory) = 1;
-    FIFO <Packet> *Q;
+    //FIFO <Packet> *Q;
 
     //cout << "STA " << node_id << ": received a packet for category " << packet.accessCategory << endl;
 
-    switch (packet.accessCategory)
+    /*switch (packet.accessCategory)
     {
         case 0:
             Q = &MACQueueBE;
@@ -433,13 +439,18 @@ void STA :: in_packet(Packet &packet)
         case 3:
             Q = &MACQueueVO;
             break;
+    }*/
+
+    if( Queues.at(packet.accessCategory).QueueSize()  < K )
+    {
+        Queues.at(packet.accessCategory).PutPacket(packet);
     }
-    
-    if(Q->QueueSize() < K)
+    /*if(Q->QueueSize() < K)
     {
         Q->PutPacket(packet);
     	queuesSizes.at(packet.accessCategory) = (int)Q->QueueSize();
-    }else
+
+    }*/else
     {
         blockedPackets.at(packet.accessCategory)++;
     }

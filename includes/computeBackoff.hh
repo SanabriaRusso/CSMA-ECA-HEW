@@ -1,30 +1,15 @@
+#define AC 4
+
 using namespace std;
 
-void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, 
+void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness, int &backoffStage, 
 	double &counter, int &system_stickiness, int &id, int &sx, int &EDCA){
 
-	int CWmin = 0;
+	int CWmin [4] = { 32, 32, 16, 8 };
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 
-	switch (AC){
-		case 0:
-			if(qSize > 0) CWmin = 32;
-			break;
-		case 1:
-			if(qSize > 0) CWmin = 32;
-			break;
-		case 2:
-			if(qSize > 0) CWmin = 16;
-			break;
-		case 3:
-			if(qSize > 0) CWmin = 8;
-			break;
-		default:
-			break;	
-	}
-	
-	if(CWmin > 0)
+	if(Queue.QueueSize() > 0)
 	{
 		//cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
 
@@ -32,22 +17,22 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 		{
 			if(EDCA == 1)
 			{
-				counter = (int)(pow(2,backoffStage)*CWmin/2);
+				counter = (int)(pow(2,backoffStage)*CWmin[ac]/2);
 				//cout << "+++Node " << id << " AC: " << AC << " ECA: " << counter << endl;
 			}else
 			{
-				counter = rand() % (int) ( (pow(2,backoffStage) * CWmin) );
+				counter = rand() % (int)  (pow(2,backoffStage) * CWmin[ac] );
 				//cout << "---Node " << id << " AC: " << AC << " DCF: " << counter << endl;
 			}
 		}else
 		{
 			if(stickiness > 0)
 			{
-				counter = (int)(pow(2,backoffStage)*CWmin/2);
+				counter = (int)(pow(2,backoffStage)*CWmin[ac]/2);
 				//cout << "+++Node " << id << " AC: " << AC << " ECA (hyst): " << counter << endl;				
 			}else
 			{
-				counter = rand() % (int) ( (pow(2,backoffStage) * CWmin) );
+				counter = rand() % (int) (pow(2,backoffStage) * CWmin[ac] );
 				//cout << "---Node " << id << " AC: " << AC << " DCF (col): " << counter << endl;
 			}
 			
