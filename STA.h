@@ -198,8 +198,8 @@ void STA :: Stop()
     double remaining = 0.0;
     for(int i = 0; i < AC; i++)
     {
-        erased += ( droppedAC.at(i) + successfulTx.at(i) + backlogged.at(i) );
-        remaining += ( packetsInQueue.at(i) + blockedPackets.at(i) );
+        erased += ( droppedAC.at(i) + successfulTx.at(i) );
+        remaining += ( packetsInQueue.at(i) + blockedPackets.at(i) - backlogged.at(i) );
     }
     cout << "- Erased packets failure index (should be 1): " << ( (incommingPackets - erased) / remaining ) << endl;
     
