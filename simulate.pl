@@ -2,6 +2,7 @@
 
 use warnings;
 use strict;
+use Switch;
 
 die ("Getting out. You need some parameters, i.e.: --help\n") if (not exists $ARGV[0]);
 
@@ -13,7 +14,7 @@ my %help = (
 				'--help'	=> 1
 			);
 
-die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. ECA\n") 
+die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. ECA Code\n") 
 	if (exists $help{$ARGV[0]});
 
 my $rep = $ARGV[0];
@@ -30,7 +31,7 @@ my $drift = 0;
 my $EDCA = 0;
 my $maxAggregation = 0;
 
-my $hysteresis = 0;
+my $stickiness = 0;
 my $fairShare = 0;
 
 print ("Going to simulate:\n");
@@ -40,9 +41,34 @@ if ($Nmax == $Nmin){
 	print ("\t$rep repetitions jumping $jump of $time seconds, ", ($Nmax - $Nmin), " stations, $bandwidth Mbps and ECA $ECA.\n\n\n");
 }
 
-if ($ECA == 1){
-	$hysteresis = 1;
-	$fairShare = 1;
+switch ($ECA){
+	case 0 {
+		$stickiness = 0;
+		$fairShare = 0;
+		
+	}
+	case 1 {
+		$stickiness = 0;
+		$fairShare = 0;
+		
+	}
+	case 2 {
+		$ECA = 1;
+		$stickiness = 1;
+		$fairShare = 0;
+		
+	}
+	case 3 {
+		$ECA = 1; 
+		$stickiness = 2;
+		$fairShare = 0;
+		
+	}
+	case 5 {
+		$ECA = 1;
+		$stickiness = 5;
+		$fairShare = 0;
+	}
 }
 
 my $compile = './build_local';
@@ -60,13 +86,13 @@ foreach ($Nmin .. $Nmax)
 
 }
 push @jumps, $Nmax
-	if @jumps[-1] != $Nmax;
+	if $jumps[-1] != $Nmax;
 
 
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
-		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $hysteresis $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
+		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
 		print ("\n\n****Node #$i of $Nmax ($?).\n");
 		print ("****Iteration #$j of $rep.\n");
 		print ("**** @command\n");

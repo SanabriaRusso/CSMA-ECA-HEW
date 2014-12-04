@@ -7,7 +7,7 @@
 int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC> &qSizes, 
 	std::array<int,AC> &stickiness, std::array<int,AC> &stages, std::array<double,AC> &counters, 
 	int system_stickiness, int id, std::array<double,AC> &totalInternalACCol, std::array<int,AC> &retAttemptAC,
-	double simTime){
+	double simTime, int EDCA){
 
 	int iterator = counters.size() - 1;
 	int acToTx = -1;
@@ -33,11 +33,13 @@ int resolveInternalCollision(std::array<int,AC> &backlogg, std::array<double,AC>
 		{
 			//cout << "(" << simTime << ") STA-" << id << ": Colliding internally with " << acToTx << ": " << i 
 			//	<< " with counter: " << counters.at(i) << " and stage: " << stages.at(i) << endl;
+
 			stickiness.at(i) = std::max((int) stickiness.at(i) - 1, 0);
             stages.at(i) = std::min((int)stages.at(i) + 1, MAXSTAGE);
             sx = 0;
             //cout << "STA-" << id << ": internalCollision: " << acToTx << " and " << i << endl;
-			computeBackoff(backlogg.at(i), qSizes.at(i), i, stickiness.at(i), stages.at(i), counters.at(i), system_stickiness, id, sx);
+			computeBackoff(backlogg.at(i), qSizes.at(i), i, stickiness.at(i), stages.at(i), 
+				counters.at(i), system_stickiness, id, sx, EDCA);
 			//cout << ". New counter for AC " << i << ": " << counters.at(i) << ", new stage: " << stages.at(i) << endl;
 			totalInternalACCol.at(i)++;
 

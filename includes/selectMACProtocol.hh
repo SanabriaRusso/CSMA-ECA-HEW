@@ -2,9 +2,19 @@ using namespace std;
 
 //EDCA = 0 means CSMA/ECA
 
-void selectMACProtocol(const int &cut, const int &node_id, int &EDCA, int &hysteresis, int &fairShare, int &maxAggregation){
+void selectMACProtocol(const int node_id, int &EDCA, int stickiness){
 
-	if(node_id < cut)
+
+	if(EDCA > 0)
+	{
+		EDCA = 1;
+	}else
+	{
+		EDCA = 0;
+	}
+
+
+	/*if(node_id < cut)
 	{
 		//cout << node_id << ": I am using EDCA";
 		EDCA = 1;
@@ -23,5 +33,5 @@ void selectMACProtocol(const int &cut, const int &node_id, int &EDCA, int &hyste
 	{
 		//cout << node_id << ": I am using CSMA/ECA" << endl;
 		EDCA = 0;
-	}
+	}*/
 }

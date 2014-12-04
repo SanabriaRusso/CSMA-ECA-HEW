@@ -1,6 +1,7 @@
 using namespace std;
 
-void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, double &counter, int &system_stickiness, int id, int sx){
+void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &backoffStage, 
+	double &counter, int &system_stickiness, int &id, int &sx, int &EDCA){
 
 	int CWmin = 0;
 
@@ -8,10 +9,10 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 
 	switch (AC){
 		case 0:
-			if(qSize > 0) CWmin = 64;
+			if(qSize > 0) CWmin = 32;
 			break;
 		case 1:
-			if(qSize > 0) CWmin = 64;
+			if(qSize > 0) CWmin = 32;
 			break;
 		case 2:
 			if(qSize > 0) CWmin = 16;
@@ -26,15 +27,33 @@ void computeBackoff(int &backlog, double &qSize, int &AC, int &stickiness, int &
 	if(CWmin > 0)
 	{
 		//cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
-		if((sx == 1) && (stickiness > 0))
+
+		if(sx == 1)
 		{
-			counter = (int)(pow(2,backoffStage)*CWmin/2);
+			if(EDCA == 1)
+			{
+				counter = (int)(pow(2,backoffStage)*CWmin/2);
+				//cout << "+++Node " << id << " AC: " << AC << " ECA: " << counter << endl;
+			}else
+			{
+				counter = rand() % (int) ( (pow(2,backoffStage) * CWmin) );
+				//cout << "---Node " << id << " AC: " << AC << " DCF: " << counter << endl;
+			}
 		}else
 		{
-			counter = rand() % (int) ( (pow(2,backoffStage) *CWmin));
+			if(stickiness > 0)
+			{
+				counter = (int)(pow(2,backoffStage)*CWmin/2);
+				//cout << "+++Node " << id << " AC: " << AC << " ECA (hyst): " << counter << endl;				
+			}else
+			{
+				counter = rand() % (int) ( (pow(2,backoffStage) * CWmin) );
+				//cout << "---Node " << id << " AC: " << AC << " DCF (col): " << counter << endl;
+			}
+			
 		}
 		backlog = 1;
-		//cout << "Node " << id << " New counter: " << counter << endl;
+		
 	}else
 	{
 		backlog = 0;
