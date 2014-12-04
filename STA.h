@@ -412,52 +412,36 @@ void STA :: in_packet(Packet &packet)
     incommingPackets++;
 
     backlogged.at(packet.accessCategory) = 1;
+    FIFO <Packet> *Q;
 
     //cout << "STA " << node_id << ": received a packet for category " << packet.accessCategory << endl;
 
+    switch (packet.accessCategory)
+    {
+        case 0:
+            Q = &MACQueueBE;
+            break;
 
+        case 1:
+            Q = &MACQueueBK;
+            break;
+
+        case 2:
+            Q = &MACQueueVI;
+            break;
+
+        case 3:
+            Q = &MACQueueVO;
+            break;
+    }
     
-    switch (packet.accessCategory){
-    	case 0:
-    		if(MACQueueBE.QueueSize() < K)
-    		{
-    			MACQueueBE.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = (int)MACQueueBE.QueueSize();
-    		}else
-    		{
-    			blockedPackets.at(BE)++;
-    		}
-    		break;
-    	case 1:
-    		if(MACQueueBK.QueueSize() < K)
-    		{
-    			MACQueueBK.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = (int)MACQueueBK.QueueSize();
-    		}else
-    		{
-    			blockedPackets.at(BK)++;
-    		}
-    		break;
-    	case 2:
-    		if(MACQueueVI.QueueSize() < K)
-    		{
-    			MACQueueVI.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = (int)MACQueueVI.QueueSize();
-    		}else
-    		{
-    			blockedPackets.at(VI)++;
-    		}
-    		break;
-    	case 3:
-    		if(MACQueueVO.QueueSize() < K)
-    		{
-                MACQueueVO.PutPacket(packet);
-    			queuesSizes.at(packet.accessCategory) = (int)MACQueueVO.QueueSize();
-            }else
-    		{
-    			blockedPackets.at(VO)++;
-    		}
-    		break;
+    if(Q->QueueSize() < K)
+    {
+        Q->PutPacket(packet);
+    	queuesSizes.at(packet.accessCategory) = (int)Q->QueueSize();
+    }else
+    {
+        blockedPackets.at(packet.accessCategory)++;
     }
 }
 
