@@ -43,7 +43,7 @@ component STA : public TypeII
         
         //Protocol picking
         int cut;
-        int EDCA;
+        int ECA;
         
         //aggregation settings
         int maxAggregation;
@@ -113,9 +113,9 @@ void STA :: Setup()
 
 void STA :: Start()
 {
-	selectMACProtocol(node_id, EDCA, system_stickiness);
+	selectMACProtocol(node_id, ECA, system_stickiness);
 
-    //cout << EDCA << endl;
+    //cout << ECA << endl;
 	
 	/*Initializing variables and arrays to avoid warning regarding
 	in-class initialization of non-static data members*/
@@ -141,7 +141,7 @@ void STA :: Start()
         backoffStages.at(i) = 0;
         Queues.at(i) = Q;
         computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-            backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
+            backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
     }
 	
 };
@@ -233,13 +233,14 @@ void STA :: in_slot(SLOT_notification &slot)
 				    {
                         //Gathering statistics from last transmission
                         successfulTx.at(i) += superPacket.at(i).aggregation;
-                        sx = 1;
+                        sx = 1; //it was a successful transmission
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
-                        //cout << "STA-" << node_id << ": AC: " << i << ". Transmitted" << endl;
+                        // cout << "STA-" << node_id << ": AC: " << i << ". Transmitted " <<
+                        // superPacket.at(i).aggregation << " packets." << endl;
 
                         //Erasing the packet(s) that was(were) sent
-                        erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i));
+                        erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, sx);
                     
                         //If there is another packet waiting in the transmission queue, pick it and start contention
 
@@ -252,8 +253,10 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         //cout << "+++Tx" << endl;
                         computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
-                        if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id);
+                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                        if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id, 
+                            backoffStages, fairShare);
                         break;
 				    }
                 }
@@ -278,18 +281,19 @@ void STA :: in_slot(SLOT_notification &slot)
                     {
                         //Collision metrics
                         totalACCollisions.at(i)++;
+                        sx = 0;
                         //Retransmission metrics
                         totalACRet.at(i)++;
+
                         if(retAttemptAC.at(i) == MAX_RET)
                         {
-                            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i));
+                            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, sx);
                             droppedAC.at(i)++;
                             stationStickiness.at(i) = system_stickiness;
-                            //JUST FOR EDCA
-                            backoffStages.at(i) = 0;
-                            //JUST FOR EDCA
 
-                            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id);
+                            if(ECA == 0) backoffStages.at(i) = 0;
+                            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id, 
+                                backoffStages, fairShare);
 
                             retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
 
@@ -301,10 +305,9 @@ void STA :: in_slot(SLOT_notification &slot)
                             retAttemptAC.at(i)++;
                         }
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
-                        sx = 0;
                         //cout << "--Tx" << endl;
                         computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
+                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                         transmitted = 0;
                         break;
                     }
@@ -331,26 +334,26 @@ void STA :: in_slot(SLOT_notification &slot)
 
     ACToTx = resolveInternalCollision(backlogged, Queues, stationStickiness, 
         backoffStages, backoffCounters, system_stickiness, node_id, totalInternalACCol, retAttemptAC, 
-        SimTime(), EDCA);
+        SimTime(), ECA);
 
     //Fix any dropping of packets due to internal collisions
     for(int i = 0; i < retAttemptAC.size(); i++)
     {
         if(retAttemptAC.at(i) == MAX_RET)
         {
-            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i));
+            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, sx);
             droppedAC.at(i)++;
             stationStickiness.at(i) = system_stickiness;
-            //JUST FOR EDCA
-            backoffStages.at(i) = 0;
-            //JUST FOR EDCA
+            
+            if(ECA == 0) backoffStages.at(i) = 0;
+            
+            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id,
+                backoffStages, fairShare);
 
-            if(backlogged.at(i) > 0) pickNewPacket(i, SimTime(), superPacket, Queues, node_id);
             computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                backoffCounters.at(i), system_stickiness, node_id, sx, EDCA);
+                backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
 
             retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
-
         }
 
     }
@@ -358,7 +361,7 @@ void STA :: in_slot(SLOT_notification &slot)
     //Attempting transmission if any available
     if(ACToTx >= 0){
         //cout << "(" << SimTime() << ") +++Station: " << node_id << ": transmitted AC: " << ACToTx << endl;
-        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id);
+        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages);
         transmissions.at(ACToTx)++;
         transmitted = 1;
         out_packet(packet);

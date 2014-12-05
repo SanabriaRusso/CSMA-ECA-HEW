@@ -12,6 +12,7 @@ struct Packet
 	double contention_time;
 	int aggregation; //used whenever fairShare is activated
 	int accessCategory; // 0 = best-effort, 1 = background, 2 = video, 3 = voice
+	int startContentionStage;
 };
 
 struct SLOT_notification

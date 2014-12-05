@@ -19,7 +19,7 @@ using namespace std;
 component SlottedCSMA : public CostSimEng
 {
 	public:
-		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int EDCA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int simSeed);
+		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int simSeed);
 		void Stop();
 		void Start();		
 
@@ -41,7 +41,7 @@ component SlottedCSMA : public CostSimEng
 
 };
 
-void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int EDCA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int simSeed)
+void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int simSeed)
 {
 	SimId = Sim_Id;
 	Nodes = NumNodes;
@@ -71,7 +71,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		stas[n].node_id = n;
 		stas[n].K = 1000;
 		stas[n].system_stickiness = Stickiness;
-		stas[n].EDCA = EDCA;
+		stas[n].ECA = ECA;
 		stas[n].fairShare = fairShare;
 		//stas[n].driftProbability = slotDrift;
 		stas[n].cut = intCut;     
@@ -84,14 +84,14 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 
 		sources[n].packet_rateBE = Bandwidth/PacketLength;
-		sources[n].packet_rateBK = Bandwidth/PacketLength;
-		sources[n].packet_rateVI = (Bandwidth/8)/PacketLength;
-		sources[n].packet_rateVO = (Bandwidth/32)/PacketLength;
+		//sources[n].packet_rateBK = Bandwidth/PacketLength;
+		//sources[n].packet_rateVI = (Bandwidth/8)/PacketLength;
+		//sources[n].packet_rateVO = (Bandwidth/32)/PacketLength;
 		
 		//sources[n].packet_rateBE = 0;
-		// sources[n].packet_rateBK = 0;
-		// sources[n].packet_rateVI = 0;
-		// sources[n].packet_rateVO = 0;
+		sources[n].packet_rateBK = 0;
+		sources[n].packet_rateVI = 0;
+		sources[n].packet_rateVO = 0;
 
 		sources[n].MaxBatch = Batch;
 	}
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 	double Bandwidth;
 	int Batch;
 	int Stickiness;
-	int EDCA;
+	int ECA;
 	int fairShare;
 	float channelErrors;
 	float slotDrift;
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 				cout << "------------" << endl;
 				cout << "Cheatsheet:" << endl;
 				cout << "------------" << endl;
-				cout << "(0)./XXXX (1)SimTime (2)NumNodes (3)PacketLength (4)Bandwidth (5)Batch (6)Stickiness (7)EDCA (8)fairShare (9)channelErrors (10)slotDrift (11)percentageOfEDCA (12)maxAggregation (13)simSeed" << endl << endl;;
+				cout << "(0)./XXXX (1)SimTime (2)NumNodes (3)PacketLength (4)Bandwidth (5)Batch (6)ECA (7)Stickiness (8)fairShare (9)channelErrors (10)slotDrift (11)percentageOfEDCA (12)maxAggregation (13)simSeed" << endl << endl;;
 				cout << "0) ./XXX: Name of executable file" << endl;
 				cout << "1) SimTime: simulation time in seconds" << endl;
 				cout << "2) NumNodes: number of contenders" << endl;
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 		}else
 		{
 			cout << "Executed with default values shown below" << endl;
-			cout << "./XXXX SimTime [10] NumNodes [2] PacketLength [1024] Bandwidth [65e6] Batch [1] Stickiness [0] EDCA [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
+			cout << "./XXXX SimTime [10] NumNodes [2] PacketLength [1024] Bandwidth [65e6] Batch [1] ECA [0] Stickiness [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
 			MaxSimIter = 1;
 			SimTime = 10;
 			NumNodes = 30;
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
 			Bandwidth = 65e6;
 			Batch = 1; // =1
 			Stickiness = 0; // 0 = EDCA, up to 2.
-			EDCA = 0;	//EDCA
+			ECA = 0;	//0 = EDCA, 1 = ECA
 			fairShare = 0; //0 = EDCA, 1 = CSMA-ECA
 			channelErrors = 0; // float 0-1
 			slotDrift = 0; // // float 0-1
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
 		PacketLength = atoi(argv[3]);
 		Bandwidth = atof(argv[4]);
 		Batch = atoi(argv[5]); // =1
-		EDCA = atoi(argv[6]); //0 = EDCA, 1 = CSMA-ECA
+		ECA = atoi(argv[6]); //0 = EDCA, 1 = CSMA-ECA
 		Stickiness = atoi(argv[7]); // 0 = EDCA.
 		fairShare = atoi(argv[8]); //0 = EDCA, 1 = CSMA-ECA
 		channelErrors = atof(argv[9]); // float 0-1
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
 	printf("\n####################### Simulation (Seed: %d) #######################\n",simSeed);
 	if(Stickiness > 0)
 	{
-		if(EDCA > 0)
+		if(ECA > 0)
 		{
 			if(fairShare > 0)
 			{
@@ -378,7 +378,7 @@ int main(int argc, char *argv[])
 		
 	test.StopTime(SimTime);
 
-	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, EDCA, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, simSeed);
+	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, ECA, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, simSeed);
 	
 	test.Run();
 

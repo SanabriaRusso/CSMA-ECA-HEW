@@ -2,11 +2,22 @@
 
 using namespace std;
 
-void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, int backlogged)
+void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
+    int backlogged, int fairShare, int sx)
 {
     int packetDisposal = 0;
 
-    packetDisposal = std::min(packet.aggregation, Queues.at(packet.accessCategory).QueueSize());
+    if(sx == 1 || fairShare == 0)
+    {
+        packetDisposal = std::min( packet.aggregation, 
+            Queues.at(packet.accessCategory).QueueSize() );
+    }else
+    {
+        packetDisposal = std::min((int)pow(2, packet.startContentionStage), 
+            Queues.at(packet.accessCategory).QueueSize());
+    }
+    
+
     //cout << packetDisposal << endl;
     //cout << "Old queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
     for(int i = 0; i < packetDisposal; i++) Queues.at(packet.accessCategory).DelFirstPacket();

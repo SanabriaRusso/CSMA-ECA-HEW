@@ -3,7 +3,7 @@
 using namespace std;
 
 void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness, int &backoffStage, 
-	double &counter, int &system_stickiness, int &id, int &sx, int &EDCA){
+	double &counter, int &system_stickiness, int &id, int &sx, int &ECA){
 
 	int CWmin [4] = { 32, 32, 16, 8 };
 
@@ -15,7 +15,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 
 		if(sx == 1)
 		{
-			if(EDCA == 1)
+			if(ECA == 1)
 			{
 				counter = (int)(pow(2,backoffStage)*CWmin[ac]/2);
 				//cout << "+++Node " << id << " AC: " << AC << " ECA: " << counter << endl;
