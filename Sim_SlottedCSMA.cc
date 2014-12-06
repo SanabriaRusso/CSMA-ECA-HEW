@@ -145,10 +145,13 @@ void SlottedCSMA :: Stop()
 	array <double,AC> droppedAC = {};
 	double totalDropped = 0.0;
 
+	double totalIncommingPackets = 0.0;
+	double totalErasedPackets = 0.0;
+	double totalRemainingPackets = 0.0;
+
 
 	for (int i = 0; i < Nodes; i++){
 		for (int j = 0; j < AC; j++){
-			//#1 Throughput
 			totalThroughput += stas[i].overallACThroughput.at(j);
 			totalACthroughput.at(j) += stas[i].overallACThroughput.at(j);
 
@@ -170,6 +173,9 @@ void SlottedCSMA :: Stop()
 			totalDropped += (stas[i].droppedAC.at(j));
 			droppedAC.at(j) += (stas[i].droppedAC.at(j));
 		}
+		totalIncommingPackets += (stas[i].incommingPackets);
+		totalErasedPackets += (stas[i].erased);
+		totalRemainingPackets += (stas[i].remaining);
 	}
 
 	ofstream file;
@@ -254,6 +260,12 @@ void SlottedCSMA :: Stop()
 		cout << "\tAC " << i << ": " << droppedAC.at(i) << ". Dropped AC / SxSent ratio: "
 			<< droppedAC.at(i) / totalSxTx << endl;
 	}
+
+	cout << "\n5. Overall erased packets failure index (should be 1): " << 
+	( (totalIncommingPackets - totalErasedPackets) / totalRemainingPackets ) << endl;
+
+
+
 
 
 };
