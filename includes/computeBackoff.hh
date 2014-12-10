@@ -16,7 +16,9 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 		{
 			if(ECA == 1)
 			{
-				counter = (int)(pow(2,backoffStage)*CWmin[ac]/2);
+				counter = (int)((pow(2,backoffStage)*CWmin[ac]/2)-1);
+
+				//(int)(pow(2,backoffStage)*CWmin[ac]/2);
 				//cout << "+++Node " << id << " AC: " << ac << " ECA: " << counter << endl;
 			}else
 			{
@@ -27,7 +29,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 		{
 			if(stickiness > 0)
 			{
-				counter = (int)(pow(2,backoffStage)*CWmin[ac]/2);
+				counter = (int)((pow(2,backoffStage)*CWmin[ac]/2)-1);
 				//cout << "+++Node " << id << " AC: " << AC << " ECA (hyst): " << counter << endl;				
 			}else
 			{

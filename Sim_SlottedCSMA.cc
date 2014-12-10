@@ -135,7 +135,7 @@ void SlottedCSMA :: Stop()
 	double totalRetransmissions = 0.0;
 
 	array <double,AC> totalACCol = {};
-	double totalCol = 0.0;
+	double totalCol = channel.collision_slots;
 
 	array <double,AC> totalIntACCol = {};
 	double totalIntCol = 0.0;
@@ -162,7 +162,7 @@ void SlottedCSMA :: Stop()
 			totalRetransmissions += (stas[i].totalACRet.at(j));
 			totalACRet.at(j) += (stas[i].totalACRet.at(j));
 
-			totalCol += (stas[i].totalACCollisions.at(j));
+			// totalCol += (stas[i].totalACCollisions.at(j));
 			totalACCol.at(j) += (stas[i].totalACCollisions.at(j));
 
 			totalIntCol += (stas[i].totalInternalACCol.at(j));
@@ -178,10 +178,10 @@ void SlottedCSMA :: Stop()
 
 	ofstream file;
 	file.open("Results/output.txt", ios::app);
-	file << "#1. Nodes 2. totalThroughput 3. totalBEThroughput 4. totalBKThroughput 5. totalVIThroughput " << endl;
-	file << "#6. totalVOThroughput 7. totalCollisions 8. totalBECollisions 9. totalBKCollisions" << endl;
-	file << "#10. totalVICollisions 11. TotalVOCollisions 12. totalInternalCollisions" << endl;
-	file << "#13. totalBEIntCol 14. totalBKIntCol 15. totalVIIntCol 16. totalVOIntCol" << endl;
+	file << "#1. Nodes 				2. totalThroughput 		3. totalBEThroughput 4. totalBKThroughput 5. totalVIThroughput " << endl;
+	file << "#6. totalVOThroughput 	7. totalCollisionsSlots 8. totalBECollisions 9. totalBKCollisions" << endl;
+	file << "#10. totalVICollisions 11. TotalVOCollisions 	12. totalInternalCollisions" << endl;
+	file << "#13. totalBEIntCol 	14. totalBKIntCol 		15. totalVIIntCol 	 16. totalVOIntCol" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -227,8 +227,7 @@ void SlottedCSMA :: Stop()
 	}
 
 
-	cout << "\n2. Total Collisions: " << totalCol << ". Collisions / Transmitted ratio: " 
-		<< totalCol / totalTx << endl;
+	cout << "\n2. Total Collisions: " << totalCol << endl;
 	cout << "2.1 Total Internal Collisions: " << totalIntCol << ". Internal Collisions + Collisions: "
 		<< totalIntCol + totalCol << endl;
 

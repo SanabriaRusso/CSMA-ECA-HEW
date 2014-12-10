@@ -9,7 +9,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
 
     if(packet.accessCategory >= 0)
     {
-        if(sx == 1 || fairShare == 0)
+        if(sx == 1)
         {
             packetDisposal = std::min( packet.aggregation, 
                 Queues.at(packet.accessCategory).QueueSize() );
