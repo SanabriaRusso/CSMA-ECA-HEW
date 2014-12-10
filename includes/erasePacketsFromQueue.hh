@@ -20,7 +20,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             packetDisposal = std::min((int)pow(2, packet.startContentionStage), 
                 Queues.at(packet.accessCategory).QueueSize());
 
-            cout << "STA-" << id << " Dropping. Erasing: " << packetDisposal << endl;
+            //cout << "STA-" << id << " Dropping. Erasing: " << packetDisposal << endl;
 
             dropped+= packetDisposal;
         }

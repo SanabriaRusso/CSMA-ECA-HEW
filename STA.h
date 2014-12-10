@@ -287,8 +287,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         if(retAttemptAC.at(i) >= MAX_RET)
                         {
-                            cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
-                            << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
+                            // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
+                            // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                                 fairShare, sx, droppedAC.at(i));
@@ -347,8 +347,8 @@ void STA :: in_slot(SLOT_notification &slot)
         {
             if(retAttemptAC.at(i) >= MAX_RET)
             {
-                cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
-                << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
+                // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
+                // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
 
                 erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                     sx, droppedAC.at(i));
