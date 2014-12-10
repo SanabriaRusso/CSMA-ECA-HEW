@@ -41,6 +41,6 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 		backoffStage = 0;
 		counter = 0;
 		stickiness = system_stickiness;
-		cout << "\tAC " << ac << " has an empty queue" << endl;
+		// cout << "\tAC " << ac << " has an empty queue" << endl;
 	}
 }

@@ -25,9 +25,9 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             dropped+= packetDisposal;
         }
         
-        cout << "Old queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
+        // cout << "Old queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
         for(int i = 0; i < packetDisposal; i++) Queues.at(packet.accessCategory).DelFirstPacket();
-        cout << "New queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
+        // cout << "New queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
 
         if (Queues.at(packet.accessCategory).QueueSize() > 0)
         {   

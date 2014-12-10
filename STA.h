@@ -199,6 +199,8 @@ void STA :: Stop()
 
     cout << "- Overall retransmissions: " << totalRetransmissions << endl;
 
+    cout << "- Overall incomming packets: " << incommingPackets << endl;
+
     cout << "- Overall dropped due to RET: " << totalDropped << endl;
 
     cout << "- Total Blocked packet due to full MAC queue: " << totalBloked << endl;
@@ -227,7 +229,7 @@ void STA :: in_slot(SLOT_notification &slot)
 				if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
 				{
 					backoffCounters.at(i)--;
-                    cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
+                    // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
 				}else if(backlogged.at(i) == 0)
                 {
                     // cout << "STA-" << node_id << ": AC: " << i << ". Is not backlogged. Checking the queue." << endl;
@@ -239,7 +241,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                             backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
 
-                        cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
+                        // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
                     }
                 }
 			}
@@ -256,14 +258,14 @@ void STA :: in_slot(SLOT_notification &slot)
                         sx = 1; //it was a successful transmission
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
-                        cout << "1) STA-" << node_id << ": AC: " << i << ". Transmitted " <<
-                        packet.aggregation << " packets." << endl;
+                        // cout << "1) STA-" << node_id << ": AC: " << i << ". Transmitted " <<
+                        // packet.aggregation << " packets." << endl;
 
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                             sx, droppedAC.at(i));
 
-                        cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
+                        // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
                     
                         //If there is another packet waiting in the transmission queue, pick it and start contention
                         /*****NEW PACKET IS PICKED************
@@ -378,8 +380,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
         }
         packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages);
-        cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
-        << ". " << packet.aggregation << " packets." << endl;
+        // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
+        // << ". " << packet.aggregation << " packets." << endl;
 
         transmissions.at(ACToTx)++;
         transmitted = 1;
