@@ -9,20 +9,19 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 
-	if(Queue.QueueSize() > 0)
+	if(backlog == 1)
 	{
 		//cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
-
 		if(sx == 1)
 		{
 			if(ECA == 1)
 			{
 				counter = (int)(pow(2,backoffStage)*CWmin[ac]/2);
-				//cout << "+++Node " << id << " AC: " << AC << " ECA: " << counter << endl;
+				//cout << "+++Node " << id << " AC: " << ac << " ECA: " << counter << endl;
 			}else
 			{
 				counter = rand() % (int)  (pow(2,backoffStage) * CWmin[ac] );
-				//cout << "---Node " << id << " AC: " << AC << " DCF: " << counter << endl;
+				//cout << "---Node " << id << " AC: " << ac << " DCF: " << counter << endl;
 			}
 		}else
 		{
@@ -37,14 +36,11 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 			}
 			
 		}
-		backlog = 1;
-		
 	}else
 	{
-		backlog = 0;
 		backoffStage = 0;
 		counter = 0;
 		stickiness = system_stickiness;
-		//cout << "\tAC " << AC << " has an empty queue" << endl;
+		cout << "\tAC " << ac << " has an empty queue" << endl;
 	}
 }

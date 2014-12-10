@@ -220,6 +220,7 @@ void SlottedCSMA :: Stop()
 	cout << "---------------------------"<< endl;
 
 	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (Mbps): " << totalThroughput << endl;
+	cout << "1.1 Packet generation: " << Bandwidth_ << endl;
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << overallTx.at(i) << ". Total Throughput for AC (Mbps): " 
@@ -261,7 +262,7 @@ void SlottedCSMA :: Stop()
 			<< droppedAC.at(i) / totalSxTx << endl;
 	}
 
-	cout << "\n5. Overall erased packets failure index (should be 1): " << 
+	if(totalRemainingPackets > 0) cout << "\n5. Overall erased packets failure index (should be 1): " << 
 	( (totalIncommingPackets - totalErasedPackets) / totalRemainingPackets ) << endl;
 
 
