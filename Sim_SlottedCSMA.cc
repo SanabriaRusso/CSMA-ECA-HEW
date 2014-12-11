@@ -136,6 +136,7 @@ void SlottedCSMA :: Stop()
 
 	array <double,AC> totalACCol = {};
 	double totalCol = channel.collision_slots;
+	double sumOfCol = 0.0;
 
 	array <double,AC> totalIntACCol = {};
 	double totalIntCol = 0.0;
@@ -146,6 +147,12 @@ void SlottedCSMA :: Stop()
 	double totalIncommingPackets = 0.0;
 	double totalErasedPackets = 0.0;
 	double totalRemainingPackets = 0.0;
+
+	array <double,AC> fairnessAC = {};
+	array <double,AC> fairnessACNum = {};
+	array <double,AC> fairnessACDenom = {};
+	double overallFairnessNum = 0.0;
+	double overallFairnessDenom = 0.0;
 
 
 	for (int i = 0; i < Nodes; i++){
@@ -162,7 +169,7 @@ void SlottedCSMA :: Stop()
 			totalRetransmissions += (stas[i].totalACRet.at(j));
 			totalACRet.at(j) += (stas[i].totalACRet.at(j));
 
-			// totalCol += (stas[i].totalACCollisions.at(j));
+			sumOfCol += (stas[i].totalACCollisions.at(j));
 			totalACCol.at(j) += (stas[i].totalACCollisions.at(j));
 
 			totalIntCol += (stas[i].totalInternalACCol.at(j));
@@ -170,18 +177,28 @@ void SlottedCSMA :: Stop()
 
 			totalDropped += (stas[i].droppedAC.at(j));
 			droppedAC.at(j) += (stas[i].droppedAC.at(j));
+
+			fairnessACNum.at(j) += stas[i].overallACThroughput.at(j);
+			overallFairnessNum += stas[i].overallACThroughput.at(j);
+			fairnessACDenom.at(j) += (double)pow(stas[i].overallACThroughput.at(j), 2);
+			overallFairnessDenom += (double)pow(stas[i].overallACThroughput.at(j), 2);
+
+
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
 		totalErasedPackets += (stas[i].erased);
 		totalRemainingPackets += (stas[i].remaining);
+
 	}
 
 	ofstream file;
 	file.open("Results/output.txt", ios::app);
-	file << "#1. Nodes 				2. totalThroughput 		3. totalBEThroughput 4. totalBKThroughput 5. totalVIThroughput " << endl;
-	file << "#6. totalVOThroughput 	7. totalCollisionsSlots 8. totalBECollisions 9. totalBKCollisions" << endl;
-	file << "#10. totalVICollisions 11. TotalVOCollisions 	12. totalInternalCollisions" << endl;
-	file << "#13. totalBEIntCol 	14. totalBKIntCol 		15. totalVIIntCol 	 16. totalVOIntCol" << endl;
+	file << "#1. Nodes 					2. totalThroughput 			3. totalBEThroughput 		4. totalBKThroughput "<< endl;
+	file << "#5. totalVIThroughput 		6. totalVOThroughput 		7. totalCollisionsSlots 	8. fractionBECollisions "<< endl;
+	file << "#9. fractionBKCollisions	10. fractionVICollisions 	11. fractionVOCollisions 	12. totalInternalCollisions" << endl;
+	file << "#13. totalBEIntCol 		14. totalBKIntCol 			15. totalVIIntCol 	 		16. totalVOIntCol" << endl;
+	file << "#17. overallFairness 		18. BEFairness				19. BKFairness				20. VIFairness"	<< endl;
+	file << "#21. VOFairness" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -193,13 +210,27 @@ void SlottedCSMA :: Stop()
 	//7-11
 	file << totalCol << " ";
 	for (int i = 0; i < AC; i++){
-		file << totalACCol.at(i) << " ";
+		file << (double)(totalACCol.at(i)/totalTx) << " ";
 	}
 
 	//12-16
 	file << totalIntCol << " ";
 	for (int i = 0; i < AC; i++){
 		file << totalIntACCol.at(i) << " ";
+	}
+
+	//17-21
+	file << (double) ( (pow(overallFairnessNum,2)) / (Nodes * (overallFairnessDenom)) ) << " ";
+	for (int i = 0; i < AC; i++){
+		fairnessAC.at(i) = (double) ( (pow(fairnessACNum.at(i),2)) / (Nodes * (fairnessACDenom.at(i))) );
+		if(fairnessAC.at(i))
+		{
+			file << fairnessAC.at(i) << " ";
+		}else
+		{
+			file << "0 ";
+			fairnessAC.at(i) = 0.0;
+		}
 	}
 
 	file << endl;
@@ -226,11 +257,10 @@ void SlottedCSMA :: Stop()
 
 	}
 
-
 	cout << "\n2. Total Collisions: " << totalCol << endl;
 	cout << "2.1 Total Internal Collisions: " << totalIntCol << ". Internal Collisions + Collisions: "
 		<< totalIntCol + totalCol << endl;
-
+	cout << "2.2 Summing collision metrics from all stations" << endl;
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << totalACCol.at(i) << ". Collisions AC / Total Transmitted: " 
@@ -259,12 +289,17 @@ void SlottedCSMA :: Stop()
 			<< droppedAC.at(i) / totalSxTx << endl;
 	}
 
-	if(totalRemainingPackets > 0) cout << "\n5. Overall erased packets failure index (should be 1): " << 
-	( (totalIncommingPackets - totalErasedPackets) / totalRemainingPackets ) << endl;
+	cout << "\n5. Overall erased packets failure index (at least one should be 1). In sat: " << 
+	( (totalIncommingPackets - totalErasedPackets) / totalRemainingPackets ) << ". Non-sat: " << 
+	totalIncommingPackets / totalErasedPackets <<  endl;
 
 
+	cout << "\n6. Overal Fairness: " << (double)((pow(overallFairnessNum,2))/(Nodes*(overallFairnessDenom))) << endl;
 
-
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " << i << " fairness: " << fairnessAC.at(i) << endl;
+	}
 
 };
 

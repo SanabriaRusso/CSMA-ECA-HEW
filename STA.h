@@ -144,6 +144,7 @@ void STA :: Start()
         backlogged.at(i) = 0;
         backoffStages.at(i) = 0;
         Queues.at(i) = Q;
+        overallACThroughput.at(i) = 0.0;
         computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
             backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
     }
@@ -205,13 +206,21 @@ void STA :: Stop()
 
     cout << "- Total Blocked packet due to full MAC queue: " << totalBloked << endl;
 
+    double pFailureI_1 = 0.0;
+    double pFailureI_2 = 0.0;
+
     for(int i = 0; i < AC; i++)
     {
         erased += ( droppedAC.at(i) + successfulTx.at(i) );
-        remaining += ( packetsInQueue.at(i) + blockedPackets.at(i) - backlogged.at(i) );
+        remaining += ( packetsInQueue.at(i) + blockedPackets.at(i) );
     }
-    if(remaining > 0 )
-            cout << "- Erased packets failure index (should be 1): " << ( (incommingPackets - erased) / remaining ) << endl;
+
+    pFailureI_1 = (incommingPackets - erased) / remaining;
+    pFailureI_2 = incommingPackets / erased;
+    
+    cout << "- Erased packets failure index (at least one should be 1). In sat: " <<
+    pFailureI_1 << ". Non-sat: " << pFailureI_2 << endl;
+
     
 };
 

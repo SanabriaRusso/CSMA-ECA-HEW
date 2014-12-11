@@ -33,14 +33,15 @@ while (my $row = <$fh>)
 open(my $fw, ">", $outputFile)
     or die "Could not open write file $outputFile $!";
 
-
+##Odd indexes are standard deviations.
 print $fw 
 ("#1 Nodes,             #2 AvgThroughput,               #4 totalBEThroughput, 
 #6 totalBKThroughput,   #8 totalVIThroughput,           #10 totalVOThroughput,
 #12 totalCollisions,    #14 totalBECollisions,          #16 totalBKCollisions,
 #18 totalVICollisions,  #20 TotalVOCollisions,          #22 totalInternalCollisions,    
 #24 totalBEIntCol,      #26 totalBKIntCol,              #28 totalVIIntCol,
-#30 totalVOIntCol\n");
+#30 totalVOIntCol,      #32 overallFairness,            #34 BEFairness,
+#36 BKFairness,         #38 VIFairness,                 #40 VOFairness\n");
 
 OUTTER: foreach($lowNodes .. $highNodes)
 {
