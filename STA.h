@@ -61,8 +61,9 @@ component STA : public TypeII
 
         //Transmissions statistics
         std::array<double,AC> transmissions;
-        std::array<double,AC> successfulTx; //successful transmissions per AC
-        double overallSxTx;
+        std::array<double,AC> sxTx;
+        std::array<double,AC> packetsSent; //successfully sent packets per AC
+        double overallSentPackets;
         std::array<double,AC> overallACThroughput;
         double overallThroughput;
 
@@ -159,19 +160,19 @@ void STA :: Stop()
         cout << "AC " << it << endl;
         cout << "\t* Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
         cout << "\t* Total transmission attempts for AC " << it << ": " << transmissions.at(it) << endl;
-        cout << "\t+ Total Packets sent for AC " << it << ": " << successfulTx.at(it) << endl;
+        cout << "\t+ Total Packets sent for AC " << it << ": " << packetsSent.at(it) << endl;
         
-        if(successfulTx.at(it) > 0){
-            overallACThroughput.at(it) = (successfulTx.at(it) * L * 8.)/SimTime();
+        if(packetsSent.at(it) > 0){
+            overallACThroughput.at(it) = (packetsSent.at(it) * L * 8.)/SimTime();
         }else
         {
             overallACThroughput.at(it) = 0.0;
         }
         cout << "\t+ Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
         
-        overallSxTx += successfulTx.at(it);
+        overallSentPackets += packetsSent.at(it);
         cout << "\t- Time between successful transmissions for AC " << it << ": " << 
-        accumTimeBetweenSxTx.at(it) / successfulTx.at(it) << endl;
+        accumTimeBetweenSxTx.at(it) / sxTx.at(it) << endl;
 
         packetsInQueue.at(it) = Queues.at(it).QueueSize();
         cout << "\t* Queue AC " << it << ": " << packetsInQueue.at(it) << endl;
@@ -191,9 +192,9 @@ void STA :: Stop()
         cout << "\t- Total Blocked due to full MAC queue for AC " << it << ": " << blockedPackets.at(it) << endl;
 
     }
-    cout << "+ Overall successful transmissions: " << overallSxTx << endl;
+    cout << "+ Overall successful transmissions: " << overallSentPackets << endl;
     
-    overallThroughput = (overallSxTx * L * 8.) / SimTime();
+    overallThroughput = (overallSentPackets * L * 8.) / SimTime();
     cout << "+ Overall throughput for this station: " << overallThroughput << endl;
 
     cout << "- Overal Collisions for this station: " << totalCollisions << endl;
@@ -211,7 +212,7 @@ void STA :: Stop()
 
     for(int i = 0; i < AC; i++)
     {
-        erased += ( droppedAC.at(i) + successfulTx.at(i) );
+        erased += ( droppedAC.at(i) + packetsSent.at(i) );
         remaining += ( packetsInQueue.at(i) + blockedPackets.at(i) );
     }
 
@@ -265,7 +266,8 @@ void STA :: in_slot(SLOT_notification &slot)
 				    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//this category transmitted the last packet
 				    {
                         //Gathering statistics from last transmission
-                        successfulTx.at(i) += packet.aggregation;
+                        packetsSent.at(i) += packet.aggregation;
+                        sxTx.at(i)++;
                         sx = 1; //it was a successful transmission
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
@@ -314,6 +316,9 @@ void STA :: in_slot(SLOT_notification &slot)
                         {
                             // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
                             // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
+
+                            //Adding the already elapsed time to the timeBetweenSxTx
+                            accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                                 fairShare, sx, droppedAC.at(i));
@@ -380,6 +385,9 @@ void STA :: in_slot(SLOT_notification &slot)
             {
                 // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
                 // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
+
+                //Adding the already elapsed time to the timeBetweenSxTx
+                accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                 erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                     sx, droppedAC.at(i));

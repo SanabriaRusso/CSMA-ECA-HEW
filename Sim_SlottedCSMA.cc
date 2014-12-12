@@ -82,14 +82,14 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		// Traffic Source
 		sources[n].L = PacketLength;
 		sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
-		//sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
-		//sources[n].packet_rateVI = (Bandwidth/8)/(PacketLength * 8);
-		//sources[n].packet_rateVO = (Bandwidth/32)/(PacketLength * 8);
+		sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
+		sources[n].packet_rateVI = (Bandwidth/8)/(PacketLength * 8);
+		sources[n].packet_rateVO = (Bandwidth/32)/(PacketLength * 8);
 		
-		//sources[n].packet_rateBE = 0;
-		sources[n].packet_rateBK = 0;
-		sources[n].packet_rateVI = 0;
-		sources[n].packet_rateVO = 0;
+		// sources[n].packet_rateBE = 0;
+		// sources[n].packet_rateBK = 0;
+		// sources[n].packet_rateVI = 0;
+		// sources[n].packet_rateVO = 0;
 
 		sources[n].MaxBatch = Batch;
 	}
@@ -127,7 +127,7 @@ void SlottedCSMA :: Stop()
 	double totalThroughput = 0.0;
 
 	array <double,AC> overallSxTx = {};
-	double totalSxTx = 0.0;
+	double totalSentPackets = 0.0;
 
 	array <double,AC> overallTx = {};
 	double totalTx = 0.0;
@@ -154,14 +154,16 @@ void SlottedCSMA :: Stop()
 	double overallFairnessNum = 0.0;
 	double overallFairnessDenom = 0.0;
 
+	array <double,AC> avgTimeBetweenACSxTx = {};
+
 
 	for (int i = 0; i < Nodes; i++){
 		for (int j = 0; j < AC; j++){
 			totalThroughput += stas[i].overallACThroughput.at(j);
 			totalACthroughput.at(j) += stas[i].overallACThroughput.at(j);
 
-			totalSxTx += (stas[i].successfulTx.at(j));
-			overallSxTx.at(j) += (stas[i].successfulTx.at(j));
+			totalSentPackets += (stas[i].packetsSent.at(j));
+			overallSxTx.at(j) += (stas[i].packetsSent.at(j));
 			
 			totalTx += (stas[i].transmissions.at(j));
 			overallTx.at(j) += (stas[i].transmissions.at(j));
@@ -178,12 +180,12 @@ void SlottedCSMA :: Stop()
 			totalDropped += (stas[i].droppedAC.at(j));
 			droppedAC.at(j) += (stas[i].droppedAC.at(j));
 
-			fairnessACNum.at(j) += stas[i].overallACThroughput.at(j);
-			overallFairnessNum += stas[i].overallACThroughput.at(j);
+			fairnessACNum.at(j) += (stas[i].overallACThroughput.at(j));
+			overallFairnessNum += (stas[i].overallACThroughput.at(j));
 			fairnessACDenom.at(j) += (double)pow(stas[i].overallACThroughput.at(j), 2);
 			overallFairnessDenom += (double)pow(stas[i].overallACThroughput.at(j), 2);
 
-
+			avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
 		totalErasedPackets += (stas[i].erased);
@@ -198,7 +200,8 @@ void SlottedCSMA :: Stop()
 	file << "#9. fractionBKCollisions	10. fractionVICollisions 	11. fractionVOCollisions 	12. totalInternalCollisions" << endl;
 	file << "#13. totalBEIntCol 		14. totalBKIntCol 			15. totalVIIntCol 	 		16. totalVOIntCol" << endl;
 	file << "#17. overallFairness 		18. BEFairness				19. BKFairness				20. VIFairness"	<< endl;
-	file << "#21. VOFairness" << endl;
+	file << "#21. VOFairness			22. avgTimeBtSxTxBE			23. avgTimeBtSxTxBK			24. avgTimeBtSxTxVI" << endl;
+	file << "#25. avgTimeBtSxTxVO" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -223,13 +226,25 @@ void SlottedCSMA :: Stop()
 	file << (double) ( (pow(overallFairnessNum,2)) / (Nodes * (overallFairnessDenom)) ) << " ";
 	for (int i = 0; i < AC; i++){
 		fairnessAC.at(i) = (double) ( (pow(fairnessACNum.at(i),2)) / (Nodes * (fairnessACDenom.at(i))) );
-		if(fairnessAC.at(i))
+		if(fairnessAC.at(i) > 0)
 		{
 			file << fairnessAC.at(i) << " ";
 		}else
 		{
 			file << "0 ";
 			fairnessAC.at(i) = 0.0;
+		}
+	}
+
+	//22-25
+	for(int i = 0; i < AC; i++){
+		if(avgTimeBetweenACSxTx.at(i) > 0)
+		{
+			file << avgTimeBetweenACSxTx.at(i)/Nodes << " ";
+		}else
+		{
+			file << "0 ";
+			avgTimeBetweenACSxTx.at(i) = 0.0;
 		}
 	}
 
@@ -281,12 +296,12 @@ void SlottedCSMA :: Stop()
 	}
 
 	cout << "\n4. Total Dropped packets due to RET " << totalDropped << ". Dropped / SxSent ratio: "
-		<< totalDropped / totalSxTx << endl;
+		<< totalDropped / totalSentPackets << endl;
 
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << droppedAC.at(i) << ". Dropped AC / SxSent ratio: "
-			<< droppedAC.at(i) / totalSxTx << endl;
+			<< droppedAC.at(i) / totalSentPackets << endl;
 	}
 
 	cout << "\n5. Overall erased packets failure index (at least one should be 1). In sat: " << 
@@ -299,6 +314,13 @@ void SlottedCSMA :: Stop()
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << " fairness: " << fairnessAC.at(i) << endl;
+	}
+
+	cout << "\n7. Average time between successful transmissions for each AC:" << endl;
+
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " << i << ": " << avgTimeBetweenACSxTx.at(i)/Nodes << endl;
 	}
 
 };
