@@ -11,7 +11,8 @@
 
 #include "Channel.h"
 #include "STA.h"
-#include "BatchPoissonSource.h"
+// #include "BatchPoissonSource.h"
+#include "BatchPoissonSource_enhanced.h"
 #include "stats/stats.h"
 
 using namespace std;
@@ -81,10 +82,20 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 		// Traffic Source
 		sources[n].L = PacketLength;
-		sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
-		sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
-		sources[n].packet_rateVI = (Bandwidth/8)/(PacketLength * 8);
-		sources[n].packet_rateVO = (Bandwidth/32)/(PacketLength * 8);
+		
+		// Implementing a faster source
+		sources[n].packet_rate = Bandwidth/(PacketLength * 8);		//Global source packet generation rate
+
+		// The percentage of generated packets destined to a specific AC
+		sources[n].BEShare = 100; // 35%
+		sources[n].BKShare = 65;  // 35%
+		sources[n].VIShare = 30;  // 20%
+		sources[n].VOShare = 10;  // 10%
+
+		// sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
+		// sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
+		// sources[n].packet_rateVI = (Bandwidth/8)/(PacketLength * 8);
+		// sources[n].packet_rateVO = (Bandwidth/32)/(PacketLength * 8);
 		
 		// sources[n].packet_rateBE = 0;
 		// sources[n].packet_rateBK = 0;
