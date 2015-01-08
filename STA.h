@@ -8,6 +8,7 @@
 #include "Aux.h"
 #include "FIFO.h"
 #include "includes/computeBackoff.hh"
+#include "includes/computeBackoff_enhanced.hh"
 #include "includes/selectMACProtocol.hh"
 #include "includes/resolveInternalCollision.hh"
 #include "includes/preparePacketForTransmission.hh"
@@ -146,8 +147,10 @@ void STA :: Start()
         backoffStages.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
-        computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-            backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+        // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+        //     backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+        computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages, 
+            backoffCounters, system_stickiness, node_id, sx, ECA);
     }
 	
 };
@@ -248,8 +251,12 @@ void STA :: in_slot(SLOT_notification &slot)
                         backlogged.at(i) = 1;
 
                         pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
-                        computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+                        // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                        //     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                        computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                            backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+
 
                         // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
                         // cout << "\tBacklog: " << backlogged.at(i) << ". Counter: " << backoffCounters.at(i) << endl;
@@ -292,8 +299,12 @@ void STA :: in_slot(SLOT_notification &slot)
                         if(backlogged.at(i) == 1)
                         {
                             pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
-                            computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                            // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                            //     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
                         }
 				    }
                 }
@@ -339,8 +350,12 @@ void STA :: in_slot(SLOT_notification &slot)
                         }
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
                         //cout << "--Tx" << endl;
-                        computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                            backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                        // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                        //     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                        computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                            backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
 
                         transmitted = 0;
                     }
@@ -369,8 +384,12 @@ void STA :: in_slot(SLOT_notification &slot)
     {
         if(recomputeBackoff.at(i) == 1)
         {
-            computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                backoffCounters.at(i), system_stickiness, node_id, sx, ECA);   
+            // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+            //     backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages, 
+                backoffCounters, system_stickiness, node_id, sx, ECA);
+
             // cout << "Counter " << i << ": " << backoffCounters.at(i) << endl;
         }
     }
@@ -398,8 +417,11 @@ void STA :: in_slot(SLOT_notification &slot)
                 if(backlogged.at(i) == 1) pickNewPacket(i, SimTime(), superPacket, Queues, node_id,
                     backoffStages, fairShare);
 
-                computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                    backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+                // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+                //     backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
+
+                computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages, 
+                    backoffCounters, system_stickiness, node_id, sx, ECA);
 
                 retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
             }
