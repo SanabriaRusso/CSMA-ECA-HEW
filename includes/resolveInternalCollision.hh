@@ -43,41 +43,15 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 				{	
 					int recompute = std::min(i,j);
 					recomputeBackoff.at(recompute) = 1;
-					stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
-					stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
+					//stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
+					//stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
 
 					totalInternalACCol.at(recompute)++;
-					retAttemptAC.at(recompute)++;
+					//retAttemptAC.at(recompute)++;
 				}
 			}
 		}
 	}
-
-
-	// if(acToTx > 0)
-	// {
-	// 	for(int i = 0; i < acToTx; i++)
-	// 	{
-	// 		if(backlogg.at(i) == 1)
-	// 		{
-	// 			if(counters.at(i) == counters.at(acToTx))
-	// 			{
-	// 				stickiness.at(i) = std::max((int) stickiness.at(i) - 1, 0);
-	// 				stages.at(i) = std::min((int)stages.at(i) + 1, MAXSTAGE);
-				
-	// 				recomputeBackoff.at(i) = 1;
-	// 				totalInternalACCol.at(i)++;
-
-	// 				retAttemptAC.at(i)++;
-	// 			}else
-	// 			{
-	// 				recomputeBackoff.at(i) = 0;
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-
 
 	return(acToTx);
 	

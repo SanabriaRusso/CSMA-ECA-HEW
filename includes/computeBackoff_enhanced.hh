@@ -3,7 +3,7 @@
 using namespace std;
 
 void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness, std::array<int,AC> &stages, 
-	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA){
+	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA, std::array<double,AC> &qEmpty){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	int CWmin [4] = { 32, 32, 16, 8 };
@@ -23,7 +23,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &ac, int &s
 
 	while ( (compareBackoffs != match) || (compareCycles != match) )
 	{
-		randomBackoff = rand() % (int) ( (pow(2,stages.at(ac))) * CWmin[ac] - 1 );
+		randomBackoff = rand() % (int) ( (pow(2,stages.at(ac))) * CWmin[ac]);
 		if(randomBackoff == 0) randomBackoff++;
 
 		//Avoiding internal collisions with the randomBackoff
@@ -32,8 +32,8 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &ac, int &s
 			//Checking if the randomBackoff will collide with successful ACs
 			if(i != ac)
 			{
-				int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2 - 1) - randomBackoff);
-				int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2 - 1), randomBackoff );
+				int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2) - randomBackoff);
+				int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2), randomBackoff );
 				futureCycles.at(i) = difference % minimum; 
 			}
 		}
@@ -94,14 +94,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &ac, int &s
 		stages.at(ac) = 0;
 		counters.at(ac) = 0;
 		stickiness = system_stickiness;
+		qEmpty.at(ac)++;
 		// cout << "\tAC " << ac << " has an empty queue" << endl;
 	}
-
-
-	// cout << "New backoff for AC " << ac << ": " << counters.at(ac) <<  endl;
-	// cout << "Other ACs backoffs: " << endl;
-	// for(int i = 0; i < AC; i++)
-	// {
-	// 	cout << "\tAC " << i << ": " << counters.at(i) << endl;
-	// }
 }

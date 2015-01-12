@@ -167,6 +167,8 @@ void SlottedCSMA :: Stop()
 
 	array <double,AC> avgTimeBetweenACSxTx = {};
 
+	array <double,AC> qEmpties = {};
+
 
 	for (int i = 0; i < Nodes; i++){
 		for (int j = 0; j < AC; j++){
@@ -197,6 +199,8 @@ void SlottedCSMA :: Stop()
 			overallFairnessDenom += (double)pow(stas[i].overallACThroughput.at(j), 2);
 
 			avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+
+			qEmpties.at(j) += (stas[i].queueEmpties.at(j));
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
 		totalErasedPackets += (stas[i].erased);
@@ -212,7 +216,8 @@ void SlottedCSMA :: Stop()
 	file << "#13. totalBEIntCol 		14. totalBKIntCol 			15. totalVIIntCol 	 		16. totalVOIntCol" << endl;
 	file << "#17. overallFairness 		18. BEFairness				19. BKFairness				20. VIFairness"	<< endl;
 	file << "#21. VOFairness			22. avgTimeBtSxTxBE			23. avgTimeBtSxTxBK			24. avgTimeBtSxTxVI" << endl;
-	file << "#25. avgTimeBtSxTxVO" << endl;
+	file << "#25. avgTimeBtSxTxVO		26. qEmptyBE				27. qEmptyBK				28. qEmptyVI" << endl;
+	file << "#29. qEmptyVO" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -256,6 +261,18 @@ void SlottedCSMA :: Stop()
 		{
 			file << "0 ";
 			avgTimeBetweenACSxTx.at(i) = 0.0;
+		}
+	}
+
+	//26-29
+	for(int i = 0; i < AC; i++){
+		if(qEmpties.at(i) > 0)
+		{
+			file << qEmpties.at(i) << " ";
+		}else
+		{
+			file << "0 ";
+			qEmpties.at(i) = 0.0;
 		}
 	}
 
@@ -332,6 +349,13 @@ void SlottedCSMA :: Stop()
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << avgTimeBetweenACSxTx.at(i)/Nodes << endl;
+	}
+
+	cout << "\n8. Number of times the queue empties for each AC:" << endl;
+
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " << i << ": " << qEmpties.at(i) << endl;
 	}
 
 };
