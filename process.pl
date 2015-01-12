@@ -7,7 +7,7 @@ use Statistics::Basic qw(:all);
 my @inputData;
 my $highNodes = 0;
 my $lowNodes = 10000;
-my $outputFile = 'Results/processed.txt';
+my $outputFile = 'Results/processed_toPlot.txt';
 
 ####Finding the nodes limits based on the file.
 my $filename = $ARGV[0];

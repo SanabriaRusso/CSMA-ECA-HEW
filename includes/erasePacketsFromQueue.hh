@@ -3,7 +3,7 @@
 using namespace std;
 
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
-    int &backlogged, int fairShare, int sx, double &dropped)
+    int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty)
 {
     int packetDisposal = 0;
 
@@ -35,6 +35,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         }else
         {
             backlogged = 0;
+            qEmpty.at(packet.accessCategory)++;
         }
     }
 

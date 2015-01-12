@@ -46,6 +46,10 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 					//stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
 					//stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
 
+					// cout << "\nInternal collision" << endl;
+					// cout << "---AC " << i << " timer: " << counters.at(i) << ". AC " << j << " timer: " << counters.at(j) <<  endl;
+					// cout << "\t---Changing " << recompute << endl;
+
 					totalInternalACCol.at(recompute)++;
 					//retAttemptAC.at(recompute)++;
 				}
