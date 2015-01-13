@@ -10,6 +10,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 	int CWmin [4] = { 32, 32, 16, 8 };
 
 	// int CWmin [4] = { 64, 64, 32, 16 };
+	// int CWmin [4] = { 1024, 1024, 1024, 1024 };
 
 	double deterministicBackoff;
 	double randomBackoff;

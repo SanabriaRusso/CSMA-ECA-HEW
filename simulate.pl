@@ -104,7 +104,13 @@ OUTTER: foreach my $i (@jumps){
 
 #Calling the parser
 my $parserFile = 'process.pl';
+my $parseSlots = 'analyseSlots.pl';
 my $dataFile = 'Results/output.txt';
+my $slotsFile = 'Results/slotsInTime.txt';
 my @parseCommand = ("perl $parserFile $dataFile");
+system(@parseCommand);
+(print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
+
+@parseCommand = ("perl $parseSlots $slotsFile");
 system(@parseCommand);
 (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);

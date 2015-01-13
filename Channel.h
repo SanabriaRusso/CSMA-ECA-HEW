@@ -12,9 +12,9 @@
 #define L_ack 112*/
 
 //Complying with 802.11n at 2.4 GHz
-#define SLOT 9e-06 // was 16e-06
-#define DIFS 28e-06 // was 34e-06
-#define SIFS 10e-06 // was9e-06
+#define SLOT 9e-06 
+#define DIFS 28e-06
+#define SIFS 10e-06
 #define LDBPS 256
 #define TSYM 4e-06
 			
@@ -39,16 +39,17 @@ component Channel : public TypeII
 		// Timers
 		Timer <trigger_t> slot_time; // Duration of current slot
 		Timer <trigger_t> rx_time; // Time to receive all packets transmitted in current slot
-		Timer <trigger_t> cpSampler; // Sampler of the collision probability		
+		// Timer <trigger_t> cpSampler; // Sampler of the collision probability		
 		
 		inport inline void NewSlot(trigger_t& t1);
 		inport inline void EndReceptionTime(trigger_t& t2);
-		inport inline void Sampler(trigger_t& t3);
+		// inport inline void Sampler(trigger_t& t3);
 
 		Channel () { 
 			connect slot_time.to_component,NewSlot; 
 			connect rx_time.to_component,EndReceptionTime;
-		    connect cpSampler.to_component,Sampler; }
+		    // connect cpSampler.to_component,Sampler; 
+		}
 
 	private:
 		double number_of_transmissions_in_current_slot;
@@ -100,7 +101,7 @@ void Channel :: Start()
 	errorProbability = 0;
 
 	slot_time.Set(SimTime()); // Let's go!
-    cpSampler.Set(SimTime() + 1); //To sample CP 1 segs after the start of the simulator	
+    // cpSampler.Set(SimTime() + 1); //To sample CP 1 segs after the start of the simulator	
 	
 	slotsInTime.open("Results/slotsInTime.txt", ios::app);
 
@@ -119,21 +120,20 @@ void Channel :: Stop()
 	slotsInTime.close();
 };
 
-void Channel :: Sampler(trigger_t &)
-{
-    //Statistics for the evolution of Cp
-    
-	/*if(total_slots > 0) 
-	{
-	    slotsInTime << SimTime() << " " << collision_slots/total_slots << endl;
-	}
-	else
-	{
-	    slotsInTime << SimTime() << " 0" << endl;
-	}*/
+// void Channel :: Sampler(trigger_t &)
+// {
+//     //Capturing the fraction of collision slots each second    
+// 	if(total_slots > 0) 
+// 	{
+// 	    slotsInTime << SimTime() << " " << collision_slots/total_slots << endl;
+// 	}
+// 	else
+// 	{
+// 	    slotsInTime << SimTime() << " 0" << endl;
+// 	}
 	
-	cpSampler.Set(SimTime() + 1);
-}
+// 	cpSampler.Set(SimTime() + 1);
+// }
 
 void Channel :: NewSlot(trigger_t &)
 {
