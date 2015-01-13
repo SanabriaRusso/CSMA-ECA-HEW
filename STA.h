@@ -5,6 +5,7 @@
 #include <math.h>
 #include <algorithm>
 #include <array>
+#include <map>
 #include "Aux.h"
 #include "FIFO.h"
 #include "includes/computeBackoff.hh"
@@ -46,6 +47,9 @@ component STA : public TypeII
         int cut;
         int ECA;
         int backoffScheme;
+
+        //Performance enhancement variables
+        std::map<double,double> buffer;
         
         //aggregation settings
         int maxAggregation;
@@ -123,7 +127,7 @@ void STA :: Start()
 {
 	selectMACProtocol(node_id, ECA, system_stickiness);
 
-    backoffScheme = 0; // 0 = oldScheme, 1 = newScheme
+    backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
 
     //cout << ECA << endl;
 	
@@ -159,7 +163,7 @@ void STA :: Start()
         }else
         {
             computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
         }
     }
 	
@@ -275,7 +279,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         }else
                         {
                             computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, forceRandom, 
-                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                         }
 
                         // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
@@ -331,7 +335,7 @@ void STA :: in_slot(SLOT_notification &slot)
                             }else
                             {
                                 computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+                                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                             }
                         }
 				    }
@@ -392,7 +396,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         }else
                         {
                             computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                         }
 
                         transmitted = 0;
@@ -432,7 +436,7 @@ void STA :: in_slot(SLOT_notification &slot)
             }else
             {
                 computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, forceRandom, 
-                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
             }
         }
     }
@@ -474,7 +478,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 }else
                 {
                     computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                        backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA);
+                        backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                 }
 
                 retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter

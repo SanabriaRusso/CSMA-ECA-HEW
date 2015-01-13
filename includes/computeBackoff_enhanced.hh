@@ -1,14 +1,15 @@
+#include "concatenate.hh"
 #define AC 4
 
 using namespace std;
 
 void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, int &stickiness, std::array<int,AC> &stages, 
-	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA){
+	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA, std::map<double,double> &buffer){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-	// int CWmin [4] = { 32, 32, 16, 8 };
+	int CWmin [4] = { 32, 32, 16, 8 };
 
-	int CWmin [4] = { 64, 64, 32, 16 };
+	// int CWmin [4] = { 64, 64, 32, 16 };
 
 	double deterministicBackoff;
 	double randomBackoff;
@@ -16,6 +17,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 	std::array<int, AC> compareBackoffs;
 	std::array<int, AC> compareCycles; 
 	std::array<int, AC> match;
+	std::map<double,double>::iterator it;
 
 	deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);
 	match.fill(0);
@@ -23,43 +25,67 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 	compareBackoffs.fill(1);
 	compareBackoffs.fill(1);
 
-	while ( (compareBackoffs != match) || (compareCycles != match) )
+
+	//Looking for an appropriate random backoff in the buffer
+	//to avoid repeating the computation everytime.
+
+	unsigned hash1 = concatenate(counters.at(0), counters.at(1));
+	// cout << "hash1: " << hash1;
+	unsigned hash2 = concatenate(counters.at(2), counters.at(3));
+	// cout << ". hash2: " << hash2;
+	unsigned hash = concatenate(hash1, hash2);
+	// cout << ". hash: " << hash;
+	hash = concatenate(hash, (unsigned)stages.at(category));
+	// cout << ". final: " << hash << endl;
+	it = buffer.find(hash);
+
+	if(it == buffer.end())	//If hash is not in buffer
 	{
-		randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category]);
-		if(randomBackoff == 0) randomBackoff++;
-
-		//Avoiding internal collisions with the randomBackoff
-		for(int i = 0; i < AC; i++)
+		// cout << "Not in buffer: " << hash << endl;
+		while ( (compareBackoffs != match) || (compareCycles != match) )
 		{
-			//Checking if the randomBackoff will collide with successful ACs
-			if(i != category)
+			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category]);
+			if(randomBackoff == 0) randomBackoff++;
+
+			//Avoiding internal collisions with the randomBackoff
+			for(int i = 0; i < AC; i++)
 			{
-				int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2) - randomBackoff);
-				int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2), randomBackoff );
-				futureCycles.at(i) = difference % minimum; 
+				//Checking if the randomBackoff will collide with successful ACs
+				if(i != category)
+				{
+					int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2) - randomBackoff);
+					int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2), randomBackoff );
+					futureCycles.at(i) = difference % minimum; 
+				}
+			}
+
+			//Filling arrays to make a decision over the chosen random backoff
+			for(int i = 0; i < AC; i++)
+			{
+				if(randomBackoff == counters.at(i))
+				{
+					compareBackoffs.at(i) = 1;
+				}else
+				{
+					compareBackoffs.at(i) = 0;
+				}
+
+				if(futureCycles.at(i) == 0)
+				{
+					compareCycles.at(i) = 1;
+				}else
+				{
+					compareCycles.at(i) = 0;
+				}
+
 			}
 		}
-
-		//Filling arrays to make a decision over the chosen random backoff
-		for(int i = 0; i < AC; i++)
-		{
-			if(randomBackoff == counters.at(i))
-			{
-				compareBackoffs.at(i) = 1;
-			}else
-			{
-				compareBackoffs.at(i) = 0;
-			}
-
-			if(futureCycles.at(i) == 0)
-			{
-				compareCycles.at(i) = 1;
-			}else
-			{
-				compareCycles.at(i) = 0;
-			}
-
-		}
+		buffer[hash] = randomBackoff;
+		// cout << "Adding it: " << buffer[hash] << endl;
+	}else
+	{
+		randomBackoff = it->second;	//second value pointed by the iterator. That is, the value.
+		// cout << "Buffered [" << it->first << "]: " << it->second << endl;
 	}
 
 	//Assigning the backoff to the correspondent AC
