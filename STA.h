@@ -338,6 +338,18 @@ void STA :: in_slot(SLOT_notification &slot)
                                     backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                             }
                         }
+
+                        // Decremeting the backoff of all other ACs
+                        for(int j = 0; j < AC; j++)
+                        {
+                            if(j != i)
+                            {
+                                if(backoffCounters.at(j) > 0) //if the AC has something to transmit
+                                {
+                                    backoffCounters.at(j)--;
+                                }
+                            }
+                        }
 				    }
                 }
 			}

@@ -67,6 +67,7 @@ component Channel : public TypeII
 	public: // Statistics
 		double collision_slots, empty_slots, succesful_slots, total_slots;
 		double totalBitsSent;
+		double recentCollisions; //Collisions during the last 1000 slots
 		long long int test;
 };
 
@@ -87,6 +88,7 @@ void Channel :: Start()
 	succesful_slots = 0;
 	total_slots = 0;
 	test = 0;
+	recentCollisions = 0;
 
 	L_max = 0;
 	
@@ -170,7 +172,8 @@ void Channel :: EndReceptionTime(trigger_t &)
 	if(number_of_transmissions_in_current_slot > 1)
 	{
 		slot_time.Set(SimTime()+collision_duration);
-		collision_slots ++;	
+		collision_slots++;	
+		recentCollisions++;
 	}
 		
 	total_slots++; //Just to control that total = empty + successful + collisions
@@ -180,7 +183,10 @@ void Channel :: EndReceptionTime(trigger_t &)
 	
     if(int(total_slots) % 1000 == 0) //just printing in thousands increments
 	{
-	        slotsInTime << Nodes << " " << SimTime() << " " <<  total_slots << " " << collision_slots/total_slots << " " << succesful_slots/total_slots << " " << empty_slots/total_slots << endl;
+	        slotsInTime << Nodes << " " << SimTime() << " " <<  total_slots << " " << collision_slots/total_slots << " " 
+	        	<< succesful_slots/total_slots << " " << empty_slots/total_slots << " " << recentCollisions << endl;
+
+        	recentCollisions = 0;
 	}
 	
 }

@@ -45,7 +45,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 		// cout << "Not in buffer: " << hash << endl;
 		while ( (compareBackoffs != match) || (compareCycles != match) )
 		{
-			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category]);
+			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1);
 			if(randomBackoff == 0) randomBackoff++;
 
 			//Avoiding internal collisions with the randomBackoff
@@ -54,8 +54,8 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 				//Checking if the randomBackoff will collide with successful ACs
 				if(i != category)
 				{
-					int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2) - randomBackoff);
-					int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2), randomBackoff );
+					int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2 -1) - randomBackoff);
+					int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2 -1), randomBackoff );
 					futureCycles.at(i) = difference % minimum; 
 				}
 			}
