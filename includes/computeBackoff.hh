@@ -8,6 +8,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 	int CWmin [4] = { 32, 32, 16, 8 };
 
 	// int CWmin [4] = { 64, 64, 32, 16 };
+	// int CWmin [4] = { 128, 128, 64, 32 };
 
 	// int CWmin [4] = { 1024, 1024, 1024, 1024 };
 
