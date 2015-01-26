@@ -92,8 +92,6 @@ push @jumps, $Nmax
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
-		$seed = $seed + 1
-			if(($seed % 2) == 0);
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
 		print ("\n\n****Node #$i of $Nmax ($?).\n");
 		print ("****Iteration #$j of $rep.\n");
