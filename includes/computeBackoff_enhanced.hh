@@ -3,7 +3,7 @@
 
 using namespace std;
 
-void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, int &stickiness, std::array<int,AC> &stages, 
+void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, int &category, int &stickiness, std::array<int,AC> &stages, 
 	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA, std::map<double,double> &buffer){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
@@ -24,7 +24,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 	match.fill(0);
 	futureCycles.fill(1);
 	compareBackoffs.fill(1);
-	compareBackoffs.fill(1);
+	compareCycles.fill(1);
 
 
 	//Looking for an appropriate random backoff in the buffer
@@ -46,7 +46,6 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 		while ( (compareBackoffs != match) || (compareCycles != match) )
 		{
 			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1);
-			if(randomBackoff == 0) randomBackoff++;
 
 			//Avoiding internal collisions with the randomBackoff
 			for(int i = 0; i < AC; i++)
@@ -54,9 +53,16 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 				//Checking if the randomBackoff will collide with successful ACs
 				if(i != category)
 				{
-					int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2 -1) - randomBackoff);
-					int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2 -1), deterministicBackoff );
-					futureCycles.at(i) = difference % minimum; 
+					if(backlog.at(i) == 1)
+					{
+						int difference = fabs(counters.at(i) - randomBackoff);
+						int othersDetBackoff = (pow(2,stages.at(i)) * CWmin[i]/2);
+						int minimum = std::min((int)othersDetBackoff, (int)deterministicBackoff+1);
+						futureCycles.at(i) = difference % minimum; 
+					}else
+					{
+						futureCycles.at(i) = 1;
+					}
 				}
 			}
 
@@ -91,7 +97,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 
 	//Assigning the backoff to the correspondent AC
 
-	if(backlog == 1)
+	if(backlog.at(category) == 1)
 	{
 		// cout << "Node " << id << ". AC " << category << " Old counter: " << counters.at(category) << endl;
 		if(sx == 1)

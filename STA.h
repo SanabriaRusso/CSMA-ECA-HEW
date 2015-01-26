@@ -162,7 +162,7 @@ void STA :: Start()
                 backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
         }else
         {
-            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+            computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
                 backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
         }
     }
@@ -278,7 +278,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                         }else
                         {
-                            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, forceRandom, 
+                            computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, 
                                 backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                         }
 
@@ -334,7 +334,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                             }else
                             {
-                                computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                                computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
                                     backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                             }
                         }
@@ -407,7 +407,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                         }else
                         {
-                            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                            computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
                                 backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                         }
 
@@ -447,7 +447,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
             }else
             {
-                computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, forceRandom, 
+                computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, 
                     backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
             }
         }
@@ -489,7 +489,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                 }else
                 {
-                    computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
+                    computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
                         backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
                 }
 
