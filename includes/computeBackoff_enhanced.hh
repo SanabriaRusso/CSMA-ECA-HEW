@@ -55,7 +55,7 @@ void computeBackoff_enhanced(int &backlog, FIFO <Packet> &Queue, int &category, 
 				if(i != category)
 				{
 					int difference = fabs( (pow(2,stages.at(i)) * CWmin[i]/2 -1) - randomBackoff);
-					int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2 -1), randomBackoff );
+					int minimum = std::min( (pow(2,stages.at(i)) * CWmin[i]/2 -1), deterministicBackoff );
 					futureCycles.at(i) = difference % minimum; 
 				}
 			}
