@@ -2,7 +2,7 @@
 
 using namespace std;
 
-unsigned concatenate(unsigned x, unsigned y) {
+unsigned long long int concatenate(unsigned long long int x, unsigned long long int y) {
     unsigned pow = 10;
     while(y >= pow)
         pow *= 10;

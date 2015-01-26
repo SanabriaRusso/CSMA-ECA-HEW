@@ -49,7 +49,7 @@ component STA : public TypeII
         int backoffScheme;
 
         //Performance enhancement variables
-        std::map<double,double> buffer;
+        std::map<unsigned long long int,double> buffer;
         
         //aggregation settings
         int maxAggregation;
@@ -155,6 +155,7 @@ void STA :: Start()
         backoffStages.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
+
         
         if(backoffScheme == 0)
         {
@@ -162,8 +163,9 @@ void STA :: Start()
                 backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
         }else
         {
-            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
+            int forceRandom = 0;    //Not forcing a random backoff
+            computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
+                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, forceRandom);
         }
     }
 	
@@ -269,17 +271,17 @@ void STA :: in_slot(SLOT_notification &slot)
                         // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                         //     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
 
-                        // cout << "\nWas not backlogged" << endl;
-                        int forceRandom = 0;
-                        
+                        cout << "\nAC " << i << " was not backlogged" << endl;
+                        int forceRandom = 1;    //Forcing a random backoff if it just started
                         if(backoffScheme == 0)
                         {
                             computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, 
                                 backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                         }else
                         {
-                            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, forceRandom, 
-                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
+                            computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
+                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, 
+                                forceRandom);
                         }
 
                         // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
@@ -327,15 +329,18 @@ void STA :: in_slot(SLOT_notification &slot)
                             // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                             //     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
 
-                            // cout << "\nSuccess" << endl;
+                            cout << "\nSuccess" << endl;
+
+                            int forceRandom = 0;
                             if(backoffScheme == 0)
                             {
                                 computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                                     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                             }else
                             {
-                                computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
+                                computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
+                                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, 
+                                    forceRandom);
                             }
                         }
 
@@ -401,14 +406,16 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         // cout << "\nCollision" << endl;
 
+                        int forceRandom = 0;
                         if(backoffScheme == 0)
                         {
                             computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                                 backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                         }else
                         {
-                            computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
+                            computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
+                                backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, 
+                                forceRandom);
                         }
 
                         transmitted = 0;
@@ -440,15 +447,16 @@ void STA :: in_slot(SLOT_notification &slot)
             // cout << "\nRecomputing backoff" << endl;
 
             //Forcing the computation to derive a random backoff by setting the stickiness of the AC to 0.
-            int forceRandom = 0;
+            int forceRandom = 1;
             if(backoffScheme == 0)
             {
-                computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, 
+                computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
             }else
             {
-                computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, forceRandom, 
-                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
+                computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
+                    backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, 
+                    forceRandom);
             }
         }
     }
@@ -483,14 +491,16 @@ void STA :: in_slot(SLOT_notification &slot)
                 // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
                 //     backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
 
+                int forceRandom = 1;
                 if(backoffScheme == 0)
                 {
                     computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
                         backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
                 }else
                 {
-                    computeBackoff_enhanced(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                        backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer);
+                    computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
+                        backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, 
+                        forceRandom);
                 }
 
                 retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
