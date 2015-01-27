@@ -43,7 +43,10 @@ print $fw
 #30 totalVOIntCol,      #32 overallFairness,            #34 BEFairness,
 #36 BKFairness,         #38 VIFairness,                 #40 VOFairness,
 #42 avgTimeBtSxTxBE,    #44 avgTimeBtSxTxBK,            #46 avgTimeBtSxTxVI,
-#48 avgTimeBtSxTxVO\n");
+#48 avgTimeBtSxTxVO,    #50 qEmptyBE,                   #52 qEmptyBK,
+#54 qEmptyVI,           #56 qEmptyVO                    #58 totalDropped,
+#60 droppedBE,          #62 droppedBK                   #64 droppedVI,
+#66 droppedVO\n");
 
 
 OUTTER: foreach($lowNodes .. $highNodes)

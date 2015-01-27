@@ -217,7 +217,8 @@ void SlottedCSMA :: Stop()
 	file << "#17. overallFairness 		18. BEFairness				19. BKFairness				20. VIFairness"	<< endl;
 	file << "#21. VOFairness			22. avgTimeBtSxTxBE			23. avgTimeBtSxTxBK			24. avgTimeBtSxTxVI" << endl;
 	file << "#25. avgTimeBtSxTxVO		26. qEmptyBE				27. qEmptyBK				28. qEmptyVI" << endl;
-	file << "#29. qEmptyVO" << endl;
+	file << "#29. qEmptyVO				30. totalDropped			31. droppedBE				32. droppedBK" << endl;
+	file << "#33. droppedVI				34. droppedVO" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -272,7 +273,28 @@ void SlottedCSMA :: Stop()
 		}else
 		{
 			file << "0 ";
-			qEmpties.at(i) = 0.0;
+			qEmpties.at(i) = 0;
+		}
+	}
+
+	//30-34
+	if(totalDropped > 0)
+	{
+		file << totalDropped << " ";
+	}else
+	{
+		file << "0 ";
+		totalDropped = 0;
+	}
+	for(int i = 0; i < AC; i++)
+	{
+		if(droppedAC.at(i) > 0)
+		{
+			file << droppedAC.at(i) << " ";
+		}else
+		{
+			file << "0 ";
+			droppedAC.at(i) = 0;
 		}
 	}
 
