@@ -10,7 +10,6 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	superPacket.at(acToTx).source = id;
 	superPacket.at(acToTx).tx_time = txTime;
 	superPacket.at(acToTx).accessCategory = acToTx;
-	superPacket.at(acToTx).aggregation = (int)pow(2, stages.at(acToTx));
 
 	if(fairShare == 1)
 	{		

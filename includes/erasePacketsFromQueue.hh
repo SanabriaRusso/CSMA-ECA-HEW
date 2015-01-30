@@ -14,13 +14,20 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             packetDisposal = std::min( packet.aggregation, 
                 Queues.at(packet.accessCategory).QueueSize() );
 
-            //cout << "2) STA-" << id << " Success. Erasing: " << packetDisposal << endl;
+            // cout << "STA-" << id << " Success. Erasing: " << packetDisposal << endl;
         }else
         {
-            packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
-                Queues.at(packet.accessCategory).QueueSize() );
+            if(fairShare == 1)
+            {
+                packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
+                    Queues.at(packet.accessCategory).QueueSize() );
+            }else
+            {
+                packetDisposal = std::min( packet.aggregation, 
+                    Queues.at(packet.accessCategory).QueueSize() );
+            }
 
-            //cout << "STA-" << id << " Dropping. Erasing: " << packetDisposal << endl;
+            // cout << "STA-" << id << " Dropping. Erasing: " << packetDisposal << endl;
 
             dropped+= packetDisposal;
         }

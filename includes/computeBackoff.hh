@@ -23,23 +23,22 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 			{
 				counter = (int)((pow(2,backoffStage)*CWmin[ac]/2)-1);
 
-				//(int)(pow(2,backoffStage)*CWmin[ac]/2);
-				//cout << "+++Node " << id << " AC: " << ac << " ECA: " << counter << endl;
+				// cout << "+++Node " << id << " AC: " << ac << " ECA: " << counter << endl;
 			}else
 			{
 				counter = rand() % (int)  (pow(2,backoffStage) * CWmin[ac] );
-				//cout << "---Node " << id << " AC: " << ac << " DCF: " << counter << endl;
+				// cout << "---Node " << id << " AC: " << ac << " DCF: " << counter << endl;
 			}
 		}else
 		{
 			if(stickiness > 0)
 			{
 				counter = (int)((pow(2,backoffStage)*CWmin[ac]/2)-1);
-				//cout << "+++Node " << id << " AC: " << AC << " ECA (hyst): " << counter << endl;				
+				// cout << "+++Node " << id << " AC: " << AC << " ECA (hyst): " << counter << endl;				
 			}else
 			{
 				counter = rand() % (int) (pow(2,backoffStage) * CWmin[ac] );
-				//cout << "---Node " << id << " AC: " << AC << " DCF (col): " << counter << endl;
+				// cout << "---Node " << id << " AC: " << AC << " DCF (col): " << counter << endl;
 			}
 			
 		}
