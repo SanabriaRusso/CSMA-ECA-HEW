@@ -212,7 +212,10 @@ void Channel :: in_packet(Packet &packet)
 	    number_of_transmissions_in_current_slot++;
 	}
 	
-	succ_tx_duration = 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
+	// succ_tx_duration = 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
+
+	// Below is the sxTx duration when using AIFS. (just added a SIFS)
+	succ_tx_duration = SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
 
 	
 	collision_duration = succ_tx_duration;
