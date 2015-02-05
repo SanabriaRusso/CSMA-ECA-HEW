@@ -16,8 +16,8 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 
 	//Default AIFS extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	//In number of slots
-	int defaultAIFS [AC] = { 8, 4, 2, 1 };
-	// int defaultAIFS [AC] = { 1, 1, 1, 1 };
+	// int defaultAIFS [AC] = { 8, 4, 2, 1 };
+	int defaultAIFS [AC] = { 0, 0, 0, 0 };
 
 	double deterministicBackoff;
 
