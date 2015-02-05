@@ -254,6 +254,7 @@ void STA :: in_slot(SLOT_notification &slot)
 	{
 		case 0:
 			//Important to remember: 0 = BE, 1 = BK, 2 = VI, 3 = VO
+
             //We first decrement the backoff of backlogged ACs
 			for(int i = 0; i < backlogged.size(); i++)
 			{

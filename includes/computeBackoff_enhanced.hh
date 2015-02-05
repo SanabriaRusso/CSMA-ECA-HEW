@@ -96,7 +96,6 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 				if(backlog.at(i) == 1)
 				{
 					int difference = fabs( otherCounters.at(i) - (randomBackoff + defaultAIFS[category]) ); // in number of slots
-					cout << "Dif: " << difference << endl;
 					// int othersDetBackoff = (pow(2,stages.at(i)) * CWmin[i]/2) + defaultAIFS[i];
 					int minimum = std::min( (int)othersDetBackoff.at(i), (int)othersDetBackoff.at(category) );
 					futureCycles.at(i) = difference % minimum; 
@@ -126,6 +125,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 			{
 				compareCycles.at(i) = 0;
 			}
+
 		}
 
 			//Debug info
