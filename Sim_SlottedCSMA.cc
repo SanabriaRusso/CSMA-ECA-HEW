@@ -89,8 +89,8 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		// The percentage of generated packets destined to a specific AC
 		sources[n].BEShare = 100; // 35%
 		sources[n].BKShare = 65;  // 35%
-		sources[n].VIShare = 30;  // 20%
-		sources[n].VOShare = 10;  // 10%
+		sources[n].VIShare = 35;  // 25%
+		sources[n].VOShare = 5;  // 5%
 
 		// sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
 		// sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
