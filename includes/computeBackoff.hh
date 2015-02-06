@@ -14,7 +14,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 
 	//Default AIFS extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 
-	int defaultAIFS [AC] = { 7, 3, 2, 2 };
+	int defaultAIFS [AC] = { 8, 4, 2, 2 };
 
 	if(backlog == 1)
 	{

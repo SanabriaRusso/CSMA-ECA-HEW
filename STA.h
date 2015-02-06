@@ -26,6 +26,8 @@
 //Number of access categories
 #define AC 4
 
+// extern "C" const int defaultAIFS [AC] = { 8, 4, 2, 2 };
+
 
 using namespace std;
 
@@ -98,6 +100,8 @@ component STA : public TypeII
         std::array<double, AC> backoffCounters;
         std::array<int, AC> backoffStages;
         std::array<double,AC> AIFS;
+
+
         
         //Transmission private statistics
         int transmitted;    //0 -> no, 1 -> yes.
@@ -130,8 +134,6 @@ void STA :: Start()
 	selectMACProtocol(node_id, ECA, system_stickiness);
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-
-    //cout << ECA << endl;
 	
 	/*Initializing variables and arrays to avoid warning regarding
 	in-class initialization of non-static data members*/
@@ -155,11 +157,11 @@ void STA :: Start()
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
         backoffStages.at(i) = 0;
+        AIFS.at(i) = 0.0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
         
-        cout << "Starting" << endl;
-
+        // cout << "Starting" << endl;
         // if(backoffScheme == 0)
         // {
         //     computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
@@ -249,7 +251,7 @@ void STA :: Stop()
 
 void STA :: in_slot(SLOT_notification &slot)
 {	
-    cout << "\nNEW SLOT: " << slot.status << endl;
+    cout << "\nNEW SLOT STA-" << node_id << ": " << slot.status << endl;
 	switch(slot.status)
 	{
 		case 0:
@@ -266,10 +268,10 @@ void STA :: in_slot(SLOT_notification &slot)
 					// backoffCounters.at(i)--;
                     decrement(i, backoffCounters.at(i), AIFS.at(i));
 
-                    // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
+                    cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
 				}
             }
-            //Then we treat not backlogged stations
+            //Then we treat not backlogged ACs
             for(int i = 0; i < backlogged.size(); i++)
             {
                 if(backlogged.at(i) == 0)
@@ -280,12 +282,10 @@ void STA :: in_slot(SLOT_notification &slot)
                         backlogged.at(i) = 1;
 
                         pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
-                        // computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-                        //     backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA);
 
-                        cout << "\nAC " << i << " was not backlogged" << endl;
-                        int forceRandom = 0;
+                        cout << "\nSTA-" << node_id << " AC " << i << " was not backlogged" << endl;
                         
+                        int forceRandom = 0;                        
                         if(backoffScheme == 0)
                         {
                             computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
@@ -295,7 +295,6 @@ void STA :: in_slot(SLOT_notification &slot)
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
                                 backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
                         }
-
                         // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
                         // cout << "\tBacklog: " << backlogged.at(i) << ". Counter: " << backoffCounters.at(i) << endl;
 
@@ -303,6 +302,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 }
 			}
 			break;
+
 		case 1:
             if(transmitted == 1)
             {
@@ -337,9 +337,8 @@ void STA :: in_slot(SLOT_notification &slot)
                         if(backlogged.at(i) == 1)
                         {
                             pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                            cout << "\nSTA-" << node_id << ": Success AC " << i << endl;
 
-                            
-                            cout << "\nSuccess AC " << i << endl;
                             if(backoffScheme == 0)
                             {
                                 computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
@@ -350,23 +349,21 @@ void STA :: in_slot(SLOT_notification &slot)
                                     backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
                             }
                         }
-
-                        // Decremeting the backoff of all other ACs
-                        for(int j = 0; j < AC; j++)
-                        {
-                            if(j != i)
-                            {
-                                if(backoffCounters.at(j) > 0) //if the AC has something to transmit
-                                {
-                                    // backoffCounters.at(j)--;
-                                    decrement(j, backoffCounters.at(j), AIFS.at(j));
-                                }
-                            }
-                        }
 				    }
+                    // else
+                    // {
+                    //     // Decremeting the backoff of all other ACs
+                    //     if(backoffCounters.at(i) > 0) //if the AC has something to transmit
+                    //     {
+                    //         // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                    //         backoffCounters.at(i) --;
+                    //         // decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    //     }
+                    // }
                 }
 			}
             break;
+
         default: //it is set to default to mean a number other than 0 or 1
             if (transmitted == 1)
             {
@@ -383,7 +380,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         if(retAttemptAC.at(i) >= MAX_RET)
                         {
                             // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
-                            // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
+                            // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for collisions." << endl;
 
                             //Adding the already elapsed time to the timeBetweenSxTx
                             accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
@@ -394,6 +391,7 @@ void STA :: in_slot(SLOT_notification &slot)
                             stationStickiness.at(i) = system_stickiness;
 
                             if(ECA == 0) backoffStages.at(i) = 0;
+
                             if(backlogged.at(i) == 1) pickNewPacket(i, SimTime(), superPacket, Queues, node_id, 
                                 backoffStages, fairShare);
 
@@ -410,7 +408,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //cout << "--Tx" << endl;
 
 
-                        cout << "\nCollision" << endl;
+                        cout << "\nSTA-" << node_id << ": Collision" << endl;
 
                         if(backoffScheme == 0)
                         {
@@ -423,11 +421,18 @@ void STA :: in_slot(SLOT_notification &slot)
                         }
 
                         transmitted = 0;
+                    }else
+                    {
+                        // Decremeting the backoff of all other ACs
+                        if(backoffCounters.at(i) > 0) //if the AC has something to transmit
+                        {
+                            // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                            backoffCounters.at(i) --;
+                            // decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        }
                     }
-                }
-                
+                }  
             }
-            break;
 	}
 	
 	//**********************************************
@@ -435,7 +440,7 @@ void STA :: in_slot(SLOT_notification &slot)
     //**********************************************
 
     ACToTx = resolveInternalCollision(backoffCounters, backlogged, stationStickiness, backoffStages, 
-        recomputeBackoff, totalInternalACCol, retAttemptAC);
+        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme);
 
 
     //*****Recomputing the backoff for**
@@ -445,7 +450,7 @@ void STA :: in_slot(SLOT_notification &slot)
     {
         if(recomputeBackoff.at(i) == 1)
         {
-            cout << "\nRecomputing backoff for AC " << i << endl;
+            cout << "\nSTA-" << node_id << ": Recomputing backoff for AC " << i << endl;
 
             //Forcing the computation to derive a random backoff by setting the stickiness of the AC to 0.
             int forceRandom = 0;
@@ -464,7 +469,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
     //Attempting transmission if any available
     if(ACToTx >= 0){
-        cout << "Winner " << ACToTx << endl;
+        // cout << "Winner " << ACToTx << endl;
         //Fix any dropping of packets due to internal collisions
 
         ////////////////////////////////
@@ -508,6 +513,7 @@ void STA :: in_slot(SLOT_notification &slot)
         ///////////////////////////////////////
         //If we eliminate internal collisions//
         //no packet will be dropped////////////
+        ///////////////////////////////////////
 
 
         packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);

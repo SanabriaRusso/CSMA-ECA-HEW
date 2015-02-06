@@ -3,7 +3,7 @@
 
 int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC> &backlogg, std::array<int,AC> &stickiness, 
 	std::array<int,AC> &stages, std::array<int,AC> &recomputeBackoff, std::array<double,AC> &totalInternalACCol,
-	std::array<int,AC> &retAttemptAC){
+	std::array<int,AC> &retAttemptAC, int scheme){
 
 	int iterator = counters.size() - 1;
 	int acToTx;
@@ -42,46 +42,21 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 			{
 				int recompute = i;
 				recomputeBackoff.at(recompute) = 1;
-				// stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
-				// stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
-
-				// cout << "\nInternal collision" << endl;
-				// cout << "---AC " << i << " timer: " << counters.at(i) << ". AC " << j << " timer: " << counters.at(j) <<  endl;
-				// cout << "\t---Changing " << recompute << endl;
-
 				totalInternalACCol.at(recompute)++;
-				// retAttemptAC.at(recompute)++;
+				
+				if(scheme == 0) //EDCA
+				{
+					stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
+					stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
+
+					// cout << "\nInternal collision" << endl;
+					// cout << "---AC " << i << " timer: " << counters.at(i) << ". AC " << j << " timer: " << counters.at(j) <<  endl;
+					// cout << "\t---Changing " << recompute << endl;
+					retAttemptAC.at(recompute)++;
+				}
 			}
 		}
 	}
-
-
-	//The code shown below checks if any counter is equal, regardless of the number.
-	//This has proven to extend the transitory state, so it is not used.
-	
-	// for (int i = 0; i < (AC -1); i++)
-	// {
-	// 	for (int j = i+1; j < AC; j++)
-	// 	{
-	// 		if( (backlogg.at(i) == 1) && (backlogg.at(j) == 1))
-	// 		{
-	// 			if(counters.at(i) == counters.at(j))
-	// 			{	
-	// 				int recompute = std::min(i,j);
-	// 				recomputeBackoff.at(recompute) = 1;
-	// 				// stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
-	// 				// stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
-
-	// 				// cout << "\nInternal collision" << endl;
-	// 				// cout << "---AC " << i << " timer: " << counters.at(i) << ". AC " << j << " timer: " << counters.at(j) <<  endl;
-	// 				// cout << "\t---Changing " << recompute << endl;
-
-	// 				totalInternalACCol.at(recompute)++;
-	// 				// retAttemptAC.at(recompute)++;
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	return(acToTx);
 	

@@ -89,8 +89,8 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		// The percentage of generated packets destined to a specific AC
 		sources[n].BEShare = 100; // 35%
 		sources[n].BKShare = 65;  // 35%
-		sources[n].VIShare = 35;  // 25%
-		sources[n].VOShare = 5;  // 5%
+		sources[n].VIShare = 30;  // 25%
+		sources[n].VOShare = 10;  // 5%
 
 		// sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
 		// sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
@@ -198,7 +198,15 @@ void SlottedCSMA :: Stop()
 			fairnessACDenom.at(j) += (double)pow(stas[i].overallACThroughput.at(j), 2);
 			overallFairnessDenom += (double)pow(stas[i].overallACThroughput.at(j), 2);
 
-			avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+			// cout << stas[i].sxTx.at(j) << endl;
+
+			if(stas[i].sxTx.at(j) != 0)
+			{
+				avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+			}else
+			{
+				avgTimeBetweenACSxTx.at(j) += 0.0;
+			}
 
 			qEmpties.at(j) += (stas[i].queueEmpties.at(j));
 		}
@@ -243,7 +251,7 @@ void SlottedCSMA :: Stop()
 	file << (double) ( (pow(overallFairnessNum,2)) / (Nodes * (overallFairnessDenom)) ) << " ";
 	for (int i = 0; i < AC; i++){
 		fairnessAC.at(i) = (double) ( (pow(fairnessACNum.at(i),2)) / (Nodes * (fairnessACDenom.at(i))) );
-		if(fairnessAC.at(i) > 0)
+		if(fairnessAC.at(i) != 0)
 		{
 			file << fairnessAC.at(i) << " ";
 		}else
@@ -255,9 +263,11 @@ void SlottedCSMA :: Stop()
 
 	//22-25
 	for(int i = 0; i < AC; i++){
-		if(avgTimeBetweenACSxTx.at(i) > 0)
+		if(avgTimeBetweenACSxTx.at(i) != 0)
 		{
-			file << avgTimeBetweenACSxTx.at(i)/Nodes << " ";
+			file << (double)avgTimeBetweenACSxTx.at(i)/Nodes << " ";
+			// cout << "Hola" << endl;
+			// cout << avgTimeBetweenACSxTx.at(i)/Nodes << endl;
 		}else
 		{
 			file << "0 ";
@@ -267,7 +277,7 @@ void SlottedCSMA :: Stop()
 
 	//26-29
 	for(int i = 0; i < AC; i++){
-		if(qEmpties.at(i) > 0)
+		if(qEmpties.at(i) != 0)
 		{
 			file << qEmpties.at(i) << " ";
 		}else
