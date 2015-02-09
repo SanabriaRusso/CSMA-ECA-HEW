@@ -127,7 +127,7 @@ void STA :: Start()
 {
 	selectMACProtocol(node_id, ECA, system_stickiness);
 
-    backoffScheme = 0; // 0 = oldScheme, 1 = newScheme
+    backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
 
     //cout << ECA << endl;
 	
