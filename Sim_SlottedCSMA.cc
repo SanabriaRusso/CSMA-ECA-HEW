@@ -335,7 +335,7 @@ void SlottedCSMA :: Stop()
 	cout << "\n2. Total Collisions: " << totalCol << endl;
 	cout << "2.1 Total Internal Collisions: " << totalIntCol << ". Internal Collisions + Collisions: "
 		<< totalIntCol + totalCol << endl;
-	cout << "2.2 Summing collision metrics from all stations" << endl;
+	cout << "2.2 Summing collision metrics from all stations (is not the real number of collisions)" << endl;
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << totalACCol.at(i) << ". Collisions AC / Total Transmitted: " 

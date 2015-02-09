@@ -251,7 +251,7 @@ void STA :: Stop()
 
 void STA :: in_slot(SLOT_notification &slot)
 {	
-    cout << "\nNEW SLOT STA-" << node_id << ": " << slot.status << endl;
+    // cout << "\nNEW SLOT STA-" << node_id << ": " << slot.status << endl;
 	switch(slot.status)
 	{
 		case 0:
@@ -268,7 +268,7 @@ void STA :: in_slot(SLOT_notification &slot)
 					// backoffCounters.at(i)--;
                     decrement(i, backoffCounters.at(i), AIFS.at(i));
 
-                    cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
+                    // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
 				}
             }
             //Then we treat not backlogged ACs
@@ -282,8 +282,6 @@ void STA :: in_slot(SLOT_notification &slot)
                         backlogged.at(i) = 1;
 
                         pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
-
-                        cout << "\nSTA-" << node_id << " AC " << i << " was not backlogged" << endl;
                         
                         int forceRandom = 0;                        
                         if(backoffScheme == 0)
@@ -302,7 +300,6 @@ void STA :: in_slot(SLOT_notification &slot)
                 }
 			}
 			break;
-
 		case 1:
             if(transmitted == 1)
             {
@@ -337,7 +334,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         if(backlogged.at(i) == 1)
                         {
                             pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
-                            cout << "\nSTA-" << node_id << ": Success AC " << i << endl;
+                            // cout << "\nSTA-" << node_id << ": Success AC " << i << endl;
 
                             if(backoffScheme == 0)
                             {
@@ -349,24 +346,43 @@ void STA :: in_slot(SLOT_notification &slot)
                                     backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
                             }
                         }
-				    }
-                    // else
-                    // {
-                    //     // Decremeting the backoff of all other ACs
-                    //     if(backoffCounters.at(i) > 0) //if the AC has something to transmit
-                    //     {
-                    //         // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
-                    //         backoffCounters.at(i) --;
-                    //         // decrement(i, backoffCounters.at(i), AIFS.at(i));
-                    //     }
-                    // }
+				    }else
+                    {
+                        // Decremeting the backoff of all other ACs
+                        if(backoffCounters.at(i) > 0)
+                        {
+                            // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                            decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        }
+                    }
                 }
-			}
+			}else
+            {
+                for(int i = 0; i < backoffCounters.size(); i++)
+                {
+                    // Decremeting the backoff of all other ACs
+                    if(backoffCounters.at(i) > 0)
+                    {
+                        // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    }
+                }
+            }
             break;
 
         default: //it is set to default to mean a number other than 0 or 1
             if (transmitted == 1)
             {
+                for(int i = 0; i < backoffCounters.size(); i++)
+                {
+                    if( (packet.accessCategory != i) && (backoffCounters.at(i) > 0) )
+                    {
+                        // Decremeting the backoff of all other ACs
+                        // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                        // backoffCounters.at(i) --;
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    }
+                }
                 for (int i = 0; i < backoffCounters.size(); i++)
                 {
                     if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//to modify the colliding AC backoff parameters
@@ -407,8 +423,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
                         //cout << "--Tx" << endl;
 
-
-                        cout << "\nSTA-" << node_id << ": Collision" << endl;
+                        // cout << "\nSTA-" << node_id << ": Collision" << endl;
 
                         if(backoffScheme == 0)
                         {
@@ -419,19 +434,20 @@ void STA :: in_slot(SLOT_notification &slot)
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
                                 backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
                         }
-
                         transmitted = 0;
-                    }else
-                    {
-                        // Decremeting the backoff of all other ACs
-                        if(backoffCounters.at(i) > 0) //if the AC has something to transmit
-                        {
-                            // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
-                            backoffCounters.at(i) --;
-                            // decrement(i, backoffCounters.at(i), AIFS.at(i));
-                        }
                     }
                 }  
+            }else
+            {
+                for(int i = 0; i < backoffCounters.size(); i++)
+                {
+                    // Decremeting the backoff of all other ACs
+                    if(backoffCounters.at(i) > 0)
+                    {
+                        // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    }
+                }
             }
 	}
 	
@@ -450,7 +466,7 @@ void STA :: in_slot(SLOT_notification &slot)
     {
         if(recomputeBackoff.at(i) == 1)
         {
-            cout << "\nSTA-" << node_id << ": Recomputing backoff for AC " << i << endl;
+            // cout << "\nSTA-" << node_id << ": Recomputing backoff for AC " << i << endl;
 
             //Forcing the computation to derive a random backoff by setting the stickiness of the AC to 0.
             int forceRandom = 0;

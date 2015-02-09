@@ -12,5 +12,5 @@ void decrement(int category, double &counter, double &AIFS)
 		// AIFS --;
 	// }
 
-	cout << "AC " << category << ": AIFS " << AIFS << ", Counter " << counter << endl;
+	// cout << "AC " << category << ": AIFS " << AIFS << ", Counter " << counter << endl;
 }
