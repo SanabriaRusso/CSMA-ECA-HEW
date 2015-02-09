@@ -60,81 +60,110 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	//////SmartBackoff/////////
 	///////////////////////////
 
-	double randomBackoff;
-	std::array<int, AC> futureCycles;
-	std::array<int, AC> compareBackoffs;
-	std::array<int, AC> compareCycles; 
-	std::array<int, AC> match;
+
+	//Looking for an appropriate random backoff in the buffer
+	//to avoid repeating the computation everytime.
+
 	std::map<double,double>::iterator it;
 
-	match.fill(0);
-	futureCycles.fill(1);
-	compareBackoffs.fill(1);
-	compareCycles.fill(1);
+	unsigned hash1 = concatenate(counters.at(0), counters.at(1));
+	// cout << "hash1: " << hash1;
+	unsigned hash2 = concatenate(counters.at(2), counters.at(3));
+	// cout << ". hash2: " << hash2;
+	unsigned hash = concatenate(hash1, hash2);
+	// cout << ". hash: " << hash;
+	hash = concatenate(hash, (unsigned)stages.at(category));
+	// cout << ". final: " << hash << endl;
+	it = buffer.find(hash);
 
-	while ( (compareBackoffs != match) || (compareCycles != match) )
+	if(it == buffer.end())	//If hash is not in buffer
 	{
-		randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1);
+		// cout << "Not in buffer: " << hash << endl;
+		
+		double randomBackoff;
+		std::array<int, AC> futureCycles;
+		std::array<int, AC> compareBackoffs;
+		std::array<int, AC> compareCycles; 
+		std::array<int, AC> match;
+		std::map<double,double>::iterator it;
 
-		//Avoiding internal collisions with the randomBackoff
-		for(int i = 0; i < AC; i++)
+		match.fill(0);
+		futureCycles.fill(1);
+		compareBackoffs.fill(1);
+		compareCycles.fill(1);
+
+		while ( (compareBackoffs != match) || (compareCycles != match) )
 		{
-			//Checking if the randomBackoff will collide with successful ACs
-			if(i != category)
+			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1);
+
+			//Avoiding internal collisions with the randomBackoff
+			for(int i = 0; i < AC; i++)
 			{
-				if(backlog.at(i) == 1)
+				//Checking if the randomBackoff will collide with successful ACs
+				if(i != category)
 				{
-					int difference = fabs( counters.at(i) - randomBackoff );
-					int othersDetBackoff = (pow(2,stages.at(i)) * CWmin[i]/2);
-					int minimum = std::min( (int)othersDetBackoff, (int)deterministicBackoff+1 );
-					futureCycles.at(i) = difference % minimum; 
-				}else
-				{
-					futureCycles.at(i) = 1;
+					if(backlog.at(i) == 1)
+					{
+						int difference = fabs( counters.at(i) - randomBackoff );
+						int othersDetBackoff = (pow(2,stages.at(i)) * CWmin[i]/2);
+						int minimum = std::min( (int)othersDetBackoff, (int)deterministicBackoff+1 );
+						futureCycles.at(i) = difference % minimum; 
+					}else
+					{
+						futureCycles.at(i) = 1;
+					}
 				}
 			}
-		}
 
-		//Filling arrays to make a decision over the chosen random backoff
-		for(int i = 0; i < AC; i++)
-		{
-			if(randomBackoff == counters.at(i))
+			//Filling arrays to make a decision over the chosen random backoff
+			for(int i = 0; i < AC; i++)
 			{
-				compareBackoffs.at(i) = 1;	
-			}else
-			{
-				compareBackoffs.at(i) = 0;
+				if(randomBackoff == counters.at(i))
+				{
+					compareBackoffs.at(i) = 1;	
+				}else
+				{
+					compareBackoffs.at(i) = 0;
+				}
+
+				if(futureCycles.at(i) == 0)
+				{
+					compareCycles.at(i) = 1;
+				}else
+				{
+					compareCycles.at(i) = 0;
+				}
+
 			}
-
-			if(futureCycles.at(i) == 0)
-			{
-				compareCycles.at(i) = 1;
-			}else
-			{
-				compareCycles.at(i) = 0;
-			}
-
+			// Debug info
+			// if( (compareBackoffs != match) || (compareCycles != match) )
+			// {
+			// 	cout << "---AC " << category << " Failed to compute SmartBackoff with: " << randomBackoff << " AIFS " << 
+			// 		defaultAIFS[category] << endl;
+			// 	for(int i = 0; i < AC; i++)
+			// 	{
+			// 		cout << "\nAC " << i << ": " << counters.at(i) << "\tAIFS " <<  AIFS.at(i) << endl;
+			// 	}
+			// 	cout << endl << endl;
+			// }
 		}
+		
+		counters.at(category) = randomBackoff;
+		buffer[hash] = randomBackoff;
+		// cout << "Adding it: " << buffer[hash] << endl;
+
 		// Debug info
-		// if( (compareBackoffs != match) || (compareCycles != match) )
+		// cout << "+++SmartBackoff with: " << randomBackoff << " AIFS " << defaultAIFS[category] << endl;
+		// for(int i = 0; i < AC; i++)
 		// {
-		// 	cout << "---AC " << category << " Failed to compute SmartBackoff with: " << randomBackoff << " AIFS " << 
-		// 		defaultAIFS[category] << endl;
-		// 	for(int i = 0; i < AC; i++)
-		// 	{
-		// 		cout << "\nAC " << i << ": " << counters.at(i) << "\tAIFS " <<  AIFS.at(i) << endl;
-		// 	}
-		// 	cout << endl << endl;
+		// 	cout << "\nAC " << i << ": " << counters.at(i) << " \tAIFS " << AIFS.at(i) << " ";
 		// }
-	}
-	
-	counters.at(category) = randomBackoff;
+		// cout << endl << endl;
 
-	// Debug info
-	// cout << "+++SmartBackoff with: " << randomBackoff << " AIFS " << defaultAIFS[category] << endl;
-	// for(int i = 0; i < AC; i++)
-	// {
-	// 	cout << "\nAC " << i << ": " << counters.at(i) << " \tAIFS " << AIFS.at(i) << " ";
-	// }
-	// cout << endl << endl;
+
+	}else
+	{
+		counters.at(category) = it->second;	//second value pointed by the iterator. That is, the value.
+		// cout << "Buffered [" << it->first << "]: " << it->second << endl;
+	}
 }
