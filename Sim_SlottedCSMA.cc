@@ -87,18 +87,18 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		sources[n].packet_rate = Bandwidth/(PacketLength * 8);		//Global source packet generation rate
 
 		// The percentage of generated packets destined to a specific AC
-		sources[n].BEShare = 100; // 35%
-		sources[n].BKShare = 65;  // 35%
-		sources[n].VIShare = 30;  // 25%
-		sources[n].VOShare = 10;  // 5%
+		sources[n].BKShare = 100; // 65%
+		sources[n].BEShare = 35;  // 25%
+		sources[n].VIShare = 10;  // 5%
+		sources[n].VOShare = 5;  // 5%
 
-		// sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
 		// sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
+		// sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
 		// sources[n].packet_rateVI = (Bandwidth/8)/(PacketLength * 8);
 		// sources[n].packet_rateVO = (Bandwidth/32)/(PacketLength * 8);
 		
-		// sources[n].packet_rateBE = 0;
 		// sources[n].packet_rateBK = 0;
+		// sources[n].packet_rateBE = 0;
 		// sources[n].packet_rateVI = 0;
 		// sources[n].packet_rateVO = 0;
 
@@ -172,42 +172,61 @@ void SlottedCSMA :: Stop()
 
 	for (int i = 0; i < Nodes; i++){
 		for (int j = 0; j < AC; j++){
-			totalThroughput += stas[i].overallACThroughput.at(j);
-			totalACthroughput.at(j) += stas[i].overallACThroughput.at(j);
-
-			totalSentPackets += (stas[i].packetsSent.at(j));
-			overallSxTx.at(j) += (stas[i].packetsSent.at(j));
-			
-			totalTx += (stas[i].transmissions.at(j));
-			overallTx.at(j) += (stas[i].transmissions.at(j));
-
-			totalRetransmissions += (stas[i].totalACRet.at(j));
-			totalACRet.at(j) += (stas[i].totalACRet.at(j));
-
-			sumOfCol += (stas[i].totalACCollisions.at(j));
-			totalACCol.at(j) += (stas[i].totalACCollisions.at(j));
-
-			totalIntCol += (stas[i].totalInternalACCol.at(j));
-			totalIntACCol.at(j) += (stas[i].totalInternalACCol.at(j));
-
-			totalDropped += (stas[i].droppedAC.at(j));
-			droppedAC.at(j) += (stas[i].droppedAC.at(j));
-
-			fairnessACNum.at(j) += (stas[i].overallACThroughput.at(j));
-			overallFairnessNum += (stas[i].overallACThroughput.at(j));
-			fairnessACDenom.at(j) += (double)pow(stas[i].overallACThroughput.at(j), 2);
-			overallFairnessDenom += (double)pow(stas[i].overallACThroughput.at(j), 2);
-
-			// cout << stas[i].sxTx.at(j) << endl;
-
-			if(stas[i].sxTx.at(j) != 0)
+			if(stas[i].overallACThroughput.at(j) > 0)
 			{
-				avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
-			}else
-			{
-				avgTimeBetweenACSxTx.at(j) += 0.0;
+				totalThroughput += stas[i].overallACThroughput.at(j);
+				totalACthroughput.at(j) += stas[i].overallACThroughput.at(j);
 			}
 
+			if(stas[i].packetsSent.at(j) > 0)
+			{
+				totalSentPackets += (stas[i].packetsSent.at(j));
+				overallSxTx.at(j) += (stas[i].packetsSent.at(j));
+			}
+			
+			if(stas[i].transmissions.at(j) > 0)
+			{
+				totalTx += (stas[i].transmissions.at(j));
+				overallTx.at(j) += (stas[i].transmissions.at(j));
+			}
+
+			if(stas[i].totalACRet.at(j) > 0)
+			{
+				totalRetransmissions += (stas[i].totalACRet.at(j));
+				totalACRet.at(j) += (stas[i].totalACRet.at(j));
+			}
+
+			if(stas[i].totalACCollisions.at(j) > 0)
+			{
+				sumOfCol += (stas[i].totalACCollisions.at(j));
+				totalACCol.at(j) += (stas[i].totalACCollisions.at(j));
+			}
+
+			if(stas[i].totalInternalACCol.at(j) > 0)
+			{
+				totalIntCol += (stas[i].totalInternalACCol.at(j));
+				totalIntACCol.at(j) += (stas[i].totalInternalACCol.at(j));
+			}
+
+			if(stas[i].droppedAC.at(j) > 0)
+			{
+				totalDropped += (stas[i].droppedAC.at(j));
+				droppedAC.at(j) += (stas[i].droppedAC.at(j));
+			}
+
+			if(stas[i].overallACThroughput.at(j) > 0)
+			{
+				fairnessACNum.at(j) += (stas[i].overallACThroughput.at(j));
+				overallFairnessNum += (stas[i].overallACThroughput.at(j));
+				fairnessACDenom.at(j) += (double)pow(stas[i].overallACThroughput.at(j), 2);
+				overallFairnessDenom += (double)pow(stas[i].overallACThroughput.at(j), 2);
+			}
+
+			if(stas[i].sxTx.at(j) > 0)
+			{
+				avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+			}
+			
 			qEmpties.at(j) += (stas[i].queueEmpties.at(j));
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
@@ -218,14 +237,14 @@ void SlottedCSMA :: Stop()
 
 	ofstream file;
 	file.open("Results/output.txt", ios::app);
-	file << "#1. Nodes 					2. totalThroughput 			3. totalBEThroughput 		4. totalBKThroughput "<< endl;
-	file << "#5. totalVIThroughput 		6. totalVOThroughput 		7. totalCollisionsSlots 	8. fractionBECollisions "<< endl;
-	file << "#9. fractionBKCollisions	10. fractionVICollisions 	11. fractionVOCollisions 	12. totalInternalCollisions" << endl;
-	file << "#13. totalBEIntCol 		14. totalBKIntCol 			15. totalVIIntCol 	 		16. totalVOIntCol" << endl;
-	file << "#17. overallFairness 		18. BEFairness				19. BKFairness				20. VIFairness"	<< endl;
-	file << "#21. VOFairness			22. avgTimeBtSxTxBE			23. avgTimeBtSxTxBK			24. avgTimeBtSxTxVI" << endl;
-	file << "#25. avgTimeBtSxTxVO		26. qEmptyBE				27. qEmptyBK				28. qEmptyVI" << endl;
-	file << "#29. qEmptyVO				30. totalDropped			31. droppedBE				32. droppedBK" << endl;
+	file << "#1. Nodes 					2. totalThroughput 			3. totalBKThroughput 		4. totalBEThroughput "<< endl;
+	file << "#5. totalVIThroughput 		6. totalVOThroughput 		7. totalCollisionsSlots 	8. fractionBKCollisions "<< endl;
+	file << "#9. fractionBECollisions	10. fractionVICollisions 	11. fractionVOCollisions 	12. totalInternalCollisions" << endl;
+	file << "#13. totalBKIntCol 		14. totalBEIntCol 			15. totalVIIntCol 	 		16. totalVOIntCol" << endl;
+	file << "#17. overallFairness 		18. BKFairness				19. BEFairness				20. VIFairness"	<< endl;
+	file << "#21. VOFairness			22. avgTimeBtSxTxBK			23. avgTimeBtSxTxBE			24. avgTimeBtSxTxVI" << endl;
+	file << "#25. avgTimeBtSxTxVO		26. qEmptyBK				27. qEmptyBE				28. qEmptyVI" << endl;
+	file << "#29. qEmptyVO				30. totalDropped			31. droppedBK				32. droppedBE" << endl;
 	file << "#33. droppedVI				34. droppedVO" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
@@ -250,15 +269,15 @@ void SlottedCSMA :: Stop()
 	//17-21
 	file << (double) ( (pow(overallFairnessNum,2)) / (Nodes * (overallFairnessDenom)) ) << " ";
 	for (int i = 0; i < AC; i++){
-		fairnessAC.at(i) = (double) ( (pow(fairnessACNum.at(i),2)) / (Nodes * (fairnessACDenom.at(i))) );
-		if(fairnessAC.at(i) != 0)
+		if(fairnessACDenom.at(i) > 0) 
 		{
-			file << fairnessAC.at(i) << " ";
+			fairnessAC.at(i) = (double) ( (pow(fairnessACNum.at(i),2)) / (Nodes * (fairnessACDenom.at(i))) );
 		}else
 		{
-			file << "0 ";
 			fairnessAC.at(i) = 0.0;
 		}
+		
+		file << fairnessAC.at(i) << " ";
 	}
 
 	//22-25
@@ -366,7 +385,10 @@ void SlottedCSMA :: Stop()
 
 	cout << "\n5. Overall erased packets failure index (at least one should be 1). In sat: " << 
 	( (totalIncommingPackets - totalErasedPackets) / totalRemainingPackets ) << ". Non-sat: " << 
-	totalIncommingPackets / totalErasedPackets <<  endl;
+	totalIncommingPackets / (totalErasedPackets + totalRemainingPackets) <<  endl;
+	
+	// cout <<"\t***DEBUG. totalIncommingPackets: " << totalIncommingPackets << ", totalErasedPackets: " << totalErasedPackets <<
+	// 	", totalRemainingPackets: " << totalRemainingPackets << endl;
 
 
 	cout << "\n6. Overal Fairness: " << (double)((pow(overallFairnessNum,2))/(Nodes*(overallFairnessDenom))) << endl;

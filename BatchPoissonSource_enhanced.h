@@ -67,7 +67,7 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 	}else if( (packetGeneration > VOShare) && (packetGeneration <= VIShare) )
 	{
 		packet.accessCategory = 2;
-	}else if( (packetGeneration > VIShare) && (packetGeneration <= BKShare) )
+	}else if( (packetGeneration > VIShare) && (packetGeneration <= BEShare) )
 	{
 		packet.accessCategory = 1;
 	}else

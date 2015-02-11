@@ -5,19 +5,14 @@ using namespace std;
 
 void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, int &category, int &stickiness, std::array<int,AC> &stages, 
 	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA, std::map<double,double> &buffer, 
-	std::array<double,AC> &AIFS){
+	std::array<double,AC> &AIFS, const int defaultAIFS[AC]){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	//In number of slots
-	int CWmin [AC] = { 32, 32, 16, 8 };
+	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
 
 	// int CWmin [AC] = { 64, 64, 32, 16 };
 	// int CWmin [AC] = { 1024, 1024, 1024, 1024 };
-
-	//Default AIFS extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-	//In number of slots
-	// int defaultAIFS [AC] = { 8, 4, 2, 1 };
-	int defaultAIFS [AC] = { 0, 0, 0, 0 };
 
 	double deterministicBackoff;
 
@@ -79,7 +74,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	if(it == buffer.end())	//If hash is not in buffer
 	{
 		// cout << "Not in buffer: " << hash << endl;
-		
+
 		double randomBackoff;
 		std::array<int, AC> futureCycles;
 		std::array<int, AC> compareBackoffs;

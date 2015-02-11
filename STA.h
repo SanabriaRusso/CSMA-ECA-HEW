@@ -16,6 +16,7 @@
 #include "includes/erasePacketsFromQueue.hh"
 #include "includes/pickNewPacket.hh"
 #include "includes/decrement.hh"
+#include "includes/setAIFS.hh"
 
 //#define CWMIN 16 //to comply with 802.11n it should 16. Was 32 for 802.11b.
 #define MAXSTAGE 5
@@ -26,7 +27,8 @@
 //Number of access categories
 #define AC 4
 
-// extern "C" const int defaultAIFS [AC] = { 8, 4, 2, 2 };
+extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
+// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
 using namespace std;
@@ -96,7 +98,7 @@ component STA : public TypeII
 
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
-    	ACs priorities, meaning: 0 = BE, 1 = BK, 2 = VI, 3 = VO*/
+    	ACs priorities, meaning: 0 = BK, 1 = BE, 2 = VI, 3 = VO*/
         std::array<double, AC> backoffCounters;
         std::array<int, AC> backoffStages;
         std::array<double,AC> AIFS;
@@ -132,8 +134,10 @@ void STA :: Setup()
 void STA :: Start()
 {
 	selectMACProtocol(node_id, ECA, system_stickiness);
+    setAIFS(AIFS, ECA, defaultAIFS);
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
+    if(ECA == 0) backoffScheme = 0;
 	
 	/*Initializing variables and arrays to avoid warning regarding
 	in-class initialization of non-static data members*/
@@ -157,7 +161,6 @@ void STA :: Start()
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
         backoffStages.at(i) = 0;
-        AIFS.at(i) = 0.0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
         
@@ -187,9 +190,6 @@ void STA :: Stop()
         
         if(packetsSent.at(it) > 0){
             overallACThroughput.at(it) = (packetsSent.at(it) * L * 8.)/SimTime();
-        }else
-        {
-            overallACThroughput.at(it) = 0.0;
         }
         cout << "\t+ Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
         
@@ -241,7 +241,7 @@ void STA :: Stop()
     }
 
     pFailureI_1 = (incommingPackets - erased) / remaining;
-    pFailureI_2 = incommingPackets / erased;
+    pFailureI_2 = incommingPackets / (erased + remaining);
     
     cout << "- Erased packets failure index (at least one should be 1). In sat: " <<
     pFailureI_1 << ". Non-sat: " << pFailureI_2 << endl;
@@ -255,7 +255,7 @@ void STA :: in_slot(SLOT_notification &slot)
 	switch(slot.status)
 	{
 		case 0:
-			//Important to remember: 0 = BE, 1 = BK, 2 = VI, 3 = VO
+			//Important to remember: 0 = BK, 1 = BE, 2 = VI, 3 = VO
 
             //We first decrement the backoff of backlogged ACs
 			for(int i = 0; i < backlogged.size(); i++)
@@ -265,9 +265,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
 				if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
 				{
-					// backoffCounters.at(i)--;
                     decrement(i, backoffCounters.at(i), AIFS.at(i));
-
                     // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
 				}
             }
@@ -287,11 +285,11 @@ void STA :: in_slot(SLOT_notification &slot)
                         if(backoffScheme == 0)
                         {
                             computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
-                                backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i));
+                                backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
                         }else
                         {
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
-                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
+                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
                         }
                         // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
                         // cout << "\tBacklog: " << backlogged.at(i) << ". Counter: " << backoffCounters.at(i) << endl;
@@ -336,22 +334,32 @@ void STA :: in_slot(SLOT_notification &slot)
                             pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
                             // cout << "\nSTA-" << node_id << ": Success AC " << i << endl;
 
+                            //I can calculate the backoff freely here because it was a successful transmissions
+                            //where the backoff is deterministic and no internal collision is possible after a SmartBackoff
                             if(backoffScheme == 0)
                             {
                                 computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                                    backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i));
+                                    backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
                             }else
                             {
                                 computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
-                                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
+                                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
                             }
+                        }else
+                        {
+                            backoffStages.at(i) = 0;
+                            backoffCounters.at(i) = 0;
+                            stationStickiness.at(i) = system_stickiness;
                         }
 				    }else
                     {
                         // Decremeting the backoff of all other ACs
                         if(backoffCounters.at(i) > 0)
                         {
-                            // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                            if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                            }
                             decrement(i, backoffCounters.at(i), AIFS.at(i));
                         }
                     }
@@ -363,7 +371,10 @@ void STA :: in_slot(SLOT_notification &slot)
                     // Decremeting the backoff of all other ACs
                     if(backoffCounters.at(i) > 0)
                     {
-                        // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                        if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }
                         decrement(i, backoffCounters.at(i), AIFS.at(i));
                     }
                 }
@@ -377,9 +388,10 @@ void STA :: in_slot(SLOT_notification &slot)
                 {
                     if( (packet.accessCategory != i) && (backoffCounters.at(i) > 0) )
                     {
-                        // Decremeting the backoff of all other ACs
-                        // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
-                        // backoffCounters.at(i) --;
+                        if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }
                         decrement(i, backoffCounters.at(i), AIFS.at(i));
                     }
                 }
@@ -408,8 +420,15 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             if(ECA == 0) backoffStages.at(i) = 0;
 
-                            if(backlogged.at(i) == 1) pickNewPacket(i, SimTime(), superPacket, Queues, node_id, 
-                                backoffStages, fairShare);
+                            if(backlogged.at(i) == 1)
+                            {
+                                pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                            }else
+                            {
+                                backoffStages.at(i) = 0;
+                                backoffCounters.at(i) = 0;
+                                stationStickiness.at(i) = system_stickiness;
+                            }
 
                             retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
 
@@ -428,11 +447,11 @@ void STA :: in_slot(SLOT_notification &slot)
                         if(backoffScheme == 0)
                         {
                             computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                                backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i));
+                                backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
                         }else
                         {
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
-                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
+                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
                         }
                         transmitted = 0;
                     }
@@ -444,7 +463,10 @@ void STA :: in_slot(SLOT_notification &slot)
                     // Decremeting the backoff of all other ACs
                     if(backoffCounters.at(i) > 0)
                     {
-                        // if(ECA == 0) AIFS.at(j) = defaultAIFS[j]; //Resetting AIFS for EDCA
+                        if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }
                         decrement(i, backoffCounters.at(i), AIFS.at(i));
                     }
                 }
@@ -473,19 +495,21 @@ void STA :: in_slot(SLOT_notification &slot)
             if(backoffScheme == 0)
             {
                 computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
-                    backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i));
+                    backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
             }else
             {
                 computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
-                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
+                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
             }
         }
     }
 
 
     //Attempting transmission if any available
-    if(ACToTx >= 0){
+    if(ACToTx >= 0)
+    {
         // cout << "Winner " << ACToTx << endl;
+
         //Fix any dropping of packets due to internal collisions
 
         ////////////////////////////////
@@ -503,6 +527,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                 erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                     sx, droppedAC.at(i), queueEmpties);
+                
                 stationStickiness.at(i) = system_stickiness;
                 
                 if(ECA == 0) backoffStages.at(i) = 0;
@@ -515,11 +540,11 @@ void STA :: in_slot(SLOT_notification &slot)
                 if(backoffScheme == 0)
                 {
                     computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                        backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i));
+                        backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
                 }else
                 {
                     computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
-                        backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
+                        backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
                 }
 
                 retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
@@ -528,7 +553,7 @@ void STA :: in_slot(SLOT_notification &slot)
         }
         ///////////////////////////////////////
         //If we eliminate internal collisions//
-        //no packet will be dropped////////////
+        ///////no packet will be dropped///////
         ///////////////////////////////////////
 
 

@@ -1,16 +1,16 @@
 using namespace std;
 
-//EDCA = 0 means CSMA/ECA
+//ECA = 0 means EDCA
 
-void selectMACProtocol(const int node_id, int &EDCA, int stickiness){
+void selectMACProtocol(const int node_id, int &ECA, int stickiness){
 
 
-	if(EDCA > 0)
+	if(ECA > 0)
 	{
-		EDCA = 1;
+		ECA = 1;
 	}else
 	{
-		EDCA = 0;
+		ECA = 0;
 	}
 
 

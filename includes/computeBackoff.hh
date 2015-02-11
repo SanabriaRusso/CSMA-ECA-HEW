@@ -3,7 +3,7 @@
 using namespace std;
 
 void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness, int &backoffStage, 
-	double &counter, int &system_stickiness, int &id, int &sx, int &ECA, double &AIFS){
+	double &counter, int &system_stickiness, int &id, int &sx, int &ECA, double &AIFS, const int defaultAIFS[AC]){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	int CWmin [4] = { 32, 32, 16, 8 };
@@ -11,10 +11,6 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 	// int CWmin [4] = { 64, 64, 32, 16 };
 	// int CWmin [4] = { 128, 128, 64, 32 };
 	// int CWmin [4] = { 1024, 1024, 1024, 1024 };
-
-	//Default AIFS extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-
-	int defaultAIFS [AC] = { 8, 4, 2, 2 };
 
 	if(backlog == 1)
 	{
