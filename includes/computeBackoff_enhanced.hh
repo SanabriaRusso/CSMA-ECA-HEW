@@ -59,20 +59,20 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	//Looking for an appropriate random backoff in the buffer
 	//to avoid repeating the computation everytime.
 
-	std::map<double,double>::iterator it;
+	// std::map<double,double>::iterator it;
 
-	unsigned hash1 = concatenate(counters.at(0), counters.at(1));
-	// cout << "hash1: " << hash1;
-	unsigned hash2 = concatenate(counters.at(2), counters.at(3));
-	// cout << ". hash2: " << hash2;
-	unsigned hash = concatenate(hash1, hash2);
-	// cout << ". hash: " << hash;
-	hash = concatenate(hash, (unsigned)stages.at(category));
-	// cout << ". final: " << hash << endl;
-	it = buffer.find(hash);
+	// unsigned hash1 = concatenate(counters.at(0), counters.at(1));
+	// // cout << "hash1: " << hash1;
+	// unsigned hash2 = concatenate(counters.at(2), counters.at(3));
+	// // cout << ". hash2: " << hash2;
+	// unsigned hash = concatenate(hash1, hash2);
+	// // cout << ". hash: " << hash;
+	// hash = concatenate(hash, (unsigned)stages.at(category));
+	// // cout << ". final: " << hash << endl;
+	// it = buffer.find(hash);
 
-	if(it == buffer.end())	//If hash is not in buffer
-	{
+	// if(it == buffer.end())	//If hash is not in buffer
+	// {
 		// cout << "Not in buffer: " << hash << endl;
 
 		double randomBackoff;
@@ -144,7 +144,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 		}
 		
 		counters.at(category) = randomBackoff;
-		buffer[hash] = randomBackoff;
+		// buffer[hash] = randomBackoff;
 		// cout << "Adding it: " << buffer[hash] << endl;
 
 		// Debug info
@@ -156,9 +156,9 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 		// cout << endl << endl;
 
 
-	}else
-	{
-		counters.at(category) = it->second;	//second value pointed by the iterator. That is, the value.
-		// cout << "Buffered [" << it->first << "]: " << it->second << endl;
-	}
+	// }else
+	// {
+	// 	counters.at(category) = it->second;	//second value pointed by the iterator. That is, the value.
+	// 	// cout << "Buffered [" << it->first << "]: " << it->second << endl;
+	// }
 }

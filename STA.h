@@ -263,10 +263,13 @@ void STA :: in_slot(SLOT_notification &slot)
                 // cout << "(" << SimTime() << ") STA-" << node_id << " AC " << i << ". Counter: " << backoffCounters.at(i)
                 //    << ". Stage: " << backoffStages.at(i) << endl;
 
-				if((backlogged.at(i) == 1) && (backoffCounters.at(i) > 0)) //if the AC has something to transmit
+				if(backlogged.at(i) == 1) //if the AC has something to transmit
 				{
-                    decrement(i, backoffCounters.at(i), AIFS.at(i));
-                    // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
+                    if(backoffCounters.at(i) > 0)
+                    {
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
+                    }
 				}
             }
             //Then we treat not backlogged ACs
