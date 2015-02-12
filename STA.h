@@ -27,8 +27,8 @@
 //Number of access categories
 #define AC 4
 
-extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
-// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
+// extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
+extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
 using namespace std;
@@ -65,6 +65,7 @@ component STA : public TypeII
         std::array<double,AC> blockedPackets;
         double totalBloked;
         std::array<double,AC> queuesSizes;
+        double overallPacketsInQueue;
         std::array<double,AC> packetsInQueue;
         std::array<double,AC> queueEmpties;
         double erased;
@@ -103,8 +104,6 @@ component STA : public TypeII
         std::array<int, AC> backoffStages;
         std::array<double,AC> AIFS;
 
-
-        
         //Transmission private statistics
         int transmitted;    //0 -> no, 1 -> yes.
         int sx;             //0 -> no, 1 -> yes.
@@ -117,7 +116,7 @@ component STA : public TypeII
         std::array<Packet,AC> superPacket; //an abstract packet composed of #AC packets. This structure helps at keeping track of AC-related timers
         
         std::array<FIFO <Packet>, AC> Queues;
-        FIFO <Packet> Q;
+        // FIFO <Packet> Q;
 
     public:
         //Connections
@@ -161,18 +160,19 @@ void STA :: Start()
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
         backoffStages.at(i) = 0;
-        Queues.at(i) = Q;
+        // Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
         
         // cout << "Starting" << endl;
+        // int forceRandom = 0;                        
         // if(backoffScheme == 0)
         // {
-        //     computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), 
-        //         backoffStages.at(i), backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i));
+        //     computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
+        //         backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
         // }else
         // {
-        //     computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), 
-        //         backoffStages, backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS);
+        //     computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
+        //         backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
         // }
     }
 	
@@ -198,6 +198,7 @@ void STA :: Stop()
         accumTimeBetweenSxTx.at(it) / sxTx.at(it) << endl;
 
         packetsInQueue.at(it) = Queues.at(it).QueueSize();
+        overallPacketsInQueue += packetsInQueue.at(it);
         cout << "\t* Queue AC " << it << ": " << packetsInQueue.at(it) << endl;
         cout << "\t* Number of queue flushes for AC " << it << ": " << queueEmpties.at(it) << endl;
 
@@ -231,20 +232,19 @@ void STA :: Stop()
 
     cout << "- Total Blocked packet due to full MAC queue: " << totalBloked << endl;
 
-    double pFailureI_1 = 0.0;
-    double pFailureI_2 = 0.0;
+    double pFailureI_1 = 0;
+    double pFailureI_2 = 0;
 
-    for(int i = 0; i < AC; i++)
-    {
-        erased += ( droppedAC.at(i) + packetsSent.at(i) );
-        remaining += ( packetsInQueue.at(i) + blockedPackets.at(i) );
-    }
+    erased = totalDropped + overallSentPackets;
+    remaining = overallPacketsInQueue + totalBloked;
 
     pFailureI_1 = (incommingPackets - erased) / remaining;
     pFailureI_2 = incommingPackets / (erased + remaining);
     
     cout << "- Erased packets failure index (at least one should be 1). In sat: " <<
     pFailureI_1 << ". Non-sat: " << pFailureI_2 << endl;
+
+    // cout << "***DEBUG: incommingPackets: " << incommingPackets << ", erased: " << erased << ", remaining: " << remaining << endl;
 
     
 };
@@ -277,9 +277,10 @@ void STA :: in_slot(SLOT_notification &slot)
             {
                 if(backlogged.at(i) == 0)
                 {
-                    // cout << "STA-" << node_id << ": AC: " << i << ". Is not backlogged. Checking the queue." << endl;
+                    // cout << "STA-" << node_id << ": AC: " << i << ". Is not backlogged. Checking the queue: " << endl;
                     if(Queues.at(i).QueueSize() > 0)
                     {
+                        // cout << "STA-" << node_id << ": AC: " << i << ". was not backlogged. New queue: " << Queues.at(i).QueueSize() << endl;
                         backlogged.at(i) = 1;
 
                         pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
@@ -314,7 +315,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         sx = 1; //it was a successful transmission
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
-                        // cout << "1) STA-" << node_id << ": AC: " << i << ". Transmitted " <<
+                        // cout << "STA-" << node_id << ": AC: " << i << ". Transmitted " <<
                         // packet.aggregation << " packets." << endl;
 
                         //Erasing the packet(s) that was(were) sent
@@ -410,7 +411,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         if(retAttemptAC.at(i) >= MAX_RET)
                         {
-                            // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
+                            // cout << "Station " << node_id << ": AC " << ACToTx << ". Drops " 
                             // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for collisions." << endl;
 
                             //Adding the already elapsed time to the timeBetweenSxTx
@@ -484,6 +485,48 @@ void STA :: in_slot(SLOT_notification &slot)
         recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme);
 
 
+    //Fix any dropping of packets due to internal collisions
+    ////////////////////////////////
+    //This should disappear soon.///
+    ////////////////////////////////
+    for(int i = 0; i < ACToTx; i++)
+    {
+        if(retAttemptAC.at(i) >= MAX_RET)
+        {
+            // cout << "Station " << node_id << ": AC " << ACToTx << ". Drops " 
+            // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
+
+            //Adding the already elapsed time to the timeBetweenSxTx
+            accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
+
+            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
+                fairShare, sx, droppedAC.at(i), queueEmpties);
+
+            stationStickiness.at(i) = system_stickiness;
+
+            if(ECA == 0) backoffStages.at(i) = 0;
+
+            if(backlogged.at(i) == 1)
+            {
+                pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                recomputeBackoff.at(i) = 1;
+            }else
+            {
+                backoffStages.at(i) = 0;
+                backoffCounters.at(i) = 0;
+                stationStickiness.at(i) = system_stickiness;
+            }
+
+            retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
+            // cout << "Dropping after IC" << endl;
+        }
+
+    }
+    ///////////////////////////////////////
+    //If we eliminate internal collisions//
+    ///////no packet will be dropped///////
+    ///////////////////////////////////////
+
     //*****Recomputing the backoff for**
     //*****internal collisions**********
     sx = 0;
@@ -512,53 +555,6 @@ void STA :: in_slot(SLOT_notification &slot)
     if(ACToTx >= 0)
     {
         // cout << "Winner " << ACToTx << endl;
-
-        //Fix any dropping of packets due to internal collisions
-
-        ////////////////////////////////
-        //This should disappear soon.///
-        ////////////////////////////////
-        for(int i = 0; i <= ACToTx; i++)
-        {
-            if(retAttemptAC.at(i) >= MAX_RET)
-            {
-                // cout << "3) Station " << node_id << ": AC " << ACToTx << ". Drops " 
-                // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internall collisions." << endl;
-
-                //Adding the already elapsed time to the timeBetweenSxTx
-                accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
-
-                erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
-                    sx, droppedAC.at(i), queueEmpties);
-                
-                stationStickiness.at(i) = system_stickiness;
-                
-                if(ECA == 0) backoffStages.at(i) = 0;
-                
-                if(backlogged.at(i) == 1) pickNewPacket(i, SimTime(), superPacket, Queues, node_id,
-                    backoffStages, fairShare);
-
-                // cout << "Dropping after IC" << endl;
-
-                if(backoffScheme == 0)
-                {
-                    computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
-                        backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
-                }else
-                {
-                    computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
-                        backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
-                }
-
-                retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
-            }
-
-        }
-        ///////////////////////////////////////
-        //If we eliminate internal collisions//
-        ///////no packet will be dropped///////
-        ///////////////////////////////////////
-
 
         packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
         // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx

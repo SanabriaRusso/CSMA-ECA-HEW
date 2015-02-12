@@ -155,9 +155,9 @@ void SlottedCSMA :: Stop()
 	array <double,AC> droppedAC = {};
 	double totalDropped = 0.0;
 
-	double totalIncommingPackets = 0.0;
-	double totalErasedPackets = 0.0;
-	double totalRemainingPackets = 0.0;
+	double totalIncommingPackets = 0;
+	double totalErasedPackets = 0;
+	double totalRemainingPackets = 0;
 
 	array <double,AC> fairnessAC = {};
 	array <double,AC> fairnessACNum = {};
@@ -333,9 +333,6 @@ void SlottedCSMA :: Stop()
 	//--------------------------------------------------------------//
 	//---------Presentation when simulation ends--------------------//
 	//--------------------------------------------------------------//
-	
-
-
 
 	cout << endl;
 	cout << "---------------------------"<< endl;

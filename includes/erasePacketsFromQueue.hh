@@ -6,37 +6,50 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty)
 {
     int packetDisposal = 0;
+    int aggregation = (int)packet.aggregation;
+    int cat = (int)packet.accessCategory;
 
-    if(packet.accessCategory >= 0)
+    if(cat >= 0)
     {
         if(sx == 1)
         {
-            packetDisposal = std::min( packet.aggregation, 
-                Queues.at(packet.accessCategory).QueueSize() );
+            packetDisposal = std::min( aggregation, 
+                (int)Queues.at(cat).QueueSize() );
 
+            // if(packetDisposal == 0) 
+            // {
+            //     cout << "*****ALARM: " << id << endl;
+            // }
             // cout << "STA-" << id << " Success. Erasing: " << packetDisposal << endl;
+            // cout << "STA-" << id << " aggregation: " << aggregation << ", Q: " <<  (int)Queues.at(cat).QueueSize() << endl;
         }else
         {
             if(fairShare == 1)
             {
                 packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
-                    Queues.at(packet.accessCategory).QueueSize() );
+                    (int)Queues.at(cat).QueueSize() );
             }else
             {
-                packetDisposal = std::min( packet.aggregation, 
-                    Queues.at(packet.accessCategory).QueueSize() );
+                packetDisposal = std::min( aggregation, 
+                    (int)Queues.at(cat).QueueSize() );
             }
 
+            // if(packetDisposal == 0)
+            // {
+            //     cout << "*****ALARM: " << id << endl;
+            // }
             // cout << "STA-" << id << " Dropping. Erasing: " << packetDisposal << endl;
+            
 
             dropped+= packetDisposal;
         }
         
-        // cout << "Old queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
-        for(int i = 0; i < packetDisposal; i++) Queues.at(packet.accessCategory).DelFirstPacket();
-        // cout << "New queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
+        // cout << "\tOld queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
+        for(int i = 0; i < packetDisposal; i++) Queues.at(cat).DelFirstPacket();
+        // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
 
-        if (Queues.at(packet.accessCategory).QueueSize() > 0)
+
+        if (Queues.at(cat).QueueSize() > 0)
         {   
             backlogged = 1;
         }else

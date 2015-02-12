@@ -2,7 +2,6 @@
 #include <algorithm>
 
 #define AC 4
-#define MAXSTAGE 5
 
 Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet,AC> &superPacket, 
 	int id, std::array<int,AC> stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare)
@@ -15,9 +14,6 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	{		
 		superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), 
 			Queues.at(acToTx).QueueSize() );
-	}else
-	{
-		superPacket.at(acToTx).aggregation = 1;
 	}
 
 	return((Packet)(superPacket.at(acToTx)));
