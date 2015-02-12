@@ -3,7 +3,7 @@
 
 int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC> &backlogg, std::array<int,AC> &stickiness, 
 	std::array<int,AC> &stages, std::array<int,AC> &recomputeBackoff, std::array<double,AC> &totalInternalACCol,
-	std::array<int,AC> &retAttemptAC, int scheme){
+	std::array<int,AC> &retAttemptAC, int scheme, int id){
 
 	int iterator = counters.size() - 1;
 	int acToTx;
@@ -34,25 +34,29 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 	acToTx = winner;
 
 
-	for(int i = 0; i < winner; i++)
+	if(winner >= 0)
 	{
-		if(backlogg.at(i) == 1)
+		for(int i = 0; i < winner; i++)
 		{
-			if(counters.at(i) == 0)
+			if(backlogg.at(i) == 1)
 			{
-				int recompute = i;
-				recomputeBackoff.at(recompute) = 1;
-				totalInternalACCol.at(recompute)++;
-				
-				if(scheme == 0) //EDCA
+				if(counters.at(i) == 0)
 				{
-					stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
-					stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
+					int recompute = i;
+					recomputeBackoff.at(recompute) = 1;
+					totalInternalACCol.at(recompute)++;
+					// cout << "\nSTA-" << id << ": ECA Internal collision" << endl;
+					// cout << "---AC " << i << " counter: " << counters.at(i) <<  endl;
+					
+					if(scheme == 0) //EDCA
+					{
+						stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
+						stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE);
 
-					// cout << "\nInternal collision" << endl;
-					// cout << "---AC " << i << " timer: " << counters.at(i) << ". AC " << j << " timer: " << counters.at(j) <<  endl;
-					// cout << "\t---Changing " << recompute << endl;
-					retAttemptAC.at(recompute)++;
+						// cout << "\nInternal collision" << endl;
+						// cout << "\t---Changing " << recompute << endl;
+						retAttemptAC.at(recompute)++;
+					}
 				}
 			}
 		}
