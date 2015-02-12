@@ -35,17 +35,17 @@ open(my $fw, ">", $outputFile)
 
 ##Odd indexes are standard deviations if not defined
 print $fw 
-("#1 Nodes,             #2 AvgThroughput,               #4 totalBEThroughput, 
-#6 totalBKThroughput,   #8 totalVIThroughput,           #10 totalVOThroughput,
-#12 totalCollisions,    #14 totalBECollisions,          #16 totalBKCollisions,
+("#1 Nodes,             #2 AvgThroughput,               #4 totalBKThroughput, 
+#6 totalBEThroughput,   #8 totalVIThroughput,           #10 totalVOThroughput,
+#12 totalCollisions,    #14 totalBKCollisions,          #16 totalBECollisions,
 #18 totalVICollisions,  #20 TotalVOCollisions,          #22 totalInternalCollisions,    
-#24 totalBEIntCol,      #26 totalBKIntCol,              #28 totalVIIntCol,
-#30 totalVOIntCol,      #32 overallFairness,            #34 BEFairness,
-#36 BKFairness,         #38 VIFairness,                 #40 VOFairness,
-#42 avgTimeBtSxTxBE,    #44 avgTimeBtSxTxBK,            #46 avgTimeBtSxTxVI,
-#48 avgTimeBtSxTxVO,    #50 qEmptyBE,                   #52 qEmptyBK,
+#24 totalBKIntCol,      #26 totalBEIntCol,              #28 totalVIIntCol,
+#30 totalVOIntCol,      #32 overallFairness,            #34 BKFairness,
+#36 BEFairness,         #38 VIFairness,                 #40 VOFairness,
+#42 avgTimeBtSxTxBK,    #44 avgTimeBtSxTxBE,            #46 avgTimeBtSxTxVI,
+#48 avgTimeBtSxTxVO,    #50 qEmptyBK,                   #52 qEmptyBE,
 #54 qEmptyVI,           #56 qEmptyVO                    #58 totalDropped,
-#60 droppedBE,          #62 droppedBK                   #64 droppedVI,
+#60 droppedBK,          #62 droppedBE                   #64 droppedVI,
 #66 droppedVO\n");
 
 
