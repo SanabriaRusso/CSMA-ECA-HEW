@@ -61,13 +61,13 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 	packetGeneration = rand() % (int) (100);
 	Packet packet;
 
-	if(packetGeneration <= VOShare)
+	if(packetGeneration < VOShare)
 	{
 		packet.accessCategory = 3;
-	}else if( (packetGeneration > VOShare) && (packetGeneration <= VIShare) )
+	}else if( (packetGeneration >= VOShare) && (packetGeneration < VIShare) )
 	{
 		packet.accessCategory = 2;
-	}else if( (packetGeneration > VIShare) && (packetGeneration <= BEShare) )
+	}else if( (packetGeneration >= VIShare) && (packetGeneration < BEShare) )
 	{
 		packet.accessCategory = 1;
 	}else
