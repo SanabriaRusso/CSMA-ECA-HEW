@@ -18,14 +18,14 @@
 #include "includes/decrement.hh"
 #include "includes/setAIFS.hh"
 
-//#define CWMIN 16 //to comply with 802.11n it should 16. Was 32 for 802.11b.
-#define MAXSTAGE 5
-
 //Suggested value is MAXSTAGE+1
 #define MAX_RET 6
 
 //Number of access categories
 #define AC 4
+
+// #define MAXSTAGE 5
+extern "C" const int MAXSTAGE [AC] = { 5, 5, 1, 1 };
 
 extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
 // extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
@@ -142,7 +142,7 @@ void STA :: Start()
 	in-class initialization of non-static data members*/
 	incommingPackets = 0;
 
-    for(int i = 0; i < superPacket.size(); i++)
+    for(int i = 0; i < (int)superPacket.size(); i++)
     {
         superPacket.at(i).contention_time = SimTime();
         //Setting the default aggregation parameter for the first packet transmission
@@ -453,7 +453,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         {
                             // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
-                            backoffStages.at(i) = min( (backoffStages.at(i) + 1), MAXSTAGE );
+                            backoffStages.at(i) = min( (backoffStages.at(i) + 1), MAXSTAGE[i] );
                         }
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
                         //cout << "--Tx" << endl;
@@ -493,13 +493,10 @@ void STA :: in_slot(SLOT_notification &slot)
 	//****Checking availability for transmission****
     //**********************************************
     ACToTx = resolveInternalCollision(backoffCounters, backlogged, stationStickiness, backoffStages, 
-        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id);
+        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE);
 
 
     //Fix any dropping of packets due to internal collisions
-    ////////////////////////////////
-    //This should disappear soon.///
-    ////////////////////////////////
     if(ACToTx >= 0)
     {
         for(int i = 0; i < ACToTx; i++)
@@ -535,10 +532,6 @@ void STA :: in_slot(SLOT_notification &slot)
                 retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
             }
         }
-        ///////////////////////////////////////
-        //If we eliminate internal collisions//
-        ///////no packet will be dropped///////
-        ///////////////////////////////////////
         
         //*****Recomputing the backoff for**
         //*****internal collisions**********
