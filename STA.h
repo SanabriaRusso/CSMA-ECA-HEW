@@ -27,8 +27,8 @@
 // #define MAXSTAGE 5
 extern "C" const int MAXSTAGE [AC] = { 5, 5, 1, 1 };
 
-extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
-// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
+// extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
+extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
 using namespace std;
@@ -162,18 +162,6 @@ void STA :: Start()
         backoffStages.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
-        
-        // cout << "Starting" << endl;
-        // int forceRandom = 0;                        
-        // if(backoffScheme == 0)
-        // {
-        //     computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
-        //         backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
-        // }else
-        // {
-        //     computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
-        //         backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
-        // }
     }
 	
 };
@@ -192,8 +180,11 @@ void STA :: Stop()
             overallACThroughput.at(it) = (packetsSent.at(it) * L * 8.)/SimTime();
         }
         cout << "\t+ Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
-        
         overallSentPackets += packetsSent.at(it);
+
+        if(sxTx.at(it) == 0) sxTx.at(it)++;   //Avoiding divisions by 0.
+        //Adding the contention time for the last transmission attempt
+        if(backlogged.at(it) == 1) accumTimeBetweenSxTx.at(it) += (double)(SimTime() - superPacket.at(it).contention_time);
         cout << "\t- Time between successful transmissions for AC " << it << ": " << 
         accumTimeBetweenSxTx.at(it) / sxTx.at(it) << endl;
 
@@ -344,7 +335,6 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
                     
-                        //If there is another packet waiting in the transmission queue, pick it and start contention
                         /*****NEW PACKET IS PICKED************
                         **************************************/
                         stationStickiness.at(i) = system_stickiness;            //Resetting the stickiness after a successful transmission

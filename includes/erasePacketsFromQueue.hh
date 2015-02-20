@@ -13,8 +13,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     {
         if(sx == 1)
         {
-            packetDisposal = std::min( aggregation, 
-                (int)Queues.at(cat).QueueSize() );
+            packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
 
             // if(packetDisposal == 0) 
             // {
@@ -30,8 +29,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                     (int)Queues.at(cat).QueueSize() );
             }else
             {
-                packetDisposal = std::min( aggregation, 
-                    (int)Queues.at(cat).QueueSize() );
+                packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
             }
 
             // if(packetDisposal == 0)
@@ -55,7 +53,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         }else
         {
             backlogged = 0;
-            qEmpty.at(packet.accessCategory)++;
+            qEmpty.at(cat)++;
         }
     }
 

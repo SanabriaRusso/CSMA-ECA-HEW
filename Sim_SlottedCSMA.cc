@@ -91,17 +91,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		sources[n].BEShare = 35;  // 25%
 		sources[n].VIShare = 10;  // 5%
 		sources[n].VOShare = 5;  // 5%
-
-		// sources[n].packet_rateBK = Bandwidth/(PacketLength * 8);
-		// sources[n].packet_rateBE = Bandwidth/(PacketLength * 8);
-		// sources[n].packet_rateVI = (Bandwidth/8)/(PacketLength * 8);
-		// sources[n].packet_rateVO = (Bandwidth/32)/(PacketLength * 8);
 		
-		// sources[n].packet_rateBK = 0;
-		// sources[n].packet_rateBE = 0;
-		// sources[n].packet_rateVI = 0;
-		// sources[n].packet_rateVO = 0;
-
 		sources[n].MaxBatch = Batch;
 	}
 	
@@ -388,7 +378,7 @@ void SlottedCSMA :: Stop()
 	// 	", totalRemainingPackets: " << totalRemainingPackets << endl;
 
 
-	cout << "\n6. Overal Fairness: " << (double)((pow(overallFairnessNum,2))/(Nodes*(overallFairnessDenom))) << endl;
+	cout << "\n6. Overall Fairness: " << (double)((pow(overallFairnessNum,2))/(Nodes*(overallFairnessDenom))) << endl;
 
 	for(int i = 0; i < AC; i++)
 	{
