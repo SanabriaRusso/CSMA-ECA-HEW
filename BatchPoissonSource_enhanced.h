@@ -5,6 +5,7 @@
 #include "Aux.h"
 
 #define MAXSEQ 1024
+#define AC 4
 
 component BatchPoissonSource : public TypeII
 {
@@ -27,6 +28,8 @@ component BatchPoissonSource : public TypeII
 		int MaxBatch;	
 		double packet_rate;
 		int packetGeneration;
+		double packetsGenerated;
+		std::array<double,AC> packetsInAC;
 
 		int BEShare;
 		int BKShare;
@@ -75,17 +78,13 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 		packet.accessCategory = 0;
 	}
 
-	packet.L = L;
-			
 	int RB = (int) Random(MaxBatch)+1;
-
-	for(int p=0; p < RB; p++)
-	{
-		packet.seq = seq;
-		packet.queuing_time = SimTime();
-		out(packet);
-		seq++;
-	}
+	
+	packet.L = L;
+	packet.queuing_time = SimTime();
+	out(packet);
+	packetsGenerated += 1;
+	packetsInAC.at(packet.accessCategory) += 1;
 
 	inter_packet_timer.Set(SimTime()+Exponential(RB/packet_rate));	
 };

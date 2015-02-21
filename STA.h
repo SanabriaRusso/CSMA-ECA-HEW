@@ -27,8 +27,8 @@
 // #define MAXSTAGE 5
 extern "C" const int MAXSTAGE [AC] = { 5, 5, 1, 1 };
 
-// extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
-extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
+extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
+// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
 using namespace std;

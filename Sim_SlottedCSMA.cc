@@ -82,6 +82,8 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 		// Traffic Source
 		sources[n].L = PacketLength;
+		sources[n].packetsGenerated = 0;
+		for(int i = 0; i < 4; i++) sources[n].packetsInAC.at(i) = 0;
 		
 		// Implementing a faster source
 		sources[n].packet_rate = Bandwidth/(PacketLength * 8);		//Global source packet generation rate
@@ -159,6 +161,10 @@ void SlottedCSMA :: Stop()
 
 	array <double,AC> qEmpties = {};
 
+	double totalSource = 0.0;
+	array <double,AC> sourceForAC = {};
+
+
 
 	for (int i = 0; i < Nodes; i++){
 		for (int j = 0; j < AC; j++){
@@ -218,6 +224,10 @@ void SlottedCSMA :: Stop()
 			}
 			
 			qEmpties.at(j) += (stas[i].queueEmpties.at(j));
+
+			totalSource += (sources[i].packetsInAC.at(j));
+			sourceForAC.at(j) += (sources[i].packetsInAC.at(j));
+
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
 		totalErasedPackets += (stas[i].erased);
@@ -398,6 +408,15 @@ void SlottedCSMA :: Stop()
 	{
 		cout << "\tAC " << i << ": " << qEmpties.at(i) << endl;
 	}
+
+	cout << "\n9. Packets generated: " << totalSource << endl;
+
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " <<  i << ": " << sourceForAC.at(i) << endl;
+	}
+
+	// cout << "***DEBUG. Generated / Received by STA's MAC = " << totalSource/totalIncommingPackets << endl;
 
 };
 
