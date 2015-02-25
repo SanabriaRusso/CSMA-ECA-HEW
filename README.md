@@ -1,3 +1,6 @@
+This simulator is part of a PhD thesis. It is provided for free and without any warranty so you can use it, modify it and test your protocols.
+
+
 CSMA/ECA Implementation
 ------------------------
 
