@@ -90,16 +90,16 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 		// The percentage of generated packets destined to a specific AC
 		// This distribution of the load produces predictable plots
-		// sources[n].BKShare = 100; // 40%
-		// sources[n].BEShare = 60;  // 30%
-		// sources[n].VIShare = 30;  // 15%
-		// sources[n].VOShare = 15;  // 15%
+		sources[n].BKShare = 100; // 40%
+		sources[n].BEShare = 60;  // 30%
+		sources[n].VIShare = 30;  // 15%
+		sources[n].VOShare = 15;  // 15%
 		
 		// This distribution of the load produces strage values
-		sources[n].BKShare = 100; // 40%
-		sources[n].BEShare = 35;  // 30%
-		sources[n].VIShare = 10;  // 15%
-		sources[n].VOShare = 5;  // 15%
+		// sources[n].BKShare = 100; // 65%
+		// sources[n].BEShare = 35;  // 25%
+		// sources[n].VIShare = 10;  // 5%
+		// sources[n].VOShare = 5;  // 5%
 
 		sources[n].MaxBatch = Batch;
 	}
@@ -199,11 +199,11 @@ void SlottedCSMA :: Stop()
 				totalACRet.at(j) += (stas[i].totalACRet.at(j));
 			}
 
-			if(stas[i].totalACCollisions.at(j) > 0)
-			{
+			// if(stas[i].totalACCollisions.at(j) > 0)
+			// {
 				sumOfCol += (stas[i].totalACCollisions.at(j));
-				totalACCol.at(j) += (stas[i].totalACCollisions.at(j));
-			}
+				totalACCol.at(j) += ( stas[i].totalACCollisions.at(j) / stas[i].transmissions.at(j) );
+			// }
 
 			if(stas[i].totalInternalACCol.at(j) > 0)
 			{
@@ -264,7 +264,7 @@ void SlottedCSMA :: Stop()
 	//7-11
 	file << totalCol << " ";
 	for (int i = 0; i < AC; i++){
-		file << (double)(totalACCol.at(i)/totalTx) << " ";
+		file << (double)(totalACCol.at(i)/Nodes) << " ";
 	}
 
 	//12-16
@@ -292,8 +292,6 @@ void SlottedCSMA :: Stop()
 		if(avgTimeBetweenACSxTx.at(i) != 0)
 		{
 			file << (double)avgTimeBetweenACSxTx.at(i)/Nodes << " ";
-			// cout << "Hola" << endl;
-			// cout << avgTimeBetweenACSxTx.at(i)/Nodes << endl;
 		}else
 		{
 			file << "0 ";
@@ -356,16 +354,12 @@ void SlottedCSMA :: Stop()
 	}
 
 	cout << "\n2. Total Collisions: " << totalCol << endl;
-	cout << "2.1 Total Internal Collisions: " << totalIntCol << ". Internal Collisions + Collisions: "
-		<< totalIntCol + totalCol << endl;
-	cout << "2.2 Summing collision metrics from all stations (is not the real number of collisions)" << endl;
+	cout << "2.1 Total Internal Collisions: " << totalIntCol << endl;
+	cout << "2.2 Summing collision metrics from all stations" << endl;
 	for(int i = 0; i < AC; i++)
 	{
-		cout << "\tAC " << i << ": " << totalACCol.at(i) << ". Collisions AC / Total Transmitted: " 
-			<< totalACCol.at(i) / totalTx << endl;
-		cout << "\tInternal Collisions: " << totalIntACCol.at(i) << ". Internal Collisions AC + Collisions AC: "
-			<< totalIntACCol.at(i) + totalACCol.at(i) << endl << endl;
-
+		cout << "\tAC " << i << ": " << totalACCol.at(i) / Nodes << ". Collisions AC / Total Transmitted." << endl;
+		cout << "\tInternal Collisions: " << totalIntACCol.at(i) << endl << endl;
 	}
 
 	cout << "\n3. Total Retransmissions: " << totalRetransmissions << ". Retransmitted / Transmitted ratio: " 

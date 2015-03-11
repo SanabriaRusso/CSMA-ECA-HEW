@@ -17,9 +17,10 @@
 #include "includes/pickNewPacket.hh"
 #include "includes/decrement.hh"
 #include "includes/setAIFS.hh"
+#include "includes/analiseHalvingCycle.hh"
 
 //Suggested value is MAXSTAGE+1
-#define MAX_RET 6
+#define MAX_RET 7
 
 //Number of access categories
 #define AC 4
@@ -75,6 +76,7 @@ component STA : public TypeII
         //Transmissions statistics
         std::array<double,AC> transmissions;
         std::array<double,AC> sxTx;
+        std::array<double,AC> consecutiveSx;
         std::array<double,AC> packetsSent; //successfully sent packets per AC
         double overallSentPackets;
         std::array<double,AC> overallACThroughput;
@@ -103,6 +105,14 @@ component STA : public TypeII
         std::array<double, AC> backoffCounters;
         std::array<int, AC> backoffStages;
         std::array<double,AC> AIFS;
+
+        //Halving the cycle statistics
+        int halving; // 1 = yes, 0 = no
+        std::array<double, AC> halvingCounters;
+        std::array<int,AC> halvingThresholds;
+        std::array<int, AC> halvingAttempt;
+        std::array<int, AC> shouldHalve; //1 = yes, 0 = no
+        std::array<int,AC> changeStage;
 
         //Transmission private statistics
         int transmitted;    //0 -> no, 1 -> yes.
@@ -135,8 +145,13 @@ void STA :: Start()
 	selectMACProtocol(node_id, ECA, system_stickiness);
     setAIFS(AIFS, ECA, defaultAIFS);
 
+    //--------------------IMPORTANT
+
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     if(ECA == 0) backoffScheme = 0;
+    halving = 1; // 0 = no, 1 = yes.
+
+    //-----------------------------
 	
 	/*Initializing variables and arrays to avoid warning regarding
 	in-class initialization of non-static data members*/
@@ -162,6 +177,12 @@ void STA :: Start()
         backoffStages.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
+        consecutiveSx.at(i) = 0;
+        halvingCounters.at(i) = 0.0;
+        halvingThresholds.at(i) = 0.0;
+        halvingAttempt.at(i) = 0;
+        shouldHalve.at(i) = 1;
+        changeStage.at(i) = 0;
     }
 	
 };
@@ -242,6 +263,7 @@ void STA :: Stop()
 
 void STA :: in_slot(SLOT_notification &slot)
 {	
+
     // cout << "\nNEW SLOT STA-" << node_id << ": " << slot.status << endl;
 	switch(slot.status)
 	{
@@ -324,6 +346,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //Gathering statistics from last transmission
                         packetsSent.at(i) += packet.aggregation;
                         sxTx.at(i)++;
+                        consecutiveSx.at(i)++;
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                         // cout << "STA-" << node_id << ": AC: " << i << ". Transmitted " <<
@@ -408,6 +431,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     {
                         //Collision metrics
                         totalACCollisions.at(i)++;
+                        consecutiveSx.at(i) = 0;
                         //Retransmission metrics
                         totalACRet.at(i)++;
                         retAttemptAC.at(i)++;
@@ -483,7 +507,7 @@ void STA :: in_slot(SLOT_notification &slot)
 	//****Checking availability for transmission****
     //**********************************************
     ACToTx = resolveInternalCollision(backoffCounters, backlogged, stationStickiness, backoffStages, 
-        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE);
+        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE, consecutiveSx);
 
 
     //Fix any dropping of packets due to internal collisions
@@ -556,6 +580,13 @@ void STA :: in_slot(SLOT_notification &slot)
         transmissions.at(ACToTx)++;
         transmitted = 1;
         out_packet(packet);
+    }
+
+    //Checking if it is possible to halve the cycle length for this station
+    if(halving == 1)
+    {
+        analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+            MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, changeStage);
     }
     
 

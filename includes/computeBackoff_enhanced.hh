@@ -27,7 +27,9 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 			if(ECA == 1)
 			{
 				counters.at(category) = deterministicBackoff;
-				// cout << "+++Deterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
+
+				// cout << "**Node " << id << endl;
+				// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
 				return; //get out
 			}
 
@@ -36,7 +38,8 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 			if(stickiness > 0)
 			{
 				counters.at(category) = deterministicBackoff;	
-				// cout << "+++Deterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
+				// cout << "**Node " << id << endl;
+				// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
 				return;
 			}
 		}

@@ -69,7 +69,7 @@ component Channel : public TypeII
 		double collision_slots, empty_slots, succesful_slots, total_slots;
 		double totalBitsSent;
 		double recentCollisions; //Collisions during the last 1000 slots
-		long long int test;
+		int test;
 };
 
 void Channel :: Setup()
@@ -197,6 +197,8 @@ void Channel :: in_packet(Packet &packet)
 {
 	//cout << "Received Packet from node: " << packet.source << endl;
 
+	test++;
+
 	if(packet.L > L_max) L_max = packet.L;
 	
 	aggregation = packet.aggregation;
@@ -211,6 +213,11 @@ void Channel :: in_packet(Packet &packet)
 	}else
 	{
 	    number_of_transmissions_in_current_slot++;
+	    if( (test % 100) == 0 )
+	   	{
+	   		number_of_transmissions_in_current_slot++;
+	   		test = 0;
+	   	}
 	}
 
 	switch(packet.fairShare)
@@ -220,7 +227,7 @@ void Channel :: in_packet(Packet &packet)
 			break;
 			
 		default:
-			succ_tx_duration = SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
+			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 	}
 
 	
