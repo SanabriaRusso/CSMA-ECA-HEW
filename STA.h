@@ -592,7 +592,8 @@ void STA :: in_slot(SLOT_notification &slot)
     }
 
     //Checking if it is possible to halve the cycle length for this station
-    if(halving == 1)
+    //Limiting it to ECA with hysteresis only
+    if( (halving == 1) && (ECA == 1) && (system_stickiness == 1) )
     {
         analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
