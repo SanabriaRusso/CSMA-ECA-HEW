@@ -4,18 +4,11 @@ using namespace std;
 
 void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double,AC> &halvingCounters,
 	std::array<int,AC> &stages, std::array<double,AC> &counters, int acToTx, const int MAXSTAGES[AC],
-	std::array<int,AC> backlog, std::array<int,AC> &halvingAttempt, int s, std::array<int, AC> &shouldHalve,
-	std::array<int,AC> &halvingThresholds, int node, std::array<int,AC> &changeStage){
+	std::array<int,AC> backlog, std::array<int,AC> &halvingAttempt, int slot, std::array<int, AC> &shouldHalve,
+	std::array<int,AC> &halvingThresholds, int node, std::array<int,AC> &changeStage, std::array<double,AC> &halved,
+	std::array<int, AC> &stationStickiness){
 
 	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
-	int slot;
-	if(s > 0)
-	{
-		slot = 0;
-	}else
-	{
-		slot = 1; 
-	}
 
 
 	//Decrementing previously set counters
@@ -25,9 +18,14 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 		{
 			if(halvingCounters.at(i) == 0)
 			{
-				shouldHalve.at(i) *= slot;
+				shouldHalve.at(i) += slot;
 				halvingCounters.at(i) = -1;	//waiting for another schedule of the halving
-				// cout << "**Node " << node << " saving slot state (" << s << ")" << endl;
+				if(shouldHalve.at(i) > 0)
+				{
+					halvingAttempt.at(i) = 0;	//Restart the looking around if one try fails
+				}
+
+				// cout << "**Node " << node << " saving slot state (" << slot << ")" << endl;
 			}else if(halvingCounters.at(i) > 0)
 			{
 				halvingCounters.at(i)--;	
@@ -41,28 +39,25 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 	//Can we halve the cycle?
 	for(int i = 0; i < AC; i++)
 	{
-		if( (int)halvingAttempt.at(i) == ((int)halvingThresholds.at(i) - 1) )
+		if( (halvingCounters.at(i) == -1) && ( (int)halvingAttempt.at(i) == (int)halvingThresholds.at(i) ) ) //Checking if we can
 		{
-			if(shouldHalve.at(i) > 0)
+			if(shouldHalve.at(i) == 0) //our slot in the new cycle is free
 			{
 				//*/DEBUG
 				// int previousStage = std::max(0, stages.at(i) - 1);
 				// cout << "**Node " << node << endl;
 				// cout << "Halving attempt #" << halvingAttempt.at(i) << endl;
-				// cout << "Change stage (" << shouldHalve.at(i) << ")" << endl;
 				// cout << "\tChange stage from: " << stages.at(i) << " to: " << previousStage << endl;
 
-				halvingAttempt.at(i) = 0;
 				changeStage.at(i) = 1;
+				halvingAttempt.at(i) = 0;
 			}else
 			{
 				//*/DEBUG
 				// cout << "**Node " << node << endl;
 				// cout << "Don't change stage (" << shouldHalve.at(i) << ")" << endl;
 				
-				halvingAttempt.at(i) = 0;
 				changeStage.at(i) = 0;
-				consecutiveSx.at(i) = 0;
 			}
 		}
 	}
@@ -77,15 +72,24 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 				if(changeStage.at(i) == 1) //Halve the cycle for the next transmission now
 				{
 					stages.at(i) = std::max(0, stages.at(i) - 1);
+					// stationStickiness.at(i)++;	//Resisting a colision because we changed to another schedule
+					consecutiveSx.at(i) = 0;
 					changeStage.at(i) = 0;
+					halved.at(i)++;
 
 					//*/DEBUG
 					// cout << "**Node " << node << endl;
-					// cout << "Making the change to stage " << stages.at(i) << " now." << endl;
+					// cout << "\tMaking the change to stage " << stages.at(i) << " now." << endl;
 
 				}
 
-				halvingThresholds.at(i) = (pow(2, MAXSTAGES[i]) * CWmin[i] / 2) / (pow(2, stages.at(i)) * CWmin[i] / 2);
+				halvingThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
+				if(halvingThresholds.at(i) == 0) halvingThresholds.at(i)++;
+
+				//*/DEBUG
+					// cout << "**Node  " << node << endl;
+					// cout << "\tNew threshold: " << halvingThresholds.at(i) << endl;
+
 				if( ((int)consecutiveSx.at(i) >= (int)halvingThresholds.at(i)) ) //you can start to schedule a halving
 				{
 					int previousStage = std::max(0, stages.at(i) - 1);
@@ -94,7 +98,7 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 																						//slot containing the actual transmission
 					///*DEBUG
 					// cout << "**Node " << node << " AC " << i << ": halveCounter: " << halvingCounters.at(i) << endl;
-					// cout << "\tExpect transmition in the: " << (pow(2, stages.at(i)) * CWmin[i] / 2) << "th slot." << endl;
+					// cout << "\tOwn transmition in the next slot, number: " << (pow(2, stages.at(i)) * CWmin[i] / 2) << "." << endl;
 				}
 			}
 		}

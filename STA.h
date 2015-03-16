@@ -113,6 +113,7 @@ component STA : public TypeII
         std::array<int, AC> halvingAttempt;
         std::array<int, AC> shouldHalve; //1 = yes, 0 = no
         std::array<int,AC> changeStage;
+        std::array<double,AC> halved; //number of times the backoff was halved
 
         //Transmission private statistics
         int transmitted;    //0 -> no, 1 -> yes.
@@ -179,10 +180,11 @@ void STA :: Start()
         overallACThroughput.at(i) = 0.0;
         consecutiveSx.at(i) = 0;
         halvingCounters.at(i) = 0.0;
-        halvingThresholds.at(i) = 0.0;
+        halvingThresholds.at(i) = 1;
         halvingAttempt.at(i) = 0;
-        shouldHalve.at(i) = 1;
+        shouldHalve.at(i) = 0;
         changeStage.at(i) = 0;
+        halved.at(i) = 0;
     }
 	
 };
@@ -257,6 +259,12 @@ void STA :: Stop()
     pFailureI_1 << ". Non-sat: " << pFailureI_2 << endl;
 
     // cout << "***DEBUG: incommingPackets: " << incommingPackets << ", erased: " << erased << ", remaining: " << remaining << endl;
+    double totalHalved = 0.0;
+    for(int i = 0; i < AC; i++)
+    {
+        totalHalved += halved.at(i);
+    }
+    cout << "+ Overall times some deterministic backoff was halved : " << totalHalved << endl;
 
     
 };
@@ -432,6 +440,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //Collision metrics
                         totalACCollisions.at(i)++;
                         consecutiveSx.at(i) = 0;
+                        halvingAttempt.at(i) = 0;
                         //Retransmission metrics
                         totalACRet.at(i)++;
                         retAttemptAC.at(i)++;
@@ -586,7 +595,8 @@ void STA :: in_slot(SLOT_notification &slot)
     if(halving == 1)
     {
         analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
-            MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, changeStage);
+            MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
+            changeStage, halved, stationStickiness);
     }
     
 

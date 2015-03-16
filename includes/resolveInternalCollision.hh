@@ -44,7 +44,9 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 					int recompute = i;
 					recomputeBackoff.at(recompute) = 1;
 					totalInternalACCol.at(recompute)++;
-					consecutiveSx.at(recompute) = 0;
+					
+					// consecutiveSx.at(recompute) = 0;
+
 					// cout << "\nSTA-" << id << ": ECA Internal collision" << endl;
 					// cout << "---AC " << i << " counter: " << counters.at(i) <<  endl;
 					

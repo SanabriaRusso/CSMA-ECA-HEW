@@ -103,8 +103,7 @@ void Channel :: Start()
 	aggregation = 0;
 	errorProbability = 0;
 
-	slot_time.Set(SimTime()); // Let's go!
-    // cpSampler.Set(SimTime() + 1); //To sample CP 1 segs after the start of the simulator	
+	slot_time.Set(SimTime()); // Let's go!	
 	
 	slotsInTime.open("Results/slotsInTime.txt", ios::app);
 
@@ -122,21 +121,6 @@ void Channel :: Stop()
 	
 	slotsInTime.close();
 };
-
-// void Channel :: Sampler(trigger_t &)
-// {
-//     //Capturing the fraction of collision slots each second    
-// 	if(total_slots > 0) 
-// 	{
-// 	    slotsInTime << SimTime() << " " << collision_slots/total_slots << endl;
-// 	}
-// 	else
-// 	{
-// 	    slotsInTime << SimTime() << " 0" << endl;
-// 	}
-	
-// 	cpSampler.Set(SimTime() + 1);
-// }
 
 void Channel :: NewSlot(trigger_t &)
 {
@@ -197,27 +181,21 @@ void Channel :: in_packet(Packet &packet)
 {
 	//cout << "Received Packet from node: " << packet.source << endl;
 
-	test++;
-
 	if(packet.L > L_max) L_max = packet.L;
 	
 	aggregation = packet.aggregation;
 	
-	errorProbability = rand() % 100 + 1;
+	errorProbability = rand() % (int) 100;
 	
-	if((errorProbability > 0) && (errorProbability <= error))
+	if( (errorProbability > 0) && (errorProbability <= (int)(error*100)) )
 	{
 	    //If the channel error probability is contained inside the system error margin,
 	    //then something wrong is going to happen with the transmissions in this slot
 	    number_of_transmissions_in_current_slot+=2;
+	    cout << "Provoked collision (" << errorProbability << ")" << endl;
 	}else
 	{
 	    number_of_transmissions_in_current_slot++;
-	    if( (test % 100) == 0 )
-	   	{
-	   		number_of_transmissions_in_current_slot++;
-	   		test = 0;
-	   	}
 	}
 
 	switch(packet.fairShare)
