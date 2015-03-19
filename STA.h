@@ -265,6 +265,11 @@ void STA :: Stop()
         totalHalved += halved.at(i);
     }
     cout << "+ Overall times some deterministic backoff was halved : " << totalHalved << endl;
+    // cout << "***DEBUG: final backoff stage" << endl;
+    // for(int i = 0; i < AC; i++)
+    // {
+    //     cout << "\tAC " << i << ": " << backoffStages.at(i) << endl;
+    // }
 
     
 };
@@ -368,7 +373,10 @@ void STA :: in_slot(SLOT_notification &slot)
                     
                         /*****NEW PACKET IS PICKED************
                         **************************************/
-                        stationStickiness.at(i) = system_stickiness;            //Resetting the stickiness after a successful transmission
+                        if(stationStickiness.at(i) <= system_stickiness)        //if the station stickiness wasn't modified by halving
+                        {
+                            stationStickiness.at(i) = system_stickiness;        //Resetting the stickiness after a successful transmission
+                        }
                         if(ECA == 0) backoffStages.at(i) = 0;                   //Resetting the backoffstage of the transmitting AC
                         retAttemptAC.at(i) = 0;                                 //Resetting the retransmission attempt counter
                         transmitted = 0;                                        //Also resetting the transmitted flag
@@ -439,8 +447,6 @@ void STA :: in_slot(SLOT_notification &slot)
                     {
                         //Collision metrics
                         totalACCollisions.at(i)++;
-                        consecutiveSx.at(i) = 0;
-                        halvingAttempt.at(i) = 0;
                         //Retransmission metrics
                         totalACRet.at(i)++;
                         retAttemptAC.at(i)++;
@@ -476,7 +482,12 @@ void STA :: in_slot(SLOT_notification &slot)
                         {
                             // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
-                            backoffStages.at(i) = min( (backoffStages.at(i) + 1), MAXSTAGE[i] );
+                            if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
+                            {
+                                consecutiveSx.at(i) = 0;
+                                halvingAttempt.at(i) = 0;
+                                backoffStages.at(i) = min( (backoffStages.at(i) + 1), MAXSTAGE[i] );
+                            }
                         }
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
                         //cout << "--Tx" << endl;
@@ -593,7 +604,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
     //Checking if it is possible to halve the cycle length for this station
     //Limiting it to ECA with hysteresis only
-    if( (halving == 1) && (ECA == 1) && (system_stickiness == 1) )
+    if( (halving == 1) && (ECA == 1) && (system_stickiness > 0) )
     {
         analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 

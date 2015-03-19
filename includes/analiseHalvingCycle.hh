@@ -72,7 +72,7 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 				if(changeStage.at(i) == 1) //Halve the cycle for the next transmission now
 				{
 					stages.at(i) = std::max(0, stages.at(i) - 1);
-					// stationStickiness.at(i)++;	//Resisting a colision because we changed to another schedule
+					stationStickiness.at(i) = std::min(stationStickiness.at(i)+1, 3);	//Resisting a colision because we changed to another schedule
 					consecutiveSx.at(i) = 0;
 					changeStage.at(i) = 0;
 					halved.at(i)++;
@@ -82,9 +82,16 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 					// cout << "\tMaking the change to stage " << stages.at(i) << " now." << endl;
 
 				}
+				//1. Checking the complete schedule
+				// halvingThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
 
-				halvingThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
-				if(halvingThresholds.at(i) == 0) halvingThresholds.at(i)++;
+				//2. Checking half of the complete schedule (more aggresive)
+				// halvingThresholds.at(i) = ( (int)(pow(2, (MAXSTAGES[i]-1) ) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
+
+				//3. Super aggressive
+				halvingThresholds.at(i) = 1;
+
+				if(halvingThresholds.at(i) == 0) halvingThresholds.at(i) = 1;
 
 				//*/DEBUG
 					// cout << "**Node  " << node << endl;
