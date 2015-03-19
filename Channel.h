@@ -192,7 +192,6 @@ void Channel :: in_packet(Packet &packet)
 	    //If the channel error probability is contained inside the system error margin,
 	    //then something wrong is going to happen with the transmissions in this slot
 	    number_of_transmissions_in_current_slot+=2;
-	    cout << "Provoked collision (" << errorProbability << ")" << endl;
 	}else
 	{
 	    number_of_transmissions_in_current_slot++;
@@ -200,9 +199,10 @@ void Channel :: in_packet(Packet &packet)
 
 	switch(packet.fairShare)
 	{
-		case 1:
-			succ_tx_duration = ECA_AIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
-			break;
+		// Uncomment for QoS testings with AIFS
+		// case 1:
+		// 	succ_tx_duration = ECA_AIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
+		// 	break;
 			
 		default:
 			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
