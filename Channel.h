@@ -71,6 +71,7 @@ component Channel : public TypeII
 		double recentCollisions; //Collisions during the last 1000 slots
 		int errorPeriod;
 		bool channelModel;	//0 = perfect, 1 = bad
+		signed long long slotNum;
 };
 
 void Channel :: Setup()
@@ -90,6 +91,7 @@ void Channel :: Start()
 	succesful_slots = 0;
 	total_slots = 0;
 	recentCollisions = 0;
+	slotNum = 0;
 	errorPeriod = 10;
 	channelModel = false;
 	triggerChange.Set(SimTime());
@@ -142,8 +144,10 @@ void Channel :: NewSlot(trigger_t &)
 	//printf("%f ***** NewSlot ****\n",SimTime());
 
 	SLOT_notification slot;
+	slotNum++;
 
 	slot.status = number_of_transmissions_in_current_slot;
+	slot.num = slotNum;
 
 	number_of_transmissions_in_current_slot = 0;
 	L_max = 0;

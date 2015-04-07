@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <map>
+#include <bitset>
 #include "Aux.h"
 #include "FIFO.h"
 #include "includes/computeBackoff.hh"
@@ -108,8 +109,9 @@ component STA : public TypeII
         std::array<double,AC> AIFS;
 
         //Halving the cycle statistics
-        int halving; // 1 = yes, 0 = no
+        int changingSchedule; // 1 = yes, 0 = no
         std::array<double, AC> halvingCounters;
+        std::array<double, AC> analysisCounter;
         std::array<int,AC> halvingThresholds;
         std::array<int, AC> halvingAttempt;
         std::array<int, AC> shouldHalve; //1 = yes, 0 = no
@@ -151,7 +153,7 @@ void STA :: Start()
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     if(ECA == 0) backoffScheme = 0;
-    halving = 0; // 0 = no, 1 = yes.
+    changingSchedule = 1; // 0 = no, 1 = yes.
 
     //-----------------------------
 	
@@ -181,6 +183,7 @@ void STA :: Start()
         overallACThroughput.at(i) = 0.0;
         consecutiveSx.at(i) = 0;
         halvingCounters.at(i) = 0.0;
+        analysisCounter.at(i) = 0.0;
         halvingThresholds.at(i) = 1;
         halvingAttempt.at(i) = 0;
         shouldHalve.at(i) = 0;
@@ -265,7 +268,7 @@ void STA :: Stop()
     {
         totalHalved += halved.at(i);
     }
-    cout << "+ Overall times some deterministic backoff was halved : " << totalHalved << endl;
+    cout << "+ Overall times some deterministic backoff was changed : " << totalHalved << endl;
     // cout << "***DEBUG: final backoff stage" << endl;
     // for(int i = 0; i < AC; i++)
     // {
@@ -605,11 +608,15 @@ void STA :: in_slot(SLOT_notification &slot)
 
     //Checking if it is possible to halve the cycle length for this station
     //Limiting it to ECA with hysteresis only
-    if( (halving == 1) && (ECA == 1) && (system_stickiness > 0) )
+    if( (changingSchedule == 1) && (ECA == 1) && (system_stickiness > 0) )
     {
-        analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
-            MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
-            changeStage, halved, stationStickiness, system_stickiness);
+        // analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        //     MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
+        //     changeStage, halved, stationStickiness, system_stickiness);
+
+        analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+            MAXSTAGE, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
+            changeStage, halved, stationStickiness, system_stickiness, analysisCounter);
     }
     
 
