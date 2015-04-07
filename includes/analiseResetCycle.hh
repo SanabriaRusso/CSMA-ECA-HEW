@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double,AC> &halvingCounters,
+void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,AC> &halvingCounters,
 	std::array<int,AC> &stages, std::array<double,AC> &counters, int acToTx, const int MAXSTAGES[AC],
 	std::array<int,AC> backlog, std::array<int,AC> &halvingAttempt, int slot, std::array<int, AC> &shouldHalve,
 	std::array<int,AC> &halvingThresholds, int node, std::array<int,AC> &changeStage, std::array<double,AC> &halved,
@@ -83,10 +83,10 @@ void analiseHalvingCycle(std::array<double,AC> &consecutiveSx, std::array<double
 
 				}
 				//1. Checking the complete schedule
-				// halvingThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
+				halvingThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
 
 				//2. Checking half of the complete schedule (more aggresive)
-				halvingThresholds.at(i) = ( (int)(pow(2, (MAXSTAGES[i]-1) ) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
+				// halvingThresholds.at(i) = ( (int)(pow(2, (MAXSTAGES[i]-1) ) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
 
 				//3. Super aggressive
 				// halvingThresholds.at(i) = 1;

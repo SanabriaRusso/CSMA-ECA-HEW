@@ -18,7 +18,8 @@ struct Packet
 
 struct SLOT_notification
 {
-	int status; // 0 = empty, 1 = succ. tx, >1 = collision
+	int status; 			// 0 = empty, 1 = succ. tx, >1 = collision
+	signed long long num;	// slot number
 };
 
 

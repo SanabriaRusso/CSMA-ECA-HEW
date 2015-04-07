@@ -64,9 +64,14 @@ switch ($ECA){
 		$fairShare = 0;
 		
 	}
+	case 4 {
+		$ECA = 1;
+		$stickiness = 2;
+		$fairShare = 0;
+	}
 	case 5 {
 		$ECA = 1;
-		$stickiness = 5;
+		$stickiness = 2;
 		$fairShare = 1;
 	}
 }

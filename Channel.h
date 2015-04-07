@@ -40,16 +40,16 @@ component Channel : public TypeII
 		// Timers
 		Timer <trigger_t> slot_time; // Duration of current slot
 		Timer <trigger_t> rx_time; // Time to receive all packets transmitted in current slot
-		// Timer <trigger_t> cpSampler; // Sampler of the collision probability		
+		Timer <trigger_t> triggerChange; // Sampler of the collision probability		
 		
 		inport inline void NewSlot(trigger_t& t1);
 		inport inline void EndReceptionTime(trigger_t& t2);
-		// inport inline void Sampler(trigger_t& t3);
+		inport inline void changeConditions(trigger_t& t3);
 
 		Channel () { 
 			connect slot_time.to_component,NewSlot; 
 			connect rx_time.to_component,EndReceptionTime;
-		    // connect cpSampler.to_component,Sampler; 
+		    connect triggerChange.to_component,changeConditions; 
 		}
 
 	private:
@@ -69,7 +69,8 @@ component Channel : public TypeII
 		double collision_slots, empty_slots, succesful_slots, total_slots;
 		double totalBitsSent;
 		double recentCollisions; //Collisions during the last 1000 slots
-		int test;
+		int errorPeriod;
+		bool channelModel;	//0 = perfect, 1 = bad
 };
 
 void Channel :: Setup()
@@ -88,8 +89,10 @@ void Channel :: Start()
 	empty_slots = 0;
 	succesful_slots = 0;
 	total_slots = 0;
-	test = 0;
 	recentCollisions = 0;
+	errorPeriod = 10;
+	channelModel = false;
+	triggerChange.Set(SimTime());
 
 	L_max = 0;
 	
@@ -121,6 +124,18 @@ void Channel :: Stop()
 	
 	slotsInTime.close();
 };
+
+void Channel :: changeConditions(trigger_t &)
+{
+	if(error > 0 && errorPeriod > 0)
+	{
+		channelModel = !channelModel;
+		//*/DEBUG
+		// cout << "(" << SimTime() << ") Chaging from " << !channelModel << " to " << channelModel << endl; 
+		triggerChange.Set(SimTime() + errorPeriod);
+	}
+
+}
 
 void Channel :: NewSlot(trigger_t &)
 {
@@ -184,17 +199,31 @@ void Channel :: in_packet(Packet &packet)
 	if(packet.L > L_max) L_max = packet.L;
 	
 	aggregation = packet.aggregation;
-	
-	errorProbability = rand() % (int) 100;
-	
-	if( (errorProbability > 0) && (errorProbability <= (int)(error*100)) )
+
+	int model = channelModel;
+	switch(model)
 	{
-	    //If the channel error probability is contained inside the system error margin,
-	    //then something wrong is going to happen with the transmissions in this slot
-	    number_of_transmissions_in_current_slot+=2;
-	}else
-	{
-	    number_of_transmissions_in_current_slot++;
+
+		case 0:
+			number_of_transmissions_in_current_slot++;
+			break;
+
+		case 1:
+			errorProbability = rand() % (int) 100;
+			
+			if( (errorProbability > 0) && (errorProbability <= (int)(error*100)) )
+			{
+			    //If the channel error probability is contained inside the system error margin,
+			    //then something wrong is going to happen with the transmissions in this slot
+			    number_of_transmissions_in_current_slot+=2;
+			}else
+			{
+			    number_of_transmissions_in_current_slot++;
+			}
+			break;
+		default:
+			number_of_transmissions_in_current_slot++;
+			break;
 	}
 
 	switch(packet.fairShare)

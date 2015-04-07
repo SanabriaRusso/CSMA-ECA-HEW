@@ -18,6 +18,7 @@
 #include "includes/decrement.hh"
 #include "includes/setAIFS.hh"
 #include "includes/analiseHalvingCycle.hh"
+#include "includes/analiseResetCycle.hh"
 
 //Suggested value is MAXSTAGE+1
 #define MAX_RET 7
@@ -150,7 +151,7 @@ void STA :: Start()
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     if(ECA == 0) backoffScheme = 0;
-    halving = 1; // 0 = no, 1 = yes.
+    halving = 0; // 0 = no, 1 = yes.
 
     //-----------------------------
 	
@@ -608,7 +609,7 @@ void STA :: in_slot(SLOT_notification &slot)
     {
         analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
-            changeStage, halved, stationStickiness);
+            changeStage, halved, stationStickiness, system_stickiness);
     }
     
 
