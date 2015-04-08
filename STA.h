@@ -616,7 +616,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
         analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
-            changeStage, halved, stationStickiness, system_stickiness, analysisCounter);
+            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
     }
     
 
