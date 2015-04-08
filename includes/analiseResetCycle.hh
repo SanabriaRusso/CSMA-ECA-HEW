@@ -12,7 +12,7 @@ void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,A
 	int newStage = 0;
 
 
-	for(int i = 0; i < 1; i++)
+	for(int i = 0; i < AC; i++)
 	{
 		// Can I start registering the slot.status?
 		if(resetAttempt.at(i) == 1)
@@ -33,7 +33,7 @@ void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,A
 	}
 
 	//Can we reset the cycle?
-	for(int i = 0; i < 1; i++)
+	for(int i = 0; i < AC; i++)
 	{
 		// If the resetCounter expired
 		if(resetCounters.at(i) == -1)
@@ -90,7 +90,7 @@ void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,A
 	}
 
 	//Checking if it is time to schedule a halving of the cycle
-	for(int i = 0; i < 1; i++)
+	for(int i = 0; i < AC; i++)
 	{
 		if(backlog.at(i) == 1)
 		{
