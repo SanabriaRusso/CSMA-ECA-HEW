@@ -92,8 +92,9 @@ void Channel :: Start()
 	total_slots = 0;
 	recentCollisions = 0;
 	slotNum = 0;
-	errorPeriod = 10;
-	channelModel = false;
+	// errorPeriod = 10;
+	errorPeriod = 0;
+	channelModel = true;
 	triggerChange.Set(SimTime());
 
 	L_max = 0;

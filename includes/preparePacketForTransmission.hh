@@ -4,7 +4,7 @@
 #define AC 4
 
 Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet,AC> &superPacket, 
-	int id, std::array<int,AC> stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare)
+	int id, std::array<int,AC> &stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare)
 {
 	superPacket.at(acToTx).source = id;
 	superPacket.at(acToTx).tx_time = txTime;

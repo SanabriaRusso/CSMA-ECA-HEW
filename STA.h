@@ -153,7 +153,7 @@ void STA :: Start()
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     if(ECA == 0) backoffScheme = 0;
-    changingSchedule = 1; // 0 = no, 1 = yes.
+    changingSchedule = 0; // 0 = no, 1 = yes.
 
     //-----------------------------
 	
@@ -381,7 +381,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         {
                             stationStickiness.at(i) = system_stickiness;        //Resetting the stickiness after a successful transmission
                         }
-                        if(ECA == 0) backoffStages.at(i) = 0;                   //Resetting the backoffstage of the transmitting AC
+                        if(ECA == 0 || system_stickiness == 0) backoffStages.at(i) = 0;                   //Resetting the backoffstage of the transmitting AC
                         retAttemptAC.at(i) = 0;                                 //Resetting the retransmission attempt counter
                         transmitted = 0;                                        //Also resetting the transmitted flag
 
