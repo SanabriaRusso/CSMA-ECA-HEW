@@ -20,6 +20,7 @@ struct SLOT_notification
 {
 	int status; 			// 0 = empty, 1 = succ. tx, >1 = collision
 	signed long long num;	// slot number
+	int error;				// 0 = noError, other = number of packets affected by the error
 };
 
 

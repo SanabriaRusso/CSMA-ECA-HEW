@@ -18,8 +18,6 @@
 #define LDBPS 256
 #define TSYM 4e-06
 #define ECA_AIFS 28e-06
-
-#define ChERROR 1000
 			
 #include "Aux.h"
 
@@ -56,6 +54,7 @@ component Channel : public TypeII
 
 	private:
 		double number_of_transmissions_in_current_slot;
+		int affected;	//number of packets affected by a channel error
 		double succ_tx_duration, collision_duration; // Depends on the packet(s) size(s)
 		double empty_slot_duration;
 		double TBack;
@@ -85,6 +84,7 @@ void Channel :: Setup()
 void Channel :: Start()
 {
 	number_of_transmissions_in_current_slot = 0;
+	affected = 0;
 	succ_tx_duration = 10E-3;
 	collision_duration = 10E-3;
 	empty_slot_duration = 9e-06;
@@ -153,8 +153,10 @@ void Channel :: NewSlot(trigger_t &)
 
 	slot.status = number_of_transmissions_in_current_slot;
 	slot.num = slotNum;
+	slot.error = affected;
 
 	number_of_transmissions_in_current_slot = 0;
+	affected = 0;
 	L_max = 0;
 
 	for(int n = 0; n < Nodes; n++) out_slot[n](slot); // We send the SLOT notification to all connected nodes
@@ -175,21 +177,23 @@ void Channel :: EndReceptionTime(trigger_t &)
 	if(number_of_transmissions_in_current_slot == 1)
 	{
 		slot_time.Set(SimTime()+succ_tx_duration);
-		succesful_slots++;
-		totalBitsSent += aggregation*(L_max*8);
-	}
-	if(number_of_transmissions_in_current_slot > 1)
-	{
-		slot_time.Set(SimTime()+collision_duration);
-		if(number_of_transmissions_in_current_slot == ChERROR)
+		if(affected > 0)
 		{
 			error_slots++;
 			recentErrors++;
+			totalBitsSent += (aggregation - affected)*(L_max*8);
+
 		}else
 		{
-			collision_slots++;	
-			recentCollisions++;
+			totalBitsSent += aggregation*(L_max*8);
+			succesful_slots++;
 		}
+	}
+	if(number_of_transmissions_in_current_slot > 1)
+	{
+		collision_slots++;	
+		recentCollisions++;
+		slot_time.Set(SimTime()+collision_duration);
 	}
 		
 	total_slots++; //Just to control that total = empty + successful + collisions
@@ -212,7 +216,6 @@ void Channel :: EndReceptionTime(trigger_t &)
 
 void Channel :: in_packet(Packet &packet)
 {
-	//cout << "Received Packet from node: " << packet.source << endl;
 
 	if(packet.L > L_max) L_max = packet.L;
 	
@@ -227,17 +230,25 @@ void Channel :: in_packet(Packet &packet)
 			break;
 
 		case 1:
-			errorProbability = rand() % (int) 100;
-			
-			if( (errorProbability > 0) && (errorProbability <= (int)(error*100)) )
+			for(int i = 1; i <= aggregation; i++)
 			{
 			    //If the channel error probability is contained inside the system error margin,
 			    //then something wrong is going to happen with the transmissions in this slot
-			    number_of_transmissions_in_current_slot = ChERROR;
-			}else
-			{
-			    number_of_transmissions_in_current_slot++;
+				//In this case we decide if certain packet is affected or not by the errors
+				errorProbability = rand() % (int) 100;
+				if( (errorProbability > 0) && (errorProbability <= (int)(error*100)) )
+				{
+					affected++;
+				}		
 			}
+			if(affected > 0)
+			{
+				if(affected == aggregation)
+				{
+					number_of_transmissions_in_current_slot++; //Add an additional tx to mimic a collision
+				}	
+			}
+		    number_of_transmissions_in_current_slot++;
 			break;
 		default:
 			number_of_transmissions_in_current_slot++;

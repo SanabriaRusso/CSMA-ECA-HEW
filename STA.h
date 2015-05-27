@@ -361,7 +361,8 @@ void STA :: in_slot(SLOT_notification &slot)
 				    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//this category transmitted the last packet
 				    {
                         //Gathering statistics from last transmission
-                        packetsSent.at(i) += packet.aggregation;
+                        packetsSent.at(i) += (packet.aggregation - slot.error);
+                        // cout << "Packets sent: " << int(packet.aggregation - slot.error) << endl;
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
@@ -371,7 +372,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
-                            sx, droppedAC.at(i), queueEmpties);
+                            sx, droppedAC.at(i), queueEmpties, slot.error);
 
                         // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
                     
@@ -464,7 +465,7 @@ void STA :: in_slot(SLOT_notification &slot)
                             accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
-                                fairShare, sx, droppedAC.at(i), queueEmpties);
+                                fairShare, sx, droppedAC.at(i), queueEmpties, slot.error);
 
                             stationStickiness.at(i) = system_stickiness;
 
@@ -550,7 +551,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                     erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
-                        fairShare, sx, droppedAC.at(i), queueEmpties);
+                        fairShare, sx, droppedAC.at(i), queueEmpties, slot.error);
 
                     stationStickiness.at(i) = system_stickiness;
 

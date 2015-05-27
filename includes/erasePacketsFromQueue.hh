@@ -3,7 +3,7 @@
 using namespace std;
 
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
-    int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty)
+    int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
@@ -13,14 +13,14 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     {
         if(sx == 1)
         {
-            packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
+            packetDisposal = std::min( (aggregation - affected), (int)Queues.at(cat).QueueSize() );
 
             // if(packetDisposal == 0) 
             // {
             //     cout << "*****ALARM: " << id << endl;
             // }
             // cout << "STA-" << id << " Success. Erasing: " << packetDisposal << endl;
-            // cout << "STA-" << id << " aggregation: " << aggregation << ", Q: " <<  (int)Queues.at(cat).QueueSize() << endl;
+            // cout << "STA-" << id << " aggregation: " << aggregation << " affected: " << affected << ", Q: " <<  (int)Queues.at(cat).QueueSize() << endl;
         }else
         {
             if(fairShare == 1)
