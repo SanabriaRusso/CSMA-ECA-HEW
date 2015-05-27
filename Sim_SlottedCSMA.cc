@@ -252,7 +252,7 @@ void SlottedCSMA :: Stop()
 	file << "#21. VOFairness			22. avgTimeBtSxTxBK			23. avgTimeBtSxTxBE			24. avgTimeBtSxTxVI" << endl;
 	file << "#25. avgTimeBtSxTxVO		26. qEmptyBK				27. qEmptyBE				28. qEmptyVI" << endl;
 	file << "#29. qEmptyVO				30. totalDropped			31. droppedBK				32. droppedBE" << endl;
-	file << "#33. droppedVI				34. droppedVO" << endl;
+	file << "#33. droppedVI				34. droppedVO				35. channelErrors           36. Stickiness" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -264,7 +264,13 @@ void SlottedCSMA :: Stop()
 	//7-11
 	file << totalCol << " ";
 	for (int i = 0; i < AC; i++){
-		file << (double)(totalACCol.at(i)/Nodes) << " ";
+		if(totalACCol.at(i) > 0)
+		{
+			file << (double)(totalACCol.at(i)/Nodes) << " ";
+		}else
+		{
+			file << "0 ";
+		}
 	}
 
 	//12-16
@@ -332,6 +338,12 @@ void SlottedCSMA :: Stop()
 		}
 	}
 
+	//35
+	file << channel.error << " ";
+
+	//36
+	file << stas[0].system_stickiness << " ";
+
 	file << endl;
 
 
@@ -343,6 +355,14 @@ void SlottedCSMA :: Stop()
 	cout << "---------------------------"<< endl;
 	cout << "--- Overall Statistics ----" << endl;
 	cout << "---------------------------"<< endl;
+
+	double count = channel.succesful_slots  + channel.collision_slots + channel.error_slots + channel.empty_slots;
+	if(count == channel.total_slots)
+	{
+	cout << "0. Channel Statistics: total slots " << channel.total_slots << ", sx slots " << channel.succesful_slots <<
+		", colision slots " << channel.collision_slots << ", channel error slots " << channel.error_slots << ", empty slots "
+		<< channel.empty_slots << endl << endl;
+	}
 
 	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (Mbps): " << totalThroughput << endl;
 	cout << "1.1 Packet generation: " << Bandwidth_ << endl;

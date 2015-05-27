@@ -18,6 +18,8 @@
 #define LDBPS 256
 #define TSYM 4e-06
 #define ECA_AIFS 28e-06
+
+#define ChERROR 1000
 			
 #include "Aux.h"
 
@@ -66,9 +68,10 @@ component Channel : public TypeII
      	ofstream slotsInTime;
 
 	public: // Statistics
-		double collision_slots, empty_slots, succesful_slots, total_slots;
+		double collision_slots, empty_slots, succesful_slots, error_slots, total_slots;
 		double totalBitsSent;
 		double recentCollisions; //Collisions during the last 1000 slots
+		double recentErrors;
 		int errorPeriod;
 		bool channelModel;	//0 = perfect, 1 = bad
 		signed long long slotNum;
@@ -90,9 +93,10 @@ void Channel :: Start()
 	empty_slots = 0;
 	succesful_slots = 0;
 	total_slots = 0;
+	error_slots = 0;
 	recentCollisions = 0;
+	recentErrors = 0;
 	slotNum = 0;
-	// errorPeriod = 10;
 	errorPeriod = 0;
 	channelModel = true;
 	triggerChange.Set(SimTime());
@@ -177,8 +181,15 @@ void Channel :: EndReceptionTime(trigger_t &)
 	if(number_of_transmissions_in_current_slot > 1)
 	{
 		slot_time.Set(SimTime()+collision_duration);
-		collision_slots++;	
-		recentCollisions++;
+		if(number_of_transmissions_in_current_slot == ChERROR)
+		{
+			error_slots++;
+			recentErrors++;
+		}else
+		{
+			collision_slots++;	
+			recentCollisions++;
+		}
 	}
 		
 	total_slots++; //Just to control that total = empty + successful + collisions
@@ -189,9 +200,11 @@ void Channel :: EndReceptionTime(trigger_t &)
     if(int(total_slots) % 1000 == 0) //just printing in thousands increments
 	{
 	        slotsInTime << Nodes << " " << SimTime() << " " <<  total_slots << " " << collision_slots/total_slots << " " 
-	        	<< succesful_slots/total_slots << " " << empty_slots/total_slots << " " << recentCollisions << endl;
+	        	<< succesful_slots/total_slots << " " << empty_slots/total_slots << " " << recentCollisions << " " 
+	        	<< error_slots/total_slots << " " << recentErrors << endl;
 
         	recentCollisions = 0;
+        	recentErrors = 0;
 	}
 	
 }
@@ -220,7 +233,7 @@ void Channel :: in_packet(Packet &packet)
 			{
 			    //If the channel error probability is contained inside the system error margin,
 			    //then something wrong is going to happen with the transmissions in this slot
-			    number_of_transmissions_in_current_slot+=2;
+			    number_of_transmissions_in_current_slot = ChERROR;
 			}else
 			{
 			    number_of_transmissions_in_current_slot++;

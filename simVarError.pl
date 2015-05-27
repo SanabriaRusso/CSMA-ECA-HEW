@@ -14,31 +14,30 @@ my %help = (
 				'--help'	=> 1
 			);
 
-die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. ECA Code\n") 
+die ("******Help\n", "ARGV. field:\n", "\t0. Repetitions\n \t1. Time\n \t2. Nodes\n \t3. Bandwidth\n \t4. %Channel errors min\n \t5. %Channel errors max\n \t6. %Jumps\n \t7. ECA Code\n") 
 	if (exists $help{$ARGV[0]});
 
 my $rep = $ARGV[0];
 my $time = $ARGV[1];
-my $Nmax = $ARGV[2];
-my $Nmin = $ARGV[3];
-my $jump = $ARGV[4];
-my $bandwidth = $ARGV[5];
-my $errors = $ARGV[6];
+my $N = $ARGV[2];
+my $bandwidth = $ARGV[3];
+my $erMin = $ARGV[4];
+my $erMax = $ARGV[5];
+my $jump = $ARGV[6];
 my $ECA = $ARGV[7];
 my $length = 1024;
 my $batch = 1;
 my $drift = 0;
 my $EDCA = 0;
 my $maxAggregation = 0;
-
 my $stickiness = 0;
 my $fairShare = 0;
 
 print ("Going to simulate:\n");
-if ($Nmax == $Nmin){
-	print ("\t$rep repetitions of $time seconds, ", $Nmin, " stations, $bandwidth Mbps, errors $errors and ECA $ECA.\n\n\n");	
+if ($erMax == $erMin){
+	print ("\t$rep repetitions of $time seconds, $N stations, $bandwidth Mbps, %errors $erMax and ECA $ECA.\n\n\n");	
 }else{
-	print ("\t$rep repetitions jumping $jump of $time seconds, ", ($Nmax - $Nmin), " stations, $bandwidth Mbps, errors $errors and ECA $ECA.\n\n\n");
+	print ("\t$rep repetitions jumping $jump of $time seconds, ", ($erMax - $erMin), " %channel errors gap, $N stations, $bandwidth Mbps and ECA $ECA.\n\n\n");
 }
 
 switch ($ECA){
@@ -84,21 +83,26 @@ system($compile);
 die "Command failed\n" if ($? != 0);
 
 #Simulating at $jump intervals
-foreach ($Nmin .. $Nmax)
+
+foreach ($erMin .. $erMax)
 {
 	push @jumps, $_
 		if $_ % $jump == 0;
 
 }
-push @jumps, $Nmax
-	if $jumps[-1] != $Nmax;
 
+#Avoiding problems with a decimal parameter
+push @jumps, $jump
+	if(scalar @jumps == 0);
+push @jumps, $erMax
+	if ($erMax > 0 and $jumps[-1] != $erMax);
 
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
-		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA $maxAggregation $seed"); 
-		print ("\n\n****Node #$i of $Nmax ($?).\n");
+		my $error = $i/100;
+		@command = ("./ECA_exec $time $N $length $bandwidth $batch $ECA $stickiness $fairShare $error $drift $EDCA $maxAggregation $seed"); 
+		print ("\n\n****Error #$i of $erMax ($?).\n");
 		print ("****Iteration #$j of $rep.\n");
 		print ("**** @command\n");
 		system(@command);
@@ -108,14 +112,14 @@ OUTTER: foreach my $i (@jumps){
 
 
 #Calling the parser
-my $parserFile = 'process.pl';
-my $parseSlots = 'analyseSlots.pl';
+my $parserFile = 'processVarError.pl';
+# my $parseSlots = 'analyseSlots.pl';
 my $dataFile = 'Results/output.txt';
-my $slotsFile = 'Results/slotsInTime.txt';
-my @parseCommand = ("perl $parserFile $dataFile");
+# my $slotsFile = 'Results/slotsInTime.txt';
+my @parseCommand = ("./$parserFile $dataFile");
 system(@parseCommand);
 (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
 
-@parseCommand = ("perl $parseSlots $slotsFile");
-system(@parseCommand);
-(print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
+# @parseCommand = ("perl $parseSlots $slotsFile");
+# system(@parseCommand);
+# (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
