@@ -1,0 +1,639 @@
+#include <time.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <math.h>
+#include <algorithm>
+#include <array>
+#include <map>
+#include <bitset>
+#include "Aux.h"
+#include "FIFO.h"
+#include "includes/computeBackoff.hh"
+#include "includes/computeBackoff_enhanced.hh"
+#include "includes/selectMACProtocol.hh"
+#include "includes/resolveInternalCollision.hh"
+#include "includes/preparePacketForTransmission.hh"
+#include "includes/erasePacketsFromQueue.hh"
+#include "includes/pickNewPacket.hh"
+#include "includes/decrement.hh"
+#include "includes/setAIFS.hh"
+#include "includes/analiseHalvingCycle.hh"
+#include "includes/analiseResetCycle.hh"
+
+//Suggested value is MAXSTAGE+1
+#define MAX_RET 7
+
+//Number of access categories
+#define AC 4
+
+// #define MAXSTAGE 5
+extern "C" const int MAXSTAGE [AC] = { 5, 5, 1, 1 };
+
+extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
+// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
+
+
+using namespace std;
+
+component STA : public TypeII
+{
+    public:
+        void Setup();
+        void Start();
+        void Stop();
+
+    public:
+    	//Node-specific characteristics
+        int node_id;
+        int K; //max queue size
+        int system_stickiness; //global stickiness
+        std::array<int, AC> stationStickiness; //the stickiness of each AC
+        int fairShare;
+        
+        //Protocol picking
+        int cut;
+        int ECA;
+        int backoffScheme;
+
+        //Performance enhancement variables
+        std::map<double,double> buffer;
+        
+        //aggregation settings
+        int maxAggregation;
+        int L; //length of packet
+        
+        //Source and Queue management
+        double incommingPackets;
+        std::array<double,AC> blockedPackets;
+        double totalBloked;
+        std::array<double,AC> queuesSizes;
+        double overallPacketsInQueue;
+        std::array<double,AC> packetsInQueue;
+        std::array<double,AC> queueEmpties;
+        double erased;
+        double remaining;
+
+
+        //Transmissions statistics
+        std::array<double,AC> transmissions;
+        std::array<double,AC> sxTx;
+        std::array<double,AC> consecutiveSx;
+        std::array<double,AC> packetsSent; //successfully sent packets per AC
+        double overallSentPackets;
+        std::array<double,AC> overallACThroughput;
+        double overallThroughput;
+        int saturated;
+
+        //Collision stsatistics
+        double totalCollisions;
+        std::array<double,AC> totalACCollisions;
+
+        double totalInternalCol;
+        std::array<double,AC> totalInternalACCol;
+        std::array<int,AC> recomputeBackoff;
+
+        double totalRetransmissions;
+        std::array<double,AC> totalACRet;
+        std::array<int,AC> retAttemptAC;
+        double totalDropped;
+        std::array<double,AC> droppedAC;
+
+        //Time statistics
+        std::array<double,AC> accumTimeBetweenSxTx;
+
+    private:
+    	/*the positions in the backoff counters and stages vectors follow the 
+    	ACs priorities, meaning: 0 = BK, 1 = BE, 2 = VI, 3 = VO*/
+        std::array<double, AC> backoffCounters;
+        std::array<int, AC> backoffStages;
+        std::array<double,AC> AIFS;
+
+        //Halving the cycle statistics
+        int changingSchedule; // 1 = yes, 0 = no
+        std::array<double, AC> halvingCounters;
+        std::array<double, AC> analysisCounter;
+        std::array<int,AC> halvingThresholds;
+        std::array<int, AC> halvingAttempt;
+        std::array<int, AC> shouldHalve; //1 = yes, 0 = no
+        std::array<int,AC> changeStage;
+        std::array<double,AC> halved; //number of times the backoff was halved
+
+        //Transmission private statistics
+        int transmitted;    //0 -> no, 1 -> yes.
+        int sx;             //0 -> no, 1 -> yes.
+
+        int ACToTx; //to dertermine which AC is to transmit in case of an internal collision
+        
+        std::array<int,AC> backlogged; //whether or not the station has something to transmit on an AC (0 no, 1 yes)
+
+		Packet packet; //individual packets
+        std::array<Packet,AC> superPacket; //an abstract packet composed of #AC packets. This structure helps at keeping track of AC-related timers
+        
+        std::array<FIFO <Packet>, AC> Queues;
+        FIFO <Packet> Q;
+
+    public:
+        //Connections
+        inport void inline in_slot(SLOT_notification &slot);
+        inport void inline in_packet(Packet &packet);
+        outport void out_packet(Packet &packet);
+};
+
+void STA :: Setup()
+{
+
+};
+
+void STA :: Start()
+{
+	selectMACProtocol(node_id, ECA, system_stickiness);
+    setAIFS(AIFS, ECA, defaultAIFS);
+
+    //--------------------IMPORTANT
+
+    backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
+    if(ECA == 0) backoffScheme = 0;
+    changingSchedule = 1; // 0 = no, 1 = yes.
+
+    //-----------------------------
+	
+	/*Initializing variables and arrays to avoid warning regarding
+	in-class initialization of non-static data members*/
+	incommingPackets = 0;
+
+    for(int i = 0; i < (int)superPacket.size(); i++)
+    {
+        superPacket.at(i).contention_time = SimTime();
+        //Setting the default aggregation parameter for the first packet transmission
+        superPacket.at(i).aggregation = 1;
+        superPacket.at(i).L = L;
+    }
+
+    ACToTx = -1;
+    transmitted = 0;
+    sx = 0;
+
+    for(int i = 0; i < AC; i++)
+    {
+        stationStickiness.at(i) = system_stickiness; //Could individual AC stickiness parameter be interesting?
+        droppedAC.at(i) = 0;
+        backlogged.at(i) = 0;
+        backoffStages.at(i) = 0;
+        Queues.at(i) = Q;
+        overallACThroughput.at(i) = 0.0;
+        consecutiveSx.at(i) = 0;
+        halvingCounters.at(i) = 0.0;
+        analysisCounter.at(i) = 0.0;
+        halvingThresholds.at(i) = 1;
+        halvingAttempt.at(i) = 0;
+        shouldHalve.at(i) = 0;
+        changeStage.at(i) = 0;
+        halved.at(i) = 0;
+    }
+	
+};
+
+void STA :: Stop()
+{
+    cout << "\n***Node-" << node_id << "**" <<endl;
+    for(int it = 0; it < AC; it++)
+    {
+        cout << "AC " << it << endl;
+        cout << "\t* Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
+        cout << "\t* Total transmission attempts for AC " << it << ": " << transmissions.at(it) << endl;
+        cout << "\t+ Total Packets sent for AC " << it << ": " << packetsSent.at(it) << endl;
+        
+        if(packetsSent.at(it) > 0){
+            overallACThroughput.at(it) = (packetsSent.at(it) * L * 8.)/SimTime();
+        }
+        cout << "\t+ Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
+        overallSentPackets += packetsSent.at(it);
+
+        if(sxTx.at(it) == 0) sxTx.at(it)++;   //Avoiding divisions by 0.
+        //Adding the contention time for the last transmission attempt
+        if(backlogged.at(it) == 1) accumTimeBetweenSxTx.at(it) += (double)(SimTime() - superPacket.at(it).contention_time);
+        cout << "\t- Time between successful transmissions for AC " << it << ": " << 
+        accumTimeBetweenSxTx.at(it) / sxTx.at(it) << endl;
+
+        packetsInQueue.at(it) = Queues.at(it).QueueSize();
+        overallPacketsInQueue += packetsInQueue.at(it);
+        cout << "\t* Queue AC " << it << ": " << packetsInQueue.at(it) << endl;
+        cout << "\t* Number of queue flushes for AC " << it << ": " << queueEmpties.at(it) << endl;
+
+        totalCollisions += totalACCollisions.at(it);
+        totalInternalCol += totalInternalACCol.at(it);
+        cout << "\t- Total Collisions for AC " << it << ": " << totalACCollisions.at(it) << endl;
+        cout << "\t\t- Total Internal Collisions for AC " << it << ": " << totalInternalACCol.at(it) << endl;
+
+        totalRetransmissions += totalACRet.at(it);
+        cout << "\t- Total Retransmissions for AC " << it << ": " << totalACRet.at(it) << endl;
+
+        totalDropped += droppedAC.at(it);
+        cout << "\t- Total Dropped due to retransmissions for AC " << it << ": " << droppedAC.at(it) << endl;
+
+        totalBloked += blockedPackets.at(it);
+        cout << "\t- Total Blocked due to full MAC queue for AC " << it << ": " << blockedPackets.at(it) << endl;
+
+    }
+    cout << "+ Overall successful transmissions: " << overallSentPackets << endl;
+    
+    overallThroughput = (overallSentPackets * L * 8.) / SimTime();
+    cout << "+ Overall throughput for this station: " << overallThroughput << endl;
+
+    cout << "- Overal Collisions for this station: " << totalCollisions << endl;
+
+    cout << "- Overall retransmissions: " << totalRetransmissions << endl;
+
+    cout << "- Overall incomming packets: " << incommingPackets << endl;
+
+    cout << "- Overall dropped due to RET: " << totalDropped << endl;
+
+    cout << "- Total Blocked packet due to full MAC queue: " << totalBloked << endl;
+
+    double pFailureI_1 = 0;
+    double pFailureI_2 = 0;
+
+    erased = totalDropped + overallSentPackets;
+    remaining = overallPacketsInQueue + totalBloked;
+
+    pFailureI_1 = (incommingPackets - erased) / remaining;
+    pFailureI_2 = incommingPackets / (erased + remaining);
+    
+    cout << "- Erased packets failure index (at least one should be 1). In sat: " <<
+    pFailureI_1 << ". Non-sat: " << pFailureI_2 << endl;
+
+    // cout << "***DEBUG: incommingPackets: " << incommingPackets << ", erased: " << erased << ", remaining: " << remaining << endl;
+    double totalHalved = 0.0;
+    for(int i = 0; i < AC; i++)
+    {
+        totalHalved += halved.at(i);
+    }
+    cout << "+ Overall times some deterministic backoff was changed : " << totalHalved << endl;
+    // cout << "***DEBUG: final backoff stage" << endl;
+    // for(int i = 0; i < AC; i++)
+    // {
+    //     cout << "\tAC " << i << ": " << backoffStages.at(i) << endl;
+    // }
+
+    
+};
+
+void STA :: in_slot(SLOT_notification &slot)
+{	
+
+    // cout << "\nNEW SLOT STA-" << node_id << ": " << slot.status << endl;
+	switch(slot.status)
+	{
+		case 0:
+			//Important to remember: 0 = BK, 1 = BE, 2 = VI, 3 = VO
+            //We first decrement the backoff of backlogged ACs
+			for(int i = 0; i < AC; i++)
+			{
+                // cout << "(" << SimTime() << ") STA-" << node_id << " AC " << i << ". Counter: " << backoffCounters.at(i)
+                //    << ". Stage: " << backoffStages.at(i) << endl;
+				if(backlogged.at(i) == 1) //if the AC has something to transmit
+				{
+                    if(backoffCounters.at(i) > 0)
+                    {
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
+                    }
+				}
+            }
+            //Then we treat not backlogged ACs
+            for(int i = 0; i < AC; i++)
+            {
+                if(backlogged.at(i) == 0)
+                {
+                    // cout << "STA-" << node_id << ": AC: " << i << ". Is not backlogged. Checking the queue: " << endl;
+                    if(Queues.at(i).QueueSize() > 0)
+                    {
+                        // cout << "STA-" << node_id << ": AC: " << i << ". was not backlogged. New queue: " << Queues.at(i).QueueSize() << endl;
+                        backlogged.at(i) = 1;
+
+                        pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                        
+                        // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
+
+                        int forceRandom = 0;
+                        sx = 0;                        
+                        if(backoffScheme == 0)
+                        {
+                            computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
+                                backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
+                        }else
+                        {
+                            computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
+                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                        }
+                        
+                        // cout << "\tBacklog: " << backlogged.at(i) << ". Counter: " << backoffCounters.at(i) << endl;
+
+                    }
+                }
+			}
+			break;
+		case 1:
+            if(transmitted == 1)
+            {
+                sx = 1; //it was a successful transmission
+                //All other stations should decrement their respective counters
+                for(int i = 0; i < AC; i++)
+                {
+                    if(i != packet.accessCategory){
+                        // Decremeting the backoff of all other ACs
+                        if(backlogged.at(i) == 1)
+                        {
+                            if(backoffCounters.at(i) > 0)
+                            {
+                                if(ECA == 0){
+                                    AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                    // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                                }
+                                decrement(i, backoffCounters.at(i), AIFS.at(i));    
+                            }
+                        }
+                    }
+                }
+                //Locating the AC that transmitted the last packet
+                for (int i = 0; i < AC; i++)
+                {
+				    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//this category transmitted the last packet
+				    {
+                        //Gathering statistics from last transmission
+                        packetsSent.at(i) += (packet.aggregation - slot.error);
+                        // cout << "Packets sent: " << int(packet.aggregation - slot.error) << endl;
+                        sxTx.at(i)++;
+                        consecutiveSx.at(i)++;
+                        accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
+
+                        // cout << "STA-" << node_id << ": AC: " << i << ". Transmitted " <<
+                        // packet.aggregation << " packets." << endl;
+
+                        //Erasing the packet(s) that was(were) sent
+                        erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
+                            sx, droppedAC.at(i), queueEmpties, slot.error);
+
+                        // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
+                    
+                        /*****NEW PACKET IS PICKED************
+                        **************************************/
+                        if(stationStickiness.at(i) <= system_stickiness)        //if the station stickiness wasn't modified by halving
+                        {
+                            stationStickiness.at(i) = system_stickiness;        //Resetting the stickiness after a successful transmission
+                        }
+                        if(ECA == 0 || system_stickiness == 0) backoffStages.at(i) = 0;                   //Resetting the backoffstage of the transmitting AC
+                        retAttemptAC.at(i) = 0;                                 //Resetting the retransmission attempt counter
+                        transmitted = 0;                                        //Also resetting the transmitted flag
+
+                        // cout << "+++Tx" << endl;
+                        if(backlogged.at(i) == 1)
+                        {
+                            pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                            // cout << "\nSTA-" << node_id << ": Success AC " << i;
+
+                            //I can calculate the backoff freely here because it was a successful transmissions
+                            //where the backoff is deterministic and no internal collision is possible after a SmartBackoff
+                            if(backoffScheme == 0)
+                            {
+                                computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+                                    backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
+                            }else
+                            {
+                                computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
+                                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                            }
+                            // cout << ". Counter: " << backoffCounters.at(i) << endl;
+                        }else
+                        {
+                            backoffStages.at(i) = 0;
+                            backoffCounters.at(i) = 0;
+                            stationStickiness.at(i) = system_stickiness;
+                        }
+				    }
+                }
+			}else
+            {
+                for(int i = 0; i < AC; i++)
+                {
+                    // Decremeting the backoff of all ACs
+                    if(backoffCounters.at(i) > 0)
+                    {
+                        if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    }
+                }
+            }
+            break;
+
+        default: //it is set to default to mean a number other than 0 or 1
+            if (transmitted == 1)
+            {
+                sx = 0; //it was not a successful transmission
+
+                for(int i = 0; i < AC; i++)
+                {
+                    if( (packet.accessCategory != i) && (backoffCounters.at(i) > 0) )
+                    {
+                        if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    }
+                }
+
+                for (int i = 0; i < AC; i++)
+                {
+                    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//to modify the colliding AC(s) backoff parameters
+                    {
+                        //Collision metrics
+                        totalACCollisions.at(i)++;
+                        //Retransmission metrics
+                        totalACRet.at(i)++;
+                        retAttemptAC.at(i)++;
+
+                        if(retAttemptAC.at(i) == MAX_RET)
+                        {
+                            // cout << "Station " << node_id << ": AC " << ACToTx << ". Drops " 
+                            // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for collisions." << endl;
+
+                            //Adding the already elapsed time to the timeBetweenSxTx
+                            accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
+
+                            erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
+                                fairShare, sx, droppedAC.at(i), queueEmpties, slot.error);
+
+                            stationStickiness.at(i) = system_stickiness;
+
+                            if(ECA == 0) backoffStages.at(i) = 0;
+
+                            if(backlogged.at(i) == 1)
+                            {
+                                pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                            }else
+                            {
+                                backoffStages.at(i) = 0;
+                                backoffCounters.at(i) = 0;
+                                stationStickiness.at(i) = system_stickiness;
+                            }
+
+                            retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
+
+                        }else
+                        {
+                            // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
+                            stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
+                            if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
+                            {
+                                consecutiveSx.at(i) = 0;
+                                halvingAttempt.at(i) = 0;
+                                backoffStages.at(i) = min( (backoffStages.at(i) + 1), MAXSTAGE[i] );
+                            }
+                        }
+                        //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
+                        //cout << "--Tx" << endl;
+
+                        // cout << "\nSTA-" << node_id << ": Collision" << endl;
+
+                        if(backoffScheme == 0)
+                        {
+                            computeBackoff(backlogged.at(i), Queues.at(i), i, stationStickiness.at(i), backoffStages.at(i), 
+                                backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
+                        }else
+                        {
+                            computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
+                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                        }
+                        transmitted = 0;
+                    }
+                }  
+            }else
+            {
+                for(int i = 0; i < AC; i++)
+                {
+                    // Decremeting the backoff of all other ACs
+                    if(backoffCounters.at(i) > 0)
+                    {
+                        if(ECA == 0){
+                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }
+                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                    }
+                }
+            }
+	}
+	
+	//**********************************************
+	//****Checking availability for transmission****
+    //**********************************************
+    ACToTx = resolveInternalCollision(backoffCounters, backlogged, stationStickiness, backoffStages, 
+        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE, consecutiveSx);
+
+
+    //Fix any dropping of packets due to internal collisions
+    if(ACToTx >= 0)
+    {
+        for(int i = 0; i < ACToTx; i++)
+        {
+            if(backlogged.at(i) == 1)
+            {
+                if(retAttemptAC.at(i) == MAX_RET)
+                {
+                    // cout << "Station " << node_id << ": AC " << ACToTx << ". Drops " 
+                    // << (int) pow(2, superPacket.at(i).startContentionStage) << " packets for internal collisions." << endl;
+
+                    //Adding the already elapsed time to the timeBetweenSxTx
+                    accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
+
+                    erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
+                        fairShare, sx, droppedAC.at(i), queueEmpties, slot.error);
+
+                    stationStickiness.at(i) = system_stickiness;
+
+                    if(ECA == 0) backoffStages.at(i) = 0;
+
+                    if(backlogged.at(i) == 1)
+                    {
+                        pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                    }else
+                    {
+                        backoffStages.at(i) = 0;
+                        backoffCounters.at(i) = 0;
+                        stationStickiness.at(i) = system_stickiness;
+                        recomputeBackoff.at(i) = 0; //we won't recompute the backoff of not backlogged stations
+                    }
+                }
+                retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
+            }
+        }
+        
+        //*****Recomputing the backoff for**
+        //*****internal collisions**********
+        for(int i = 0; i < ACToTx; i++)
+        {
+            if(recomputeBackoff.at(i) == 1)
+            {
+                sx = 0;
+                // cout << "\nSTA-" << node_id << ": Recomputing backoff for AC " << i << endl;
+
+                //Forcing the computation to derive a random backoff by setting the stickiness of the AC to 0.
+                int forceRandom = 0;
+                if(backoffScheme == 0)
+                {
+                    computeBackoff(backlogged.at(i), Queues.at(i), i, forceRandom, backoffStages.at(i), 
+                        backoffCounters.at(i), system_stickiness, node_id, sx, ECA, AIFS.at(i), defaultAIFS);
+                }else
+                {
+                    computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
+                        backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                }
+            }
+        }
+
+        //Attempting transmission if any available
+        // cout << "Winner " << ACToTx << endl;
+
+        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
+        // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
+        // << ". " << packet.aggregation << " packets." << endl;
+
+        transmissions.at(ACToTx)++;
+        transmitted = 1;
+        out_packet(packet);
+    }
+
+    //Checking if it is possible to halve the cycle length for this station
+    //Limiting it to ECA with hysteresis only
+    if( (changingSchedule == 1) && (ECA == 1) && (system_stickiness > 0) )
+    {
+        // analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        //     MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
+        //     changeStage, halved, stationStickiness, system_stickiness);
+
+        analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+            MAXSTAGE, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
+            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
+    }
+    
+
+};
+
+void STA :: in_packet(Packet &packet)
+{
+    incommingPackets++;
+
+    if( Queues.at(packet.accessCategory).QueueSize()  < K )
+    {
+        Queues.at(packet.accessCategory).PutPacket(packet);
+    }else
+    {
+        blockedPackets.at(packet.accessCategory)++;
+    }
+}
+
