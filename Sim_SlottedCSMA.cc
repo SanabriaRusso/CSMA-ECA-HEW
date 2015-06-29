@@ -362,8 +362,8 @@ void SlottedCSMA :: Stop()
 	file << stas[0].system_stickiness << " ";
 
 	//37-38
-	double totalThroughputUnsat = 0;
-	double totalThroughputSat = 0;
+	double totalThroughputUnsat = 0.0;
+	double totalThroughputSat = 0.0;
 	for(int i = 0; i < Nodes; i++)
 	{
 		if(stas[i].saturated == 0)
@@ -374,14 +374,7 @@ void SlottedCSMA :: Stop()
 			totalThroughputSat += stas[i].overallThroughput;		
 		}
 	}
-	if((totalThroughputUnsat + totalThroughputSat) == totalThroughput)
-	{
-		file << totalThroughputUnsat << " " << totalThroughputSat << " ";
-	}else
-	{
-		file << 0 << " " << 0 << " ";
-	}
-
+	file << totalThroughputUnsat << " " << totalThroughputSat << " ";
 	file << endl;
 
 

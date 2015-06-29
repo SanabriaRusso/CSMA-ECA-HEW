@@ -11,9 +11,6 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	//In number of slots
 	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
 
-	// int CWmin [AC] = { 64, 64, 32, 16 };
-	// int CWmin [AC] = { 1024, 1024, 1024, 1024 };
-
 	double deterministicBackoff;
 
 	deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);

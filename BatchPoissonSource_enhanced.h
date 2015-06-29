@@ -61,22 +61,22 @@ void BatchPoissonSource :: Stop()
 
 void BatchPoissonSource :: new_packet(trigger_t &)
 {
-	// packetGeneration = rand() % (int) (100);
+	packetGeneration = rand() % (int) (100);
 	Packet packet;
 
-	// if(packetGeneration < VOShare)
-	// {
-	// 	packet.accessCategory = 3;
-	// }else if( (packetGeneration >= VOShare) && (packetGeneration < VIShare) )
-	// {
-	// 	packet.accessCategory = 2;
-	// }else if( (packetGeneration >= VIShare) && (packetGeneration < BEShare) )
-	// {
-	// 	packet.accessCategory = 1;
-	// }else
-	// {
+	if(packetGeneration < VOShare)
+	{
+		packet.accessCategory = 3;
+	}else if( (packetGeneration >= VOShare) && (packetGeneration < VIShare) )
+	{
+		packet.accessCategory = 2;
+	}else if( (packetGeneration >= VIShare) && (packetGeneration < BEShare) )
+	{
+		packet.accessCategory = 1;
+	}else
+	{
 		packet.accessCategory = 0;
-	// }
+	}
 
 	int RB = (int) Random(MaxBatch)+1;
 	

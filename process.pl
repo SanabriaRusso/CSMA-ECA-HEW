@@ -49,7 +49,6 @@ print $fw
 #66 droppedVO           #68 channelErrors               #70 stickiness
 #72 totalThroughputUnsat #74 totalThroughputSat\n");
 
-
 OUTTER: foreach($lowNodes .. $highNodes)
 {
     open(my $fh, "<", $filename)

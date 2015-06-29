@@ -115,7 +115,6 @@ my $slotsFile = 'Results/slotsInTime.txt';
 my @parseCommand = ("./$parserFile $dataFile");
 system(@parseCommand);
 (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
-
 @parseCommand = ("./$parseSlots $slotsFile");
 system(@parseCommand);
 (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);

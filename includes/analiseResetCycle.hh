@@ -1,5 +1,5 @@
 #define AC 4
-
+#include "isThisNewBackoffPossible.hh"
 using namespace std;
 
 void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,AC> &resetCounters,
@@ -99,21 +99,28 @@ void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,A
 				// Can we reduce the future cycle?
 				if(changeStage.at(i) == 1)
 				{
-					//Resisting a colision because we changed to another schedule
-					stationStickiness.at(i) = std::min(stationStickiness.at(i)+1, systemStickiness+1);
-					//Reseting the control variables
-					resetAttempt.at(i) = 0;
-					resetCounters.at(i) = 0;
-					consecutiveSx.at(i) = 0;
-					changeStage.at(i) = 0;
-					reset.at(i)++;
-					//------------------------------
 
 					//*/DEBUG
 					// cout << "**(" << timer << ")Node " << node << endl;
 					// cout << "\tMaking the change from stage " << stages.at(i);
-					stages.at(i) = newStage;
-					// cout << " to " << stages.at(i) << " now" << endl;
+					int canWeChange = isThisNewBackoffPossible(newStage, stages, counters, i, backlog, CWmin);
+					if(canWeChange == 1)
+					{
+						//Resisting a colision because we changed to another schedule
+						stationStickiness.at(i) = std::min(stationStickiness.at(i)+1, systemStickiness+1);
+						//Reseting the control variables
+						resetAttempt.at(i) = 0;
+						resetCounters.at(i) = 0;
+						consecutiveSx.at(i) = 0;
+						changeStage.at(i) = 0;
+						reset.at(i)++;
+						stages.at(i) = newStage;
+						// cout << " to " << stages.at(i) << " now" << endl;
+					}else
+					{
+						//*/DEBUG
+						// cout << "The change causes a virtual collisions. Aborting." << endl;
+					}
 
 				}
 				if(stages.at(i) != 0)
