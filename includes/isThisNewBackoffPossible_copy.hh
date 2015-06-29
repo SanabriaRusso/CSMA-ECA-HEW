@@ -1,7 +1,7 @@
 #define AC 4
 using namespace std;
 
-int isThisNewBackoffPossible(double test, std::array<int,AC> &stages, std::array<double,AC> &counters, int &category,
+int isThisNewBackoffPossible_copy(double test, std::array<int,AC> &stages, std::array<double,AC> &counters, int &category,
 	std::array<int,AC> &backlog, int CWmin[AC]){
 	
 	//The code below is an extract of the one found in computeBackoff_enhanced.hh

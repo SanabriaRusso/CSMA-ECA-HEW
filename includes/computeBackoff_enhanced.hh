@@ -1,4 +1,5 @@
 #include "concatenate.hh"
+#include "isThisNewBackoffPossible_copy.hh"
 #define AC 4
 
 using namespace std;
@@ -15,31 +16,36 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 
 	deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);
 	AIFS.at(category) = defaultAIFS[category];
-	// int isItPossible = isThisNewBackoffPossible(newStage, stages, counters, i, backlog, CWmin);
+
+	//Always checking if the counters will cause a VC.
+	int isItPossible = isThisNewBackoffPossible_copy(deterministicBackoff, stages, counters, category, backlog, CWmin);
+	// int isItPossible = 1;
 
 	//If it is just a deterministic backoff, we don't have to compute the SmartBackoff
 	if(backlog.at(category) == 1)
 	{
-
-		if(sx == 1)
+		if(isItPossible == 1)
 		{
-			if(ECA == 1)
+			if(sx == 1)
 			{
-				counters.at(category) = deterministicBackoff;
+				if(ECA == 1)
+				{
+					counters.at(category) = deterministicBackoff;
 
-				// cout << "**Node " << id << endl;
-				// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
-				return; //get out
-			}
+					// cout << "**Node " << id << endl;
+					// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
+					return; //get out
+				}
 
-		}else
-		{
-			if(stickiness > 0)
+			}else
 			{
-				counters.at(category) = deterministicBackoff;	
-				// cout << "**Node " << id << endl;
-				// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
-				return;
+				if(stickiness > 0)
+				{
+					counters.at(category) = deterministicBackoff;	
+					// cout << "**Node " << id << endl;
+					// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
+					return;
+				}
 			}
 		}
 	}else
