@@ -12,5 +12,5 @@ void decrement(int category, double &counter, double &AIFS, int station, double 
 		AIFS --;
 	}
 
-	cout << "(" << timer << ") STA-" << station << " AC " << category << ": AIFS " << AIFS << ", Counter " << counter << endl;
+	// cout << "(" << timer << ") STA-" << station << " AC " << category << ": AIFS " << AIFS << ", Counter " << counter << endl;
 }

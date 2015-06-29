@@ -1,5 +1,5 @@
 #define AC 4
-int isThisNewBackoffPossible(int test, std::array<int,AC> &stages, std::array<double,AC> &counters, int &category,
+int isThisNewBackoffPossible(double test, std::array<int,AC> &stages, std::array<double,AC> &counters, int &category,
 	std::array<int,AC> &backlog, int CWmin[AC]){
 	
 	//The code below is an extract of the one found in computeBackoff_enhanced.hh

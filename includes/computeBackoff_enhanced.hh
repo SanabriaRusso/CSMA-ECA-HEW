@@ -15,10 +15,12 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 
 	deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);
 	AIFS.at(category) = defaultAIFS[category];
+	// int isItPossible = isThisNewBackoffPossible(newStage, stages, counters, i, backlog, CWmin);
 
 	//If it is just a deterministic backoff, we don't have to compute the SmartBackoff
 	if(backlog.at(category) == 1)
 	{
+
 		if(sx == 1)
 		{
 			if(ECA == 1)
@@ -148,12 +150,12 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 		// cout << "Adding it: " << buffer[hash] << endl;
 
 		// Debug info
-		cout << "+++SmartBackoff with: " << randomBackoff << " AIFS " << defaultAIFS[category] << endl;
-		for(int i = 0; i < AC; i++)
-		{
-			cout << "\nAC " << i << ": " << counters.at(i) << " \tAIFS " << AIFS.at(i) << " ";
-		}
-		cout << endl << endl;
+		// cout << "+++SmartBackoff with: " << randomBackoff << " AIFS " << defaultAIFS[category] << endl;
+		// for(int i = 0; i < AC; i++)
+		// {
+		// 	cout << "\nAC " << i << ": " << counters.at(i) << " \tAIFS " << AIFS.at(i) << " ";
+		// }
+		// cout << endl << endl;
 
 
 	// }else

@@ -48,8 +48,8 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 					
 					consecutiveSx.at(recompute) = 0;
 
-					cout << "\n(" << timer << ") STA-" << id << ": ECA Internal collision" << endl;
-					cout << "---AC " << i << " counter: " << counters.at(i) <<  endl;
+					// cout << "\n(" << timer << ") STA-" << id << ": ECA Internal collision" << endl;
+					// cout << "---AC " << i << " counter: " << counters.at(i) <<  endl;
 					
 					if(scheme == 0) //EDCA
 					{
