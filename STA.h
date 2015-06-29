@@ -296,7 +296,7 @@ void STA :: in_slot(SLOT_notification &slot)
 				{
                     if(backoffCounters.at(i) > 0)
                     {
-                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                         // cout << "STA-" << node_id << ": AC: " << i << ". backoff: " << backoffCounters.at(i) << endl;
                     }
 				}
@@ -351,7 +351,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                     AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
                                     // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
                                 }
-                                decrement(i, backoffCounters.at(i), AIFS.at(i));    
+                                decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());    
                             }
                         }
                     }
@@ -424,7 +424,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
                                 // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
                         }
-                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                     }
                 }
             }
@@ -443,7 +443,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
                                 // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
                         }
-                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                     }
                 }
 
@@ -486,7 +486,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         }else
                         {
-                            // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
+                            cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
                             if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
                             {
@@ -523,7 +523,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
                                 // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
                         }
-                        decrement(i, backoffCounters.at(i), AIFS.at(i));
+                        decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                     }
                 }
             }
@@ -533,7 +533,7 @@ void STA :: in_slot(SLOT_notification &slot)
 	//****Checking availability for transmission****
     //**********************************************
     ACToTx = resolveInternalCollision(backoffCounters, backlogged, stationStickiness, backoffStages, 
-        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE, consecutiveSx);
+        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE, consecutiveSx, SimTime());
 
 
     //Fix any dropping of packets due to internal collisions

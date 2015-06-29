@@ -2,7 +2,8 @@
 
 int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC> &backlogg, std::array<int,AC> &stickiness, 
 	std::array<int,AC> &stages, std::array<int,AC> &recomputeBackoff, std::array<double,AC> &totalInternalACCol,
-	std::array<int,AC> &retAttemptAC, int scheme, int id, const int MAXSTAGE[AC], std::array<double,AC> &consecutiveSx){
+	std::array<int,AC> &retAttemptAC, int scheme, int id, const int MAXSTAGE[AC], std::array<double,AC> &consecutiveSx,
+	double timer){
 
 	int iterator = counters.size() - 1;
 	int acToTx;
@@ -47,7 +48,7 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 					
 					consecutiveSx.at(recompute) = 0;
 
-					cout << "\nSTA-" << id << ": ECA Internal collision" << endl;
+					cout << "\n(" << timer << ") STA-" << id << ": ECA Internal collision" << endl;
 					cout << "---AC " << i << " counter: " << counters.at(i) <<  endl;
 					
 					if(scheme == 0) //EDCA

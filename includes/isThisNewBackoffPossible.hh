@@ -4,8 +4,6 @@ int isThisNewBackoffPossible(int test, std::array<int,AC> &stages, std::array<do
 	
 	//The code below is an extract of the one found in computeBackoff_enhanced.hh
 
-
-
 		int isItPossible = 0;
 		std::array<int, AC> futureCycles;
 		std::array<int, AC> compareBackoffs;

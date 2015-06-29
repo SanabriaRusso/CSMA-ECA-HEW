@@ -148,12 +148,12 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 		// cout << "Adding it: " << buffer[hash] << endl;
 
 		// Debug info
-		// cout << "+++SmartBackoff with: " << randomBackoff << " AIFS " << defaultAIFS[category] << endl;
-		// for(int i = 0; i < AC; i++)
-		// {
-		// 	cout << "\nAC " << i << ": " << counters.at(i) << " \tAIFS " << AIFS.at(i) << " ";
-		// }
-		// cout << endl << endl;
+		cout << "+++SmartBackoff with: " << randomBackoff << " AIFS " << defaultAIFS[category] << endl;
+		for(int i = 0; i < AC; i++)
+		{
+			cout << "\nAC " << i << ": " << counters.at(i) << " \tAIFS " << AIFS.at(i) << " ";
+		}
+		cout << endl << endl;
 
 
 	// }else

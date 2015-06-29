@@ -99,10 +99,6 @@ void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,A
 				// Can we reduce the future cycle?
 				if(changeStage.at(i) == 1)
 				{
-
-					//*/DEBUG
-					// cout << "**(" << timer << ")Node " << node << endl;
-					// cout << "\tMaking the change from stage " << stages.at(i);
 					int canWeChange = isThisNewBackoffPossible(newStage, stages, counters, i, backlog, CWmin);
 					if(canWeChange == 1)
 					{
@@ -115,11 +111,14 @@ void analiseResetCycle(std::array<double,AC> &consecutiveSx, std::array<double,A
 						changeStage.at(i) = 0;
 						reset.at(i)++;
 						stages.at(i) = newStage;
-						// cout << " to " << stages.at(i) << " now" << endl;
+						//*/DEBUG
+						cout << "**(" << timer << ")Node " << node << endl;
+						cout << "\tMaking the change from stage " << stages.at(i);
+						cout << " to " << stages.at(i) << " now" << endl;
 					}else
 					{
 						//*/DEBUG
-						// cout << "The change causes a virtual collisions. Aborting." << endl;
+						cout << "The change causes a virtual collisions. Aborting." << endl;
 					}
 
 				}

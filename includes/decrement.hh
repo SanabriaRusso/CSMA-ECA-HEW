@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void decrement(int category, double &counter, double &AIFS)
+void decrement(int category, double &counter, double &AIFS, int station, double timer)
 {
 	if(AIFS == 0)
 	{
@@ -12,5 +12,5 @@ void decrement(int category, double &counter, double &AIFS)
 		AIFS --;
 	}
 
-	// cout << "AC " << category << ": AIFS " << AIFS << ", Counter " << counter << endl;
+	cout << "(" << timer << ") STA-" << station << " AC " << category << ": AIFS " << AIFS << ", Counter " << counter << endl;
 }
