@@ -37,6 +37,7 @@ component SlottedCSMA : public CostSimEng
 		int Nodes;
 		double Bandwidth_;
 		int PacketLength_;
+		double percentageEDCA_;
 		int Batch_;
 		float drift;
 		double intCut, decimalCut, cut; 
@@ -103,12 +104,22 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 	// This creates a mixed saturation/non-saturation environment which is used to test the schedule reset.
 	if(Bandwidth < 10e6)
 	{
-		for(int i = 0; i < NumNodes/2; i++)
+		for(int i = 0; i < NumNodes/4; i++)
 		{
 			sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
 			stas[i].saturated = 0;
 		}
-		for(int i = NumNodes/2; i < NumNodes; i++)
+		for(int i = NumNodes/4; i < NumNodes/2; i++)
+		{
+			sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
+			stas[i].saturated = 1;
+		}	
+		for(int i = NumNodes/2; i < (3*NumNodes/4); i++)
+		{
+			sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
+			stas[i].saturated = 0;
+		}
+		for(int i = (3*NumNodes/4); i < NumNodes; i++)
 		{
 			sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
 			stas[i].saturated = 1;
@@ -135,6 +146,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 	Bandwidth_ = Bandwidth;
 	PacketLength_ = PacketLength;
 	Batch_ = Batch;
+	percentageEDCA_ = percentageEDCA;
 		
 
 };
@@ -152,8 +164,12 @@ void SlottedCSMA :: Stop()
 
 	//CLI output variables
 	array <double,AC> totalACthroughput = {};
+	array <double,AC> totalACthroughputEDCA = {};
+	array <double,AC> totalACthroughputECA = {};
 	double totalThroughput = 0.0;
-
+	double totalThroughputEDCA = 0.0;
+	double totalThroughputECA = 0.0;
+	
 	array <double,AC> overallSxTx = {};
 	double totalSentPackets = 0.0;
 
@@ -163,6 +179,8 @@ void SlottedCSMA :: Stop()
 	double totalRetransmissions = 0.0;
 
 	array <double,AC> totalACCol = {};
+	array <double,AC> totalACColEDCA = {};
+	array <double,AC> totalACColECA = {};
 	double totalCol = channel.collision_slots;
 	double sumOfCol = 0.0;
 
@@ -183,6 +201,8 @@ void SlottedCSMA :: Stop()
 	double overallFairnessDenom = 0.0;
 
 	array <double,AC> avgTimeBetweenACSxTx = {};
+	array <double,AC> avgTimeBetweenACSxTxEDCA = {};
+	array <double,AC> avgTimeBetweenACSxTxECA = {};
 
 	array <double,AC> qEmpties = {};
 
@@ -197,6 +217,14 @@ void SlottedCSMA :: Stop()
 			{
 				totalThroughput += stas[i].overallACThroughput.at(j);
 				totalACthroughput.at(j) += stas[i].overallACThroughput.at(j);
+				if(stas[i].ECA == 0)
+				{
+					totalThroughputEDCA += stas[i].overallACThroughput.at(j);
+					totalACthroughputEDCA.at(j) += stas[i].overallACThroughput.at(j);
+				}else{
+					totalThroughputECA += stas[i].overallACThroughput.at(j);
+					totalACthroughputECA.at(j) += stas[i].overallACThroughput.at(j);
+				}
 			}
 
 			if(stas[i].packetsSent.at(j) > 0)
@@ -221,6 +249,12 @@ void SlottedCSMA :: Stop()
 			// {
 				sumOfCol += (stas[i].totalACCollisions.at(j));
 				totalACCol.at(j) += ( stas[i].totalACCollisions.at(j) / stas[i].transmissions.at(j) );
+				if(stas[i].ECA == 0)
+				{
+					totalACColEDCA.at(j) += ( stas[i].totalACCollisions.at(j) / stas[i].transmissions.at(j) );
+				}else{
+					totalACColECA.at(j) += ( stas[i].totalACCollisions.at(j) / stas[i].transmissions.at(j) );
+				}
 			// }
 
 			if(stas[i].totalInternalACCol.at(j) > 0)
@@ -246,6 +280,13 @@ void SlottedCSMA :: Stop()
 			if(stas[i].sxTx.at(j) > 0)
 			{
 				avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+				if(stas[i].ECA == 0)
+				{
+					avgTimeBetweenACSxTxEDCA.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+				}else
+				{
+					avgTimeBetweenACSxTxECA.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+				}
 			}
 			
 			qEmpties.at(j) += (stas[i].queueEmpties.at(j));
@@ -271,7 +312,13 @@ void SlottedCSMA :: Stop()
 	file << "#25. avgTimeBtSxTxVO		26. qEmptyBK				27. qEmptyBE				28. qEmptyVI" << endl;
 	file << "#29. qEmptyVO				30. totalDropped			31. droppedBK				32. droppedBE" << endl;
 	file << "#33. droppedVI				34. droppedVO				35. channelErrors           36. Stickiness" << endl;
-	file << "#37. totalThroughputUnsat	38. totalThroughputSat" << endl;
+	file << "#37. totalThroughputUnsat	38. totalThroughputUnsat	39. totalThroughputEDCA		40. EDCABKthroughput" << endl;
+	file << "#41. EDCABEthroughput		42. EDCAVIthroughput		43. EDCAVOthroughput		44.totalThroughputECA" << endl;
+	file << "#45. ECABKthroughput 		46. ECABEthroughput 		47. ECAVIthroughput 		48. ECAVOthroughput" << endl;
+	file << "#49 avgTimeBtSxTxBK-EDCA	50. avgTimeBtSxTxBE-EDCA 	51. avgTimeBtSxTxVI-EDCA	52. avgTimeBtSxTxVO-EDCA" << endl;
+	file << "#53 avgTimeBtSxTxBK-ECA 	54. avgTimeBtSxTxBE-ECA 	55. avgTimeBtSxTxVI-ECA 	56. avgTimeBtSxTxVO-ECA" << endl;
+	file << "#57. fractBKCollisionsEDCA	58. fractBECollisionsEDCA 	59. fractVICollisionsEDCA 	60. fractVOCollisionsEDCA" << endl;
+	file << "#61. fractBKCollisionsECA 	62. fractBECollisionsECA 	63. fractVICollisionsECA 	64. fractVOCollisionsECA" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -377,6 +424,78 @@ void SlottedCSMA :: Stop()
 		}
 	}
 	file << totalThroughputUnsat << " " << totalThroughputSat << " ";
+
+	//39-43
+	file << totalThroughputEDCA << " ";
+
+	for (int i = 0; i < AC; i++){
+		file << totalACthroughputEDCA.at(i) << " ";
+	}
+
+	//44-48
+	file << totalThroughputECA << " ";
+	for (int i = 0; i < AC; i++){
+		file << totalACthroughputECA.at(i) << " ";
+	}
+
+	//49-52
+	int EDCAnodes = 0;
+	int ECAnodes = 0;
+	for(int n = 0; n < Nodes; n++)
+	{
+		if(stas[n].ECA == 0)
+		{
+			EDCAnodes++;
+		}else
+		{
+			ECAnodes++;
+		}
+	}
+	for(int i = 0; i < AC; i++){
+		if(avgTimeBetweenACSxTxEDCA.at(i) != 0)
+		{
+			file << (double)avgTimeBetweenACSxTxEDCA.at(i)/EDCAnodes << " ";
+		}else
+		{
+			file << "0 ";
+			avgTimeBetweenACSxTxEDCA.at(i) = 0.0;
+		}
+	}
+
+	//53-56
+	for(int i = 0; i < AC; i++){
+		if(avgTimeBetweenACSxTxECA.at(i) != 0)
+		{
+			file << (double)avgTimeBetweenACSxTxECA.at(i)/ECAnodes << " ";
+		}else
+		{
+			file << "0 ";
+			avgTimeBetweenACSxTxECA.at(i) = 0.0;
+		}
+	}
+
+	//57-60
+	for (int i = 0; i < AC; i++){
+		if(totalACColEDCA.at(i) > 0)
+		{
+			file << (double)(totalACColEDCA.at(i)/EDCAnodes) << " ";
+		}else
+		{
+			file << "0 ";
+		}
+	}
+
+	//61-64
+	for (int i = 0; i < AC; i++){
+		if(totalACColECA.at(i) > 0)
+		{
+			file << (double)(totalACColECA.at(i)/ECAnodes) << " ";
+		}else
+		{
+			file << "0 ";
+		}
+	}
+
 	file << endl;
 
 
@@ -471,6 +590,40 @@ void SlottedCSMA :: Stop()
 	}
 
 	// cout << "***DEBUG. Generated / Received by STA's MAC = " << totalSource/totalIncommingPackets << endl;
+
+	cout << "\n10. Proportion of EDCA nodes: " << percentageEDCA_*100 << "%" << endl;
+	
+	//*DEBUG
+	// for(int i = 0; i < Nodes; i++)
+	// {
+	// 	cout << "Node-" << i << ": " << stas[i].ECA << endl;
+	// 	cout << "\tThroughput: " << stas[i].overallThroughput << endl;
+	// }
+
+	cout << "\tAvg. Time between successful transmissions: " << endl;
+	cout << "\t-EDCA nodes (" << EDCAnodes << "): " << endl;
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\t\tAC " << i << ": " << (double)avgTimeBetweenACSxTxEDCA.at(i)/EDCAnodes << endl;
+	}
+	cout << "\t-CSMA/ECA_qos nodes (" << ECAnodes << "): " << endl;
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\t\tAC " << i << ": " << (double)avgTimeBetweenACSxTxECA.at(i)/ECAnodes << endl;
+	}
+
+	cout << endl;
+	cout << "\tFraction of collisions: " << endl;
+	cout << "\t-EDCA nodes (" << EDCAnodes << "): " << endl;
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\t\tAC " << i << ": " << (double)(totalACColEDCA.at(i)/EDCAnodes) << endl;
+	}
+	cout << "\t-CSMA/ECA_qos nodes (" << ECAnodes << "): " << endl;
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\t\tAC " << i << ": " << (double)(totalACColECA.at(i)/ECAnodes) << endl;
+	}		
 
 };
 

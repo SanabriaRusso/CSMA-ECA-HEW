@@ -147,7 +147,7 @@ void STA :: Setup()
 
 void STA :: Start()
 {
-	selectMACProtocol(node_id, ECA, system_stickiness);
+	selectMACProtocol(node_id, ECA, system_stickiness, cut);
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT
