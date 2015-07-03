@@ -1,12 +1,8 @@
 #define AC 4
 
 using namespace std;
-
-
-void setAIFS(std::array<double,AC> &AIFS, int ECA, const int defaultAIFS[AC] )
+void setAIFS(std::array<double,AC> &AIFS, int ECA, const int defaultAIFS[AC], const int ECA_AIFS[AC] )
 {
-	int emptyAIFS [AC] = {0,0,0,0};
-
 	if(ECA == 0)	//EDCA
 	{	
 		for(int i = 0; i < AC; i++)
@@ -17,9 +13,7 @@ void setAIFS(std::array<double,AC> &AIFS, int ECA, const int defaultAIFS[AC] )
 	{
 		for(int i = 0; i < AC; i++)
 		{
-			AIFS.at(i) = emptyAIFS[i];
+			AIFS.at(i) = ECA_AIFS[i];
 		}
 	}
-	
-
 }

@@ -28,10 +28,10 @@
 #define AC 4
 
 // #define MAXSTAGE 5
-extern "C" const int MAXSTAGE [AC] = { 5, 5, 5, 5 };
-
-extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
-// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
+extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
+extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
+extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
+extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
 using namespace std;
@@ -148,13 +148,16 @@ void STA :: Setup()
 void STA :: Start()
 {
 	selectMACProtocol(node_id, ECA, system_stickiness);
-    setAIFS(AIFS, ECA, defaultAIFS);
+    setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    if(ECA == 0) backoffScheme = 0;
-    changingSchedule = 1; // 0 = no, 1 = yes.
+    changingSchedule = 1;
+    if(ECA == 0){
+        backoffScheme = 0;
+        changingSchedule = 0; // 0 = no, 1 = yes.
+    }
 
     //-----------------------------
 	
@@ -275,7 +278,6 @@ void STA :: Stop()
     // {
     //     cout << "\tAC " << i << ": " << backoffStages.at(i) << endl;
     // }
-
     
 };
 
@@ -325,7 +327,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         }else
                         {
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
-                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                         }
                         
                         // cout << "\tBacklog: " << backlogged.at(i) << ". Counter: " << backoffCounters.at(i) << endl;
@@ -402,7 +404,7 @@ void STA :: in_slot(SLOT_notification &slot)
                             }else
                             {
                                 computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
-                                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                                    backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                             }
                             // cout << ". Counter: " << backoffCounters.at(i) << endl;
                         }else
@@ -492,7 +494,13 @@ void STA :: in_slot(SLOT_notification &slot)
                             {
                                 consecutiveSx.at(i) = 0;
                                 halvingAttempt.at(i) = 0;
-                                backoffStages.at(i) = min( (backoffStages.at(i) + 1), MAXSTAGE[i] );
+                                int maxStage = MAXSTAGE_ECA[i];
+                                if(ECA == 0)
+                                {
+                                    maxStage = MAXSTAGE_EDCA[i];
+                                }
+
+                                backoffStages.at(i) = min( (backoffStages.at(i) + 1), maxStage );
                             }
                         }
                         //cout << "Node " << node_id << "queue size after collision: " << MACQueueVI.QueueSize() << endl;
@@ -507,7 +515,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         }else
                         {
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
-                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                                backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                         }
                         transmitted = 0;
                     }
@@ -533,7 +541,8 @@ void STA :: in_slot(SLOT_notification &slot)
 	//****Checking availability for transmission****
     //**********************************************
     ACToTx = resolveInternalCollision(backoffCounters, backlogged, stationStickiness, backoffStages, 
-        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE, consecutiveSx, SimTime());
+        recomputeBackoff, totalInternalACCol, retAttemptAC, backoffScheme, node_id, MAXSTAGE_ECA, MAXSTAGE_EDCA, 
+        consecutiveSx, SimTime());
 
 
     //Fix any dropping of packets due to internal collisions
@@ -591,7 +600,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 }else
                 {
                     computeBackoff_enhanced(backlogged, Queues.at(i), i, forceRandom, backoffStages, 
-                        backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, defaultAIFS);
+                        backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                 }
             }
         }
@@ -617,7 +626,7 @@ void STA :: in_slot(SLOT_notification &slot)
         //     changeStage, halved, stationStickiness, system_stickiness);
 
         analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
-            MAXSTAGE, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
+            MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
             changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
     }
     

@@ -17,7 +17,7 @@
 #define SIFS 10e-06
 #define LDBPS 256
 #define TSYM 4e-06
-#define ECA_AIFS 28e-06
+#define ECA_AIFS_TIME 28e-06
 			
 #include "Aux.h"
 
@@ -259,7 +259,7 @@ void Channel :: in_packet(Packet &packet)
 	{
 		// Uncomment for QoS testings with AIFS
 		// case 1:
-		// 	succ_tx_duration = ECA_AIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
+		// 	succ_tx_duration = ECA_AIFS_TIME + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
 		// 	break;
 			
 		default:
