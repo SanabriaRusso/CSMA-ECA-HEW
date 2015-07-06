@@ -61,12 +61,18 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 	// Sat Nodes
 	//Determining the cut value for assigning different protocols
-	cut = NumNodes * percentageEDCA;
-	decimalCut = modf(cut, &intCut);
-	
-	if(decimalCut > 0.5)
+	if(percentageEDCA == 0 || percentageEDCA == 1)
 	{
-		intCut++;	
+		intCut = percentageEDCA;
+	}else
+	{
+		cut = NumNodes * percentageEDCA;
+		decimalCut = modf(cut, &intCut);
+		
+		if(decimalCut > 0.5)
+		{
+			intCut++;	
+		}
 	}
 	
 	for(int n=0;n<NumNodes;n++)
@@ -593,12 +599,13 @@ void SlottedCSMA :: Stop()
 
 	cout << "\n10. Proportion of EDCA nodes: " << percentageEDCA_*100 << "%" << endl;
 	
-	//*DEBUG
-	// for(int i = 0; i < Nodes; i++)
-	// {
-	// 	cout << "Node-" << i << ": " << stas[i].ECA << endl;
-	// 	cout << "\tThroughput: " << stas[i].overallThroughput << endl;
-	// }
+	// *DEBUG
+	cout << "Global cut: " << intCut << endl;
+	for(int i = 0; i < Nodes; i++)
+	{
+		cout << "Node-" << i << ": " << stas[i].ECA << endl;
+		cout << "\tThroughput: " << stas[i].overallThroughput << endl;
+	}
 
 	cout << "\tAvg. Time between successful transmissions: " << endl;
 	cout << "\t-EDCA nodes (" << EDCAnodes << "): " << endl;

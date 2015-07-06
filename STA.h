@@ -199,6 +199,7 @@ void STA :: Start()
 
 void STA :: Stop()
 {
+
     cout << "\n***Node-" << node_id << "**" <<endl;
     for(int it = 0; it < AC; it++)
     {
