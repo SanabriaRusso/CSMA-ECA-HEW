@@ -108,36 +108,43 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 	// If bandwidth is below 10e6, half the stations will have said bandwidth,
 	// while the other half will have ten times that value.
 	// This creates a mixed saturation/non-saturation environment which is used to test the schedule reset.
-	if(Bandwidth < 10e6)
-	{
-		for(int i = 0; i < NumNodes/4; i++)
-		{
-			sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
-			stas[i].saturated = 0;
-		}
-		for(int i = NumNodes/4; i < NumNodes/2; i++)
-		{
-			sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
-			stas[i].saturated = 1;
-		}	
-		for(int i = NumNodes/2; i < (3*NumNodes/4); i++)
-		{
-			sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
-			stas[i].saturated = 0;
-		}
-		for(int i = (3*NumNodes/4); i < NumNodes; i++)
-		{
-			sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
-			stas[i].saturated = 1;
-		}	
-	}else
-	{
+	// if(Bandwidth < 10e6)
+	// {
+	// 	for(int i = 0; i < NumNodes/4; i++)
+	// 	{
+	// 		sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
+	// 		stas[i].saturated = 0;
+	// 	}
+	// 	for(int i = NumNodes/4; i < NumNodes/2; i++)
+	// 	{
+	// 		sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
+	// 		stas[i].saturated = 1;
+	// 	}	
+	// 	for(int i = NumNodes/2; i < (3*NumNodes/4); i++)
+	// 	{
+	// 		sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
+	// 		stas[i].saturated = 0;
+	// 	}
+	// 	for(int i = (3*NumNodes/4); i < NumNodes; i++)
+	// 	{
+	// 		sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
+	// 		stas[i].saturated = 1;
+	// 	}	
+	// }else
+	// {
 		for(int i = 0; i < NumNodes; i++)
 		{
 			sources[i].packet_rate = Bandwidth/(PacketLength * 8);
 			stas[i].saturated = 1;
+			if(Bandwidth < 10e6) stas[i].saturated = 0;
+			
 		}
-	}
+	// }
+	//*DEBUG
+	// for(int i = 0; i < NumNodes; i++)
+	// {
+	// 	cout << "Node-" << i << " packet rate: " << sources[i].packet_rate << endl;
+	// }
 	//End traffic source
 	
 	// Connections
@@ -318,7 +325,7 @@ void SlottedCSMA :: Stop()
 	file << "#25. avgTimeBtSxTxVO		26. qEmptyBK				27. qEmptyBE				28. qEmptyVI" << endl;
 	file << "#29. qEmptyVO				30. totalDropped			31. droppedBK				32. droppedBE" << endl;
 	file << "#33. droppedVI				34. droppedVO				35. channelErrors           36. Stickiness" << endl;
-	file << "#37. totalThroughputUnsat	38. totalThroughputUnsat	39. totalThroughputEDCA		40. EDCABKthroughput" << endl;
+	file << "#37. totalThroughputUnsat	38. totalThroughputSat		39. totalThroughputEDCA		40. EDCABKthroughput" << endl;
 	file << "#41. EDCABEthroughput		42. EDCAVIthroughput		43. EDCAVOthroughput		44.totalThroughputECA" << endl;
 	file << "#45. ECABKthroughput 		46. ECABEthroughput 		47. ECAVIthroughput 		48. ECAVOthroughput" << endl;
 	file << "#49 avgTimeBtSxTxBK-EDCA	50. avgTimeBtSxTxBE-EDCA 	51. avgTimeBtSxTxVI-EDCA	52. avgTimeBtSxTxVO-EDCA" << endl;
@@ -493,12 +500,9 @@ void SlottedCSMA :: Stop()
 
 	//61-64
 	for (int i = 0; i < AC; i++){
-		if(totalACColECA.at(i) > 0)
+		if(totalACColECA.at(i) != 0)
 		{
 			file << (double)(totalACColECA.at(i)/ECAnodes) << " ";
-		}else
-		{
-			file << "0 ";
 		}
 	}
 
@@ -600,11 +604,17 @@ void SlottedCSMA :: Stop()
 	cout << "\n10. Proportion of EDCA nodes: " << percentageEDCA_*100 << "%" << endl;
 	
 	// *DEBUG
-	cout << "Global cut: " << intCut << endl;
-	for(int i = 0; i < Nodes; i++)
+	// cout << "Global cut: " << intCut << endl;
+	cout << "\tThroughput:" << endl;
+	cout << "\tEDCA nodes (" << EDCAnodes << "): " << totalThroughputEDCA << endl;
+	for(int i = 0; i < AC; i++)
 	{
-		cout << "Node-" << i << ": " << stas[i].ECA << endl;
-		cout << "\tThroughput: " << stas[i].overallThroughput << endl;
+		cout << "\t\tAC " << i << ": " << totalACthroughputEDCA.at(i) << endl;
+	}
+	cout << "\t-EDCA nodes (" << EDCAnodes << "): " << totalThroughputECA << endl;
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\t\tAC " << i << ": " << totalACthroughputECA.at(i) << endl;
 	}
 
 	cout << "\tAvg. Time between successful transmissions: " << endl;

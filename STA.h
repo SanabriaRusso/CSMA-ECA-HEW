@@ -29,7 +29,7 @@
 
 // #define MAXSTAGE 5
 extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
-extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
+extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 5, 5 };
 extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
 extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
@@ -153,7 +153,7 @@ void STA :: Start()
     //--------------------IMPORTANT
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    changingSchedule = 1;
+    changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
     if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
