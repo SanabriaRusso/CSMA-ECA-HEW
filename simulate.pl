@@ -74,6 +74,12 @@ switch ($ECA){
 		$stickiness = 2;
 		$fairShare = 1;
 	}
+	case 6 {
+		$ECA = 0;
+		$stickiness = 0;
+		$fairShare = 0;
+		$maxAggregation = 1 ;
+	}
 }
 
 my $compile = './build_local';

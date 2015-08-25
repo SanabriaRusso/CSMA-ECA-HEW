@@ -29,7 +29,7 @@
 
 // #define MAXSTAGE 5
 extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
-extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 5, 5 };
+extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
 extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
 extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
@@ -315,7 +315,8 @@ void STA :: in_slot(SLOT_notification &slot)
                         // cout << "STA-" << node_id << ": AC: " << i << ". was not backlogged. New queue: " << Queues.at(i).QueueSize() << endl;
                         backlogged.at(i) = 1;
 
-                        pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                        pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare, 
+                            maxAggregation, MAXSTAGE_EDCA, MAXSTAGE_ECA, ECA);
                         
                         // cout << "STA-" << node_id << ": AC: " << i << ". Was not backlogged. picking a new packet." << endl;
 
@@ -393,7 +394,8 @@ void STA :: in_slot(SLOT_notification &slot)
                         // cout << "+++Tx" << endl;
                         if(backlogged.at(i) == 1)
                         {
-                            pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                            pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare, 
+                                maxAggregation, MAXSTAGE_EDCA, MAXSTAGE_ECA, ECA);
                             // cout << "\nSTA-" << node_id << ": Success AC " << i;
 
                             //I can calculate the backoff freely here because it was a successful transmissions
@@ -477,7 +479,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             if(backlogged.at(i) == 1)
                             {
-                                pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                                pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare, 
+                                    maxAggregation, MAXSTAGE_EDCA, MAXSTAGE_ECA, ECA);
                             }else
                             {
                                 backoffStages.at(i) = 0;
@@ -570,7 +573,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
                     if(backlogged.at(i) == 1)
                     {
-                        pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare);
+                        pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare, maxAggregation, 
+                            MAXSTAGE_EDCA, MAXSTAGE_ECA, ECA);
                     }else
                     {
                         backoffStages.at(i) = 0;
