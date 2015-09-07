@@ -22,7 +22,7 @@ using namespace std;
 component SlottedCSMA : public CostSimEng
 {
 	public:
-		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int simSeed);
+		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int howManyACs, int simSeed);
 		void Stop();
 		void Start();		
 
@@ -45,7 +45,7 @@ component SlottedCSMA : public CostSimEng
 
 };
 
-void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int simSeed)
+void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int howManyACs, int simSeed)
 {
 	SimId = Sim_Id;
 	Nodes = NumNodes;
@@ -91,6 +91,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 
 		// Traffic Source
 		sources[n].L = PacketLength;
+		sources[n].categories = howManyACs;
 		sources[n].packetsGenerated = 0;
 		for(int i = 0; i < 4; i++) sources[n].packetsInAC.at(i) = 0;		
 
@@ -659,6 +660,7 @@ int main(int argc, char *argv[])
 	float slotDrift;
 	float percentageEDCA;
 	int maxAggregation;
+	int howManyACs;
 	int simSeed;
 	
 	if(argc < 12) 
@@ -687,7 +689,8 @@ int main(int argc, char *argv[])
 				cout << "10) SlotDrift: probability of miscounting passing empty slots [0,1]" << endl;
 				cout << "11) PercetageEDCA: percentage of nodes running EDCA. Used to simulate CSMA/ECA and CSMA/CA mixed scenarios [0,1]" << endl;
 				cout << "12) MaxAggregation: nodes use maximum aggregation when attempting transmission (0=off, 1=on)" << endl;
-				cout << "13) SimSeed: simulation seed used to generate random numbers. If testing results, repeat simulations with different seeds everytime" << endl << endl;
+				cout << "13) howManyACs: you can start simulations with 1 to 4 ACs" << endl;
+				cout << "14) SimSeed: simulation seed used to generate random numbers. If testing results, repeat simulations with different seeds everytime" << endl << endl;
 				return(0);
 			}else
 			{
@@ -699,7 +702,7 @@ int main(int argc, char *argv[])
 		}else
 		{
 			cout << "Executed with default values shown below" << endl;
-			cout << "./XXXX SimTime [10] NumNodes [2] PacketLength [1024] Bandwidth [65e6] Batch [1] ECA [0] Stickiness [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] simSeed [0]" << endl;
+			cout << "./XXXX SimTime [10] NumNodes [2] PacketLength [1024] Bandwidth [65e6] Batch [1] ECA [0] Stickiness [0] fairShare [0] channelErrors [0] slotDrift [0] percentageOfEDCA [1] maxAggregation [0] howManyACs [0] simSeed [0]" << endl;
 			MaxSimIter = 1;
 			SimTime = 10;
 			NumNodes = 30;
@@ -713,6 +716,7 @@ int main(int argc, char *argv[])
 			slotDrift = 0; // // float 0-1
 			percentageEDCA = 1; // // float 0-1
 			maxAggregation = 0;
+			howManyACs = 4; // default is CSMA/ECAqos with 4 ACs
 			simSeed = 2234; //Simulation seed
 		}
 	}else
@@ -730,7 +734,14 @@ int main(int argc, char *argv[])
 		slotDrift = atof(argv[10]); // // float 0-1
 		percentageEDCA = atof(argv[11]); // // float 0-1
 		maxAggregation = atoi(argv[12]); //0 = no, 1 = yes
-		simSeed = atof(argv[13]); //Simulation seed
+		howManyACs = atoi(argv[13]); // 1 to 4 ACs.
+		if(howManyACs == 0){
+			howManyACs = 1;	
+		}else if (howManyACs > 4)
+		{
+			howManyACs = 4;
+		}
+		simSeed = atof(argv[14]); //Simulation seed
 	}
 
 	printf("\n####################### Simulation (Seed: %d) #######################\n",simSeed);
@@ -764,7 +775,7 @@ int main(int argc, char *argv[])
 		
 	test.StopTime(SimTime);
 
-	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, ECA, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, simSeed);
+	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, ECA, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, howManyACs, simSeed);
 	
 	test.Run();
 
