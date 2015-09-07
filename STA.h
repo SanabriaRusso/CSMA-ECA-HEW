@@ -29,7 +29,7 @@
 
 // #define MAXSTAGE 5
 extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
-extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
+extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 5, 5 };
 extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
 extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
