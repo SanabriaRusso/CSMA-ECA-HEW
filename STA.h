@@ -20,6 +20,7 @@
 #include "includes/setAIFS.hh"
 #include "includes/analiseHalvingCycle.hh"
 #include "includes/analiseResetCycle.hh"
+#include "includes/analiseBetterHalving.hh"
 
 //Suggested value is MAXSTAGE+1
 #define MAX_RET 7
@@ -29,7 +30,7 @@
 
 // #define MAXSTAGE 5
 extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
-extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 5, 5 };
+extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
 extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
 extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
@@ -84,6 +85,7 @@ component STA : public TypeII
         std::array<double,AC> overallACThroughput;
         double overallThroughput;
         int saturated;
+        std::bitset< 512 > scheduleMap;
 
         //Collision stsatistics
         double totalCollisions;
@@ -613,13 +615,16 @@ void STA :: in_slot(SLOT_notification &slot)
         //Attempting transmission if any available
         // cout << "Winner " << ACToTx << endl;
 
-        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
-        // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
-        // << ". " << packet.aggregation << " packets." << endl;
+        if(backoffCounters.at(ACToTx) == 0)
+        {
+            packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
+            // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
+            // << ". " << packet.aggregation << " packets." << endl;
 
-        transmissions.at(ACToTx)++;
-        transmitted = 1;
-        out_packet(packet);
+            transmissions.at(ACToTx)++;
+            transmitted = 1;
+            out_packet(packet);
+        }
     }
 
     //Checking if it is possible to halve the cycle length for this station
@@ -630,9 +635,14 @@ void STA :: in_slot(SLOT_notification &slot)
         //     MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
         //     changeStage, halved, stationStickiness, system_stickiness);
 
-        analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        // analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        //     MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
+        //     changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
+
+        analiseBetterHalving(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
-            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
+            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
+            scheduleMap);
     }
     
 
