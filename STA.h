@@ -4,6 +4,7 @@
 #include <sstream>
 #include <math.h>
 #include <algorithm>
+#include <string>
 #include <array>
 #include <map>
 #include <bitset>
@@ -21,6 +22,8 @@
 #include "includes/analiseHalvingCycle.hh"
 #include "includes/analiseResetCycle.hh"
 #include "includes/analiseBetterReset.hh"
+// #include "includes/dumpStationLog.hh"
+
 
 //Suggested value is MAXSTAGE+1
 #define MAX_RET 7
@@ -281,6 +284,22 @@ void STA :: Stop()
     // {
     //     cout << "\tAC " << i << ": " << backoffStages.at(i) << endl;
     // }
+
+    //////////////////////////////////////////////////////////////////////
+    //Dumping station information into a file for further processing
+    //////////////////////////////////////////////////////////////////////
+    // dumpStationLog(node_id, overallThroughput, totalCollisions, totalHalved);
+    string logName = "sta-";
+    string staNum = to_string(node_id);
+    string end = ".log";
+    logName = logName + staNum + end;
+    string routeToFile = "Results/stations/";
+    routeToFile = routeToFile + logName;
+
+    ofstream staFile;
+    staFile.open(routeToFile.c_str(), ios::app);
+    staFile << node_id << " " << overallThroughput << " " << totalCollisions << " " << totalHalved << endl;
+    staFile.close();
     
 };
 
