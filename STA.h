@@ -20,7 +20,7 @@
 #include "includes/setAIFS.hh"
 #include "includes/analiseHalvingCycle.hh"
 #include "includes/analiseResetCycle.hh"
-#include "includes/analiseBetterHalving.hh"
+#include "includes/analiseBetterReset.hh"
 
 //Suggested value is MAXSTAGE+1
 #define MAX_RET 7
@@ -398,7 +398,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         {
                             pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare, 
                                 maxAggregation, MAXSTAGE_EDCA, MAXSTAGE_ECA, ECA);
-                            // cout << "\nSTA-" << node_id << ": Success AC " << i;
+                            cout << "\nSTA-" << node_id << ": Success AC " << i << " slot: " << slot.num;
 
                             //I can calculate the backoff freely here because it was a successful transmissions
                             //where the backoff is deterministic and no internal collision is possible after a SmartBackoff
@@ -411,7 +411,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
                                     backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                             }
-                            // cout << ". Counter: " << backoffCounters.at(i) << endl;
+                            cout << ". Counter: " << backoffCounters.at(i) << endl;
                         }else
                         {
                             backoffStages.at(i) = 0;
@@ -494,10 +494,10 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         }else
                         {
-                            cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
                             if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
                             {
+                                cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided. (slot " << slot.num << ")" << endl;
                                 consecutiveSx.at(i) = 0;
                                 halvingAttempt.at(i) = 0;
                                 int maxStage = MAXSTAGE_ECA[i];
@@ -523,6 +523,8 @@ void STA :: in_slot(SLOT_notification &slot)
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
                                 backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                         }
+
+                        cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " new backoff: " << backoffCounters.at(ACToTx) << ". (slot " << slot.num << ")" << endl;
                         transmitted = 0;
                     }
                 }  
@@ -639,7 +641,7 @@ void STA :: in_slot(SLOT_notification &slot)
         //     MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
         //     changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
 
-        analiseBetterHalving(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
             changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
             scheduleMap);

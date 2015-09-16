@@ -2,7 +2,7 @@
 // #include "isThisNewBackoffPossible.hh"
 using namespace std;
 
-void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<double,AC> &resetCounters,
+void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,AC> &resetCounters,
 	std::array<int,AC> &stages, std::array<double,AC> &counters, int acToTx, const int MAXSTAGES[AC],
 	std::array<int,AC> backlog, std::array<int,AC> &resetAttempt, SLOT_notification slot, std::array<int, AC> &shouldReset,
 	std::array<int,AC> &resetThresholds, int node, std::array<int,AC> &changeStage, std::array<double,AC> &reset,
@@ -11,6 +11,8 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 
 	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
 	int newStage = 0;
+	int halving = 0;	//Just halving the schedule in each attempt
+	int dynamicStickiness = 0;	//Incresing the stickiness to a fixed value each time the schedule is modified
 
 
 	for(int i = 0; i < AC; i++)
@@ -29,9 +31,9 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 					// Obtaining the decimal number that will be converted to bitmap in scheduleMap
 					shouldReset.at(i) += pow(2, (int)( analysisCounter.at(i) - (resetCounters.at(i) + 1) ) );
 					//*/DEBUG
-					cout << "**Node " << node << " tx in slot #" << slot.num << " " << shouldReset.at(i) << endl;
+					// cout << "**Node " << node << " tx in slot #" << slot.num << " " << shouldReset.at(i) << endl;
 				}
-				cout << resetCounters.at(i) << " " << counters.at(i) << " " <<  slot.num  << " " << slot.status <<  endl;
+				// cout << resetCounters.at(i) << " " << counters.at(i) << " " <<  slot.num  << " " << slot.status <<  endl;
 
 			}
 		}
@@ -53,7 +55,7 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 
 				// OR with the complete schedule map
 				//*DEBUG
-				cout << "***Building the bitmap" << endl;
+				// cout << "***Building the bitmap" << endl;
 				// cout << "pastSchedule: " << pastSchedule << endl;
 				// cout << "scheduleMap before: " << scheduleMap << endl;
 				// cout << "scheduleMap after OR: ";
@@ -65,11 +67,12 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 
 				if(consecutiveSx.at(i) >= resetThresholds.at(i))
 				{
-					cout << "***Checking the bitmap" << endl;
+					// cout << "***Checking the bitmap" << endl;
 					// Find a shorter deterministic schedule starting from the first slot analysed
 					for(int j = 0; j < stages.at(i); j++)
 					{
 						int increments = (pow(2,j) * CWmin[i]/2);
+						if(halving == 1) increments = (pow(2,max(0,stages.at(i)-1)) * CWmin[i]/2);
 						int slotAvailable = 0;
 						changeStage.at(i) = 0; 
 
@@ -93,12 +96,12 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 						{
 							slotAvailable += scheduleMap[k];
 							//*/DEBUG
-							cout << k << ": " << scheduleMap[k] << "; ";
+							// cout << k << ": " << scheduleMap[k] << "; ";
 						}
 						//*/DEBUG
-						cout << endl;
+						// cout << endl;
 
-						cout << "Counting from " << increments << " to " << analysisCounter.at(i) -1 << endl;
+						// cout << "Counting from " << increments << " to " << analysisCounter.at(i) -1 << endl;
 
 
 						// If we found the shorter schedule, stop looking.
@@ -106,12 +109,13 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 						{
 							changeStage.at(i) = 1;
 							newStage = j;
+							if(halving == 1) newStage = stages.at(i) -1;
 							break;
 						}else
 						{
 							// */DEBUG
-							cout << "--(" << timer <<")Node " << node << endl;
-							cout << "\tTried with stage: " << j << ". Staying in stage " << stages.at(i) << endl;
+							// cout << "--(" << timer <<")Node " << node << endl;
+							// cout << "\tTried with stage: " << j << ". Staying in stage " << stages.at(i) << endl;
 						}
 					}
 				}
@@ -119,7 +123,7 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 		}
 	}
 
-	//Checking if it is time to schedule a halving of the cycle
+	//Checking if it is time to schedule a reset of the cycle
 	for(int i = 0; i < AC; i++)
 	{
 		if(backlog.at(i) == 1)
@@ -134,7 +138,7 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 					if(canWeChange == 1)
 					{
 						//Resisting a colision because we changed to another schedule
-						// stationStickiness.at(i) = std::min(stationStickiness.at(i)+1, systemStickiness+1);
+						if(dynamicStickiness == 1) stationStickiness.at(i) = systemStickiness+1;
 						//Reseting the control variables
 						resetAttempt.at(i) = 0;
 						resetCounters.at(i) = 0;
@@ -143,15 +147,15 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 						reset.at(i)++;
 						// */DEBUG
 						// cout << "**(" << timer << ")Node " << node << endl;
-						cout << "***Making the change from stage " << stages.at(i);
-						cout << " to " << newStage << " now" << endl;
+						// cout << "***Making the change from stage " << stages.at(i);
+						// cout << " to " << newStage << " now" << endl;
 						stages.at(i) = newStage;
 						scheduleMap.reset();
-						cout << "Next analysis to ocurr in slot " << (int)slot.num + (int)newDeterministicBackoff + 2 << endl;
+						// cout << "Next analysis to ocurr in slot " << (int)slot.num + (int)newDeterministicBackoff + 2 << endl;
 					}else
 					{
 						//*/DEBUG
-						cout << "The change causes a virtual collisions. Aborting." << endl;
+						// cout << "The change causes a virtual collisions. Aborting." << endl;
 					}
 
 				}
