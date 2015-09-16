@@ -20,6 +20,7 @@
 #include "includes/setAIFS.hh"
 #include "includes/analiseHalvingCycle.hh"
 #include "includes/analiseResetCycle.hh"
+#include "includes/analiseBetterReset.hh"
 
 //Suggested value is MAXSTAGE+1
 #define MAX_RET 7
@@ -84,6 +85,7 @@ component STA : public TypeII
         std::array<double,AC> overallACThroughput;
         double overallThroughput;
         int saturated;
+        std::bitset< 512 > scheduleMap;
 
         //Collision stsatistics
         double totalCollisions;
@@ -396,7 +398,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         {
                             pickNewPacket(i, SimTime(), superPacket, Queues, node_id, backoffStages, fairShare, 
                                 maxAggregation, MAXSTAGE_EDCA, MAXSTAGE_ECA, ECA);
-                            // cout << "\nSTA-" << node_id << ": Success AC " << i;
+                            cout << "\nSTA-" << node_id << ": Success AC " << i << " slot: " << slot.num;
 
                             //I can calculate the backoff freely here because it was a successful transmissions
                             //where the backoff is deterministic and no internal collision is possible after a SmartBackoff
@@ -409,7 +411,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
                                     backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                             }
-                            // cout << ". Counter: " << backoffCounters.at(i) << endl;
+                            cout << ". Counter: " << backoffCounters.at(i) << endl;
                         }else
                         {
                             backoffStages.at(i) = 0;
@@ -492,10 +494,10 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         }else
                         {
-                            // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
                             if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
                             {
+                                cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided. (slot " << slot.num << ")" << endl;
                                 consecutiveSx.at(i) = 0;
                                 halvingAttempt.at(i) = 0;
                                 int maxStage = MAXSTAGE_ECA[i];
@@ -521,6 +523,8 @@ void STA :: in_slot(SLOT_notification &slot)
                             computeBackoff_enhanced(backlogged, Queues.at(i), i, stationStickiness.at(i), backoffStages, 
                                 backoffCounters, system_stickiness, node_id, sx, ECA, buffer, AIFS, ECA_AIFS);
                         }
+
+                        cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " new backoff: " << backoffCounters.at(ACToTx) << ". (slot " << slot.num << ")" << endl;
                         transmitted = 0;
                     }
                 }  
@@ -613,13 +617,16 @@ void STA :: in_slot(SLOT_notification &slot)
         //Attempting transmission if any available
         // cout << "Winner " << ACToTx << endl;
 
-        packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
-        // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
-        // << ". " << packet.aggregation << " packets." << endl;
+        if(backoffCounters.at(ACToTx) == 0)
+        {
+            packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
+            // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
+            // << ". " << packet.aggregation << " packets." << endl;
 
-        transmissions.at(ACToTx)++;
-        transmitted = 1;
-        out_packet(packet);
+            transmissions.at(ACToTx)++;
+            transmitted = 1;
+            out_packet(packet);
+        }
     }
 
     //Checking if it is possible to halve the cycle length for this station
@@ -630,9 +637,14 @@ void STA :: in_slot(SLOT_notification &slot)
         //     MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
         //     changeStage, halved, stationStickiness, system_stickiness);
 
-        analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        // analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
+        //     MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
+        //     changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
+
+        analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
             MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
-            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
+            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
+            scheduleMap);
     }
     
 

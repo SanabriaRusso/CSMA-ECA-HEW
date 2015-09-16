@@ -68,6 +68,9 @@ int isThisNewBackoffPossible(double test, std::array<int,AC> &stages, std::array
 		isItPossible = 0;
 	}
 
+	//DEBUG
+	// cout << "posibility(" << isItPossible << ")" << endl;
+
 	return(isItPossible);
 
 }
