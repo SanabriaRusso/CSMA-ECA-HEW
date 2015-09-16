@@ -494,7 +494,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         }else
                         {
-                            // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
+                            cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided." << endl;
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
                             if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
                             {

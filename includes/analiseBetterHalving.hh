@@ -19,17 +19,17 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 		if(resetAttempt.at(i) == 1)
 		{
 			// Do I still have to do it?
-			if(resetCounters.at(i) >= 0)
+			if(resetCounters.at(i) > 0)
 			{
 				// Are there any tx in the slot?
 				resetCounters.at(i)--;	
-				cout << resetCounters.at(i) << endl;
+				// cout << resetCounters.at(i) << endl;
 				if(slot.status > 0)
 				{
 					// Obtaining the decimal number that will be converted to bitmap in scheduleMap
-					shouldReset.at(i) += pow(2, (int)( analysisCounter.at(i) - resetCounters.at(i) ) );
+					shouldReset.at(i) += pow(2, (int)( analysisCounter.at(i) - (resetCounters.at(i) + 1) ) );
 					//*/DEBUG
-					cout << "**Node " << node << " tx in slot #" << slot.num << endl;
+					cout << "**Node " << node << " tx in slot #" << slot.num << " " << shouldReset.at(i) << endl;
 				}
 				cout << resetCounters.at(i) << " " << counters.at(i) << " " <<  slot.num  << " " << slot.status <<  endl;
 
@@ -40,72 +40,81 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 	//Can we reset the cycle?
 	for(int i = 0; i < AC; i++)
 	{
-		// If the resetCounter expired
-		if(resetCounters.at(i) == -1)
+		//Are we attempting to reduce the schedule?
+		if(resetAttempt.at(i) == 1)
 		{
-			// Build a bitmap of size 512 with the result of the analysis
-			std::bitset< 512 > pastSchedule ( (int) shouldReset.at(i) );
-			// OR with the complete schedule map
-
-			//*DEBUG
-			cout << "Building the bitmap" << endl;
-			// cout << "pastSchedule: " << pastSchedule << endl;
-			// cout << "scheduleMap before: " << scheduleMap << endl;
-			// cout << "scheduleMap after OR: ";
-			scheduleMap |= pastSchedule;
-			// cout << scheduleMap << endl;
-
-			if(consecutiveSx.at(i) == resetThresholds.at(i))
+			// If the resetCounter expired
+			if(resetCounters.at(i) == 0)
 			{
-				// Find a shorter deterministic schedule starting from the first slot analysed
-				for(int j = 0; j < stages.at(i); j++)
+				// Build a bitmap of size 512 with the result of the analysis
+				std::bitset< 512 > pastSchedule ( (int) shouldReset.at(i) );
+				//Erasing the value of the observations
+				shouldReset.at(i) = 0;
+
+				// OR with the complete schedule map
+				//*DEBUG
+				cout << "***Building the bitmap" << endl;
+				// cout << "pastSchedule: " << pastSchedule << endl;
+				// cout << "scheduleMap before: " << scheduleMap << endl;
+				// cout << "scheduleMap after OR: ";
+				scheduleMap |= pastSchedule;
+				// cout << scheduleMap << endl;
+
+				//Resetting the bitmap for last schedule
+				pastSchedule.reset();
+
+				if(consecutiveSx.at(i) >= resetThresholds.at(i))
 				{
-					int increments = (pow(2,j) * CWmin[i]/2);
-					int slotAvailable = 0;
-					changeStage.at(i) = 0; 
-					// Let's check the scheduleMap for empty slots for the corresponding schedules
-					// Notice that the last analysisCounter.at(i) + 1 will always be zero
-					// The last analysisCounter.at(i) + 1 is the slot before the node's next tx
-
-					//*/DEBUG
-					// Looking at the transmissions bitset
-					// cout << "**Node " << node << " the bit set is: ";
-					// for(int b = 0; b <= analysisCounter.at(i); b++)
-					// {
-					// 	cout << scheduleMap[b];
-					// }
-					// cout << endl;
-					//--------------------
-
-
-					//*/DEBUG
-					// cout << "**Node " << node << " checking bitmap position ";
-					for(int k = increments-1; k <= analysisCounter.at(i); k += increments)
+					cout << "***Checking the bitmap" << endl;
+					// Find a shorter deterministic schedule starting from the first slot analysed
+					for(int j = 0; j < stages.at(i); j++)
 					{
-						slotAvailable += scheduleMap[k];
+						int increments = (pow(2,j) * CWmin[i]/2);
+						int slotAvailable = 0;
+						changeStage.at(i) = 0; 
+
+						// Let's check the scheduleMap for empty slots for the corresponding schedules
 						//*/DEBUG
-						// cout << k << ": " << scheduleMap[k] << "; ";
-					}
-					//*/DEBUG
-					// cout << endl;
+						// Looking at the transmissions bitset
+						// cout << "**Node " << node << " the bit set is: ";
+						// //The analysis counter counts the slot of this node's transmission
+						// // up to the last slot before the next transmission
+						// for(int b = 0; b < analysisCounter.at(i); b++)
+						// {
+						// 	cout << scheduleMap[b];
+						// }
+						// cout << endl;
+						//--------------------
 
-					// If we found the shorter schedule, stop looking.
-					if(slotAvailable == 0)
-					{
-						changeStage.at(i) = 1;
-						newStage = j;
-						break;
-					}else
-					{
-						// */DEBUG
-						cout << "--(" << timer <<")Node " << node << endl;
-						cout << "\tTried with stage: " << j << ". Staying in stage " << stages.at(i) << endl;
+
+						//*/DEBUG
+						// cout << "**Node " << node << " checking bitmap position ";
+						for(int k = increments; k < analysisCounter.at(i); k += increments)
+						{
+							slotAvailable += scheduleMap[k];
+							//*/DEBUG
+							cout << k << ": " << scheduleMap[k] << "; ";
+						}
+						//*/DEBUG
+						cout << endl;
+
+						cout << "Counting from " << increments << " to " << analysisCounter.at(i) -1 << endl;
+
+
+						// If we found the shorter schedule, stop looking.
+						if(slotAvailable == 0)
+						{
+							changeStage.at(i) = 1;
+							newStage = j;
+							break;
+						}else
+						{
+							// */DEBUG
+							cout << "--(" << timer <<")Node " << node << endl;
+							cout << "\tTried with stage: " << j << ". Staying in stage " << stages.at(i) << endl;
+						}
 					}
 				}
-			}else
-			{
-				// Reset bitmap for next filling of the scheduleMap
-				pastSchedule.reset();
 			}
 		}
 	}
@@ -125,19 +134,20 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 					if(canWeChange == 1)
 					{
 						//Resisting a colision because we changed to another schedule
-						stationStickiness.at(i) = std::min(stationStickiness.at(i)+1, systemStickiness+1);
+						// stationStickiness.at(i) = std::min(stationStickiness.at(i)+1, systemStickiness+1);
 						//Reseting the control variables
 						resetAttempt.at(i) = 0;
 						resetCounters.at(i) = 0;
 						consecutiveSx.at(i) = 0;
 						changeStage.at(i) = 0;
 						reset.at(i)++;
+						// */DEBUG
+						// cout << "**(" << timer << ")Node " << node << endl;
+						cout << "***Making the change from stage " << stages.at(i);
+						cout << " to " << newStage << " now" << endl;
 						stages.at(i) = newStage;
 						scheduleMap.reset();
-						// */DEBUG
-						cout << "**(" << timer << ")Node " << node << endl;
-						cout << "\tMaking the change from stage " << stages.at(i);
-						cout << " to " << stages.at(i) << " now" << endl;
+						cout << "Next analysis to ocurr in slot " << (int)slot.num + (int)newDeterministicBackoff + 2 << endl;
 					}else
 					{
 						//*/DEBUG
@@ -151,13 +161,13 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 				if(stages.at(i) >= 0)
 				{
 					//1. Checking the complete schedule
-					resetThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) ) / (int)( pow(2, stages.at(i)) * CWmin[i] / 2 - 1 );
+					// resetThresholds.at(i) = ( (int)(pow(2, MAXSTAGES[i]) * CWmin[i] / 2) ) / (int)( pow(2, stages.at(i)) * CWmin[i] / 2 - 1 );
 
 					//2. Checking half of the complete schedule (more aggresive)
 					// resetThresholds.at(i) = ( (int)(pow(2, (MAXSTAGES[i]-1) ) * CWmin[i] / 2) / (int)(pow(2, stages.at(i)) * CWmin[i] / 2) ) -1;
 
 					//3. Super aggressive
-					// resetThresholds.at(i) = 1;
+					resetThresholds.at(i) = 1;
 
 					if(resetThresholds.at(i) <= 0) resetThresholds.at(i) = 1;
 
@@ -166,8 +176,7 @@ void analiseBetterHalving(std::array<double,AC> &consecutiveSx, std::array<doubl
 						// cout << "\tNew threshold: " << resetThresholds.at(i) << endl;
 
 					//If you have transmitted successfully for a whole complete cycle, you can starting the analysis
-					// if( ((int)consecutiveSx.at(i) >= (int)resetThresholds.at(i)) )
-					if( ((int)consecutiveSx.at(i) >= 1) )
+					if( ((int)consecutiveSx.at(i) >= (int)resetThresholds.at(i)) )
 					{
 						resetAttempt.at(i) = 1;
 						// We will look at all the slots between transmissions
