@@ -13,6 +13,7 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 	int newStage = 0;
 	int halving = 1;	//Just halving the schedule in each attempt
 	int dynamicStickiness = 0;	//Incresing the stickiness to a fixed value each time the schedule is modified
+	int conservativeApproach = 1;	//Determines which threshold unleashes the analysis of the scheduleMap
 
 
 	for(int i = 0; i < AC; i++)
@@ -65,9 +66,14 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 				//Resetting the bitmap for last schedule
 				pastSchedule.reset();
 
-				if(consecutiveSx.at(i) >= resetThresholds.at(i))
+				//Determining if we can go ahead an analyse the scheduleMap
+				int bitmapIteration = (int)resetThresholds.at(i);
+				if(conservativeApproach == 1) bitmapIteration = (int)(pow(2,MAXSTAGES[i]) * CWmin[i] / 2) / 
+					(pow(2,stages.at(i)) * CWmin[i] / 2);
+
+				if(consecutiveSx.at(i) >= bitmapIteration)
 				{
-					// cout << "***Checking the bitmap" << endl;
+					// cout << "***Checking the bitmap after " << bitmapIteration << " iterations" << endl;
 					// Find a shorter deterministic schedule starting from the first slot analysed
 					for(int j = 0; j < stages.at(i); j++)
 					{
