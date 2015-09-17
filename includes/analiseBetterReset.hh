@@ -9,7 +9,7 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 	std::array<int, AC> &stationStickiness, int systemStickiness, std::array<double,AC> &analysisCounter, 
 	double timer, std::bitset< 512 > &scheduleMap){
 
-	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
+	int CWmin [AC] = { 16, 32, 16, 8 }; //slots
 	int newStage = 0;
 	int halving = 1;	//Just halving the schedule in each attempt
 	int dynamicStickiness = 0;	//Incresing the stickiness to a fixed value each time the schedule is modified

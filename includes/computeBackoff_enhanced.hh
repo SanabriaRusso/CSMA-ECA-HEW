@@ -10,7 +10,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	//In number of slots
-	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
+	int CWmin [AC] = { 16, 32, 16, 8 }; //slots
 
 	double deterministicBackoff;
 

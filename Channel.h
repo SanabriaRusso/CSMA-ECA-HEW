@@ -18,6 +18,7 @@
 #define LDBPS 256
 #define TSYM 4e-06
 #define ECA_AIFS_TIME 28e-06
+#define SIG_EXT 6e-06
 			
 #include "Aux.h"
 
@@ -59,9 +60,10 @@ component Channel : public TypeII
 		double empty_slot_duration;
 		double TBack;
 		double L_max;
-		int MAC_H, PCLP_PREAMBLE, PCLP_HEADER;
+		int MAC_H, PLCP_PREAMBLE, PLCP_HEADER;
 		int aggregation;
 		float errorProbability;
+		int rate48;	//	are we using the 48mbps metrics for tx duration?
 		
 		//gathering statistics about the collision's evolution in time
      	ofstream slotsInTime;
@@ -85,8 +87,8 @@ void Channel :: Start()
 {
 	number_of_transmissions_in_current_slot = 0;
 	affected = 0;
-	succ_tx_duration = 10E-3;
-	collision_duration = 10E-3;
+	succ_tx_duration = 0;
+	collision_duration = 0;
 	empty_slot_duration = 9e-06;
 
 	collision_slots = 0;
@@ -104,14 +106,16 @@ void Channel :: Start()
 	L_max = 0;
 	
 	MAC_H = 272;
-	PCLP_PREAMBLE = 144; 
-	PCLP_HEADER = 48;
+	PLCP_PREAMBLE = 144; 
+	PLCP_HEADER = 48;
 	
 	TBack = 32e-06 + ceil((16 + 256 + 6)/LDBPS) * TSYM;
 	totalBitsSent = 0;
 
 	aggregation = 0;
 	errorProbability = 0;
+
+	rate48 = 1;
 
 	slot_time.Set(SimTime()); // Let's go!	
 	
@@ -255,22 +259,32 @@ void Channel :: in_packet(Packet &packet)
 			break;
 	}
 
-	switch(packet.fairShare)
-	{
+	// switch(packet.fairShare)
+	// {
 		// Uncomment for QoS testings with AIFS
 		// case 1:
 		// 	succ_tx_duration = ECA_AIFS_TIME + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
 		// 	break;
 			
-		default:
+		// default:
 			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
-	}
+	// }
+			if(rate48 == 1)
+			{
+				succ_tx_duration = 0.0;
+				double plcp_pre48 = 16e-06;
+				double plcp_head48 = 4e-06;
+				double mac_h48 = 28; //bytes
+				double mac_hPHY48 = 8e-06;
+				// the 2e-6 is to fix the division.
+				succ_tx_duration = 	DIFS + plcp_pre48 + plcp_head48 + (double)(((ceil(((mac_h48 + L_max)*8.0)/48))*1e-06)) + SIG_EXT + 2e-06 + SIFS + plcp_pre48 + plcp_head48 + mac_hPHY48 + SIG_EXT + empty_slot_duration;
+			}
 
 	
 	collision_duration = succ_tx_duration;
 	
-	/*succ_tx_duration = ((PCLP_PREAMBLE + PCLP_HEADER)/PHYRATE) + ((aggregation*L_max*8 + MAC_H)/DATARATE) + SIFS + ((PCLP_PREAMBLE + PCLP_HEADER)/PHYRATE) + (L_ack/PHYRATE) + DIFS;
-	collision_duration = ((PCLP_PREAMBLE + PCLP_HEADER)/PHYRATE) + ((aggregation*L_max*8 + MAC_H)/DATARATE) + SIFS + DIFS + ((144 + 48 + 112)/PHYRATE);*/
+	/*succ_tx_duration = ((PLCP_PREAMBLE + PLCP_HEADER)/PHYRATE) + ((aggregation*L_max*8 + MAC_H)/DATARATE) + SIFS + ((PLCP_PREAMBLE + PLCP_HEADER)/PHYRATE) + (L_ack/PHYRATE) + DIFS;
+	collision_duration = ((PLCP_PREAMBLE + PLCP_HEADER)/PHYRATE) + ((aggregation*L_max*8 + MAC_H)/DATARATE) + SIFS + DIFS + ((144 + 48 + 112)/PHYRATE);*/
 	
 	
 }
