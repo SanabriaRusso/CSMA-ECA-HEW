@@ -271,13 +271,22 @@ void Channel :: in_packet(Packet &packet)
 	// }
 			if(rate48 == 1)
 			{
-				succ_tx_duration = 0.0;
-				double plcp_pre48 = 16e-06;
-				double plcp_head48 = 4e-06;
-				double mac_h48 = 28; //bytes
-				double mac_hPHY48 = 8e-06;
-				// the 2e-6 is to fix the division.
-				succ_tx_duration = 	DIFS + plcp_pre48 + plcp_head48 + (double)(((ceil(((mac_h48 + L_max)*8.0)/48))*1e-06)) + SIG_EXT + 2e-06 + SIFS + plcp_pre48 + plcp_head48 + mac_hPHY48 + SIG_EXT + empty_slot_duration;
+				//JUST FOR SINGLE FRAME TRANSMISSIONS.
+				//IT CURRENTLY DOES NOT SUPPORT AGGREGATION
+
+				//Calculating the duration of a transmission in 48Mbps according to durations-wifi-ofdm.xlsx
+				// (bits for ack are: service, MAC, FCS, tail)
+				// ACK = PLCP + ceil((bits)/NDBPS)* SymbolTime + pause
+				double ACK = 20.0 + ceil(134.0/192.0) * 4.0 + 6.0;
+
+				// (bits are: service, MAC Header, LLC Header, IP Header, UDP Header, PAYLOAD, FCS, Tail).
+				// T = PLCP + ceil((bits)/NDBPS)* SymbolTime + pause + SIFS + ACK + DIFS + CWaverage*SLOT;
+				double frame = 20.0 + ceil((L_max*8.0 + 534.0)/192.0) * 4.0 + 6.0;
+
+				//Last 9 is an empty slot and 7.5 is CWmin/2
+				succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS + 9.0 * 7.5 * 1e-06;
+
+				cout << succ_tx_duration << endl;
 			}
 
 	
