@@ -286,7 +286,7 @@ void Channel :: in_packet(Packet &packet)
 				//Last 9 is an empty slot and 7.5 is CWmin/2
 				succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS + 9.0 * 7.5 * 1e-06;
 
-				cout << succ_tx_duration << endl;
+				// cout << succ_tx_duration << endl;
 			}
 
 	
