@@ -643,6 +643,8 @@ void SlottedCSMA :: Stop()
 		cout << "\t\tAC " << i << ": " << (double)(totalACColECA.at(i)/ECAnodes) << endl;
 	}		
 
+	cout << stas[0].ECA << endl;
+
 };
 
 int main(int argc, char *argv[])

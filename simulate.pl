@@ -27,7 +27,7 @@ my $errors = $ARGV[6];
 my $EDCA_share = $ARGV[7];
 my $ECA = $ARGV[8];
 my $numACs = $ARGV[9];
-my $length = 1470;
+my $length = 1000;
 my $batch = 1;
 my $drift = 0;
 my $maxAggregation = 0;
@@ -55,8 +55,8 @@ switch ($ECA){
 	}
 	case 2 {
 		$ECA = 1;
-		$stickiness = 1;
-		$fairShare = 1;
+		$stickiness = 0;
+		$fairShare = 0;
 		
 	}
 	case 3 {

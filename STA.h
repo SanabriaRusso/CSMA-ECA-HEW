@@ -124,6 +124,7 @@ component STA : public TypeII
         std::array<int, AC> shouldHalve; //1 = yes, 0 = no
         std::array<int,AC> changeStage;
         std::array<double,AC> halved; //number of times the backoff was halved
+        std::array<int,AC> resetSuccessfull; //to reverse the reset done before a Tx that caused a collision
 
         //Transmission private statistics
         int transmitted;    //0 -> no, 1 -> yes.
@@ -160,7 +161,7 @@ void STA :: Start()
 
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
-    if(ECA == 0){
+    if(ECA == 0 || ECA == 3){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
     }
@@ -199,6 +200,7 @@ void STA :: Start()
         shouldHalve.at(i) = 0;
         changeStage.at(i) = 0;
         halved.at(i) = 0;
+        resetSuccessfull.at(i) = 0;
     }
 	
 };
@@ -392,6 +394,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         // cout << "Packets sent: " << int(packet.aggregation - slot.error) << endl;
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
+                        if(resetSuccessfull.at(i) == 1) resetSuccessfull.at(i); //for reversing a halving after collisions. Here, nothing.
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                         // cout << "STA-" << node_id << ": AC: " << i << ". Transmitted " <<
@@ -405,7 +408,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     
                         /*****NEW PACKET IS PICKED************
                         **************************************/
-                        if(stationStickiness.at(i) <= system_stickiness)        //if the station stickiness wasn't modified by halving
+                        if(stationStickiness.at(i) <= system_stickiness)        //Avoid resetting stickiness if schedule was reduced using dynamic stickiness
                         {
                             stationStickiness.at(i) = system_stickiness;        //Resetting the stickiness after a successful transmission
                         }
@@ -480,6 +483,22 @@ void STA :: in_slot(SLOT_notification &slot)
                     {
                         //Collision metrics
                         totalACCollisions.at(i)++;
+
+                        //----------------------------
+                        //Reversing a halving
+                        if(resetSuccessfull.at(i) == 1)
+                        {
+                                int maxStage = MAXSTAGE_ECA[i];
+                                if(ECA == 0)
+                                {
+                                    maxStage = MAXSTAGE_EDCA[i];
+                                }
+
+                                backoffStages.at(i) = min( (backoffStages.at(i) + 1), maxStage );
+                                resetSuccessfull.at(i) = 0;
+                        }
+                        //----------------------------
+
                         //Retransmission metrics
                         totalACRet.at(i)++;
                         retAttemptAC.at(i)++;
@@ -497,7 +516,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             stationStickiness.at(i) = system_stickiness;
 
-                            if(ECA == 0) backoffStages.at(i) = 0;
+                            if(ECA == 0 || ECA == 3) backoffStages.at(i) = 0;
 
                             if(backlogged.at(i) == 1)
                             {
@@ -662,9 +681,9 @@ void STA :: in_slot(SLOT_notification &slot)
         //     changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
 
         analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
-            MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
-            changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
-            scheduleMap);
+        MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
+        changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
+        scheduleMap, resetSuccessfull);
     }
     
 

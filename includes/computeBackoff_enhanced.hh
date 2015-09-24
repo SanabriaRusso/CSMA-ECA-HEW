@@ -13,13 +13,21 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	int CWmin [AC] = { 16, 32, 16, 8 }; //slots
 
 	double deterministicBackoff;
+	double basicDetBackoff;
+	int isItPossible;
 
 	deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);
+	basicDetBackoff = (int) (pow(2,0) * CWmin[category]/2 - 1);
 	AIFS.at(category) = defaultAIFS[category];
 
 	//Always checking if the counters will cause a VC.
-	int isItPossible = isThisNewBackoffPossible_copy(deterministicBackoff, stages, counters, category, backlog, CWmin);
-	// int isItPossible = 1;
+	if(ECA == 3)
+	{
+		isItPossible = isThisNewBackoffPossible_copy(basicDetBackoff, stages, counters, category, backlog, CWmin);	
+	}else
+	{
+		isItPossible = isThisNewBackoffPossible_copy(deterministicBackoff, stages, counters, category, backlog, CWmin);	
+	}
 
 	//If it is just a deterministic backoff, we don't have to compute the SmartBackoff
 	if(backlog.at(category) == 1)
@@ -35,8 +43,10 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 					// cout << "**Node " << id << endl;
 					// cout << "\tDeterministic backoff: " << deterministicBackoff << " AIFS " << AIFS.at(category) << endl;
 					return; //get out
+				}else if(ECA == 3) //Basic ECA
+				{
+					counters.at(category) = basicDetBackoff;					
 				}
-
 			}else
 			{
 				if(stickiness > 0)
