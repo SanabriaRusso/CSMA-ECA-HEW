@@ -194,7 +194,7 @@ void STA :: Start()
         stationStickiness.at(i) = system_stickiness; //Could individual AC stickiness parameter be interesting?
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
-        backoffStages.at(i) = 1;
+        backoffStages.at(i) = 0;
         previousStage.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
