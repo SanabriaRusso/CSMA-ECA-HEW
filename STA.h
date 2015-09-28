@@ -22,7 +22,7 @@
 #include "includes/analiseHalvingCycle.hh"
 #include "includes/analiseResetCycle.hh"
 #include "includes/analiseBetterReset.hh"
-// #include "includes/dumpStationLog.hh"
+#include "includes/dumpStationLog.hh"
 
 
 //Suggested value is MAXSTAGE+1
@@ -51,6 +51,7 @@ component STA : public TypeII
     public:
     	//Node-specific characteristics
         int node_id;
+        int nodesInSim;
         int K; //max queue size
         int system_stickiness; //global stickiness
         std::array<int, AC> stationStickiness; //the stickiness of each AC
@@ -82,6 +83,7 @@ component STA : public TypeII
 
         //Transmissions statistics
         std::array<double,AC> transmissions;
+        double totalTransmissions;
         std::array<double,AC> sxTx;
         std::array<double,AC> consecutiveSx;
         std::array<double,AC> packetsSent; //successfully sent packets per AC
@@ -94,6 +96,7 @@ component STA : public TypeII
         //Collision stsatistics
         double totalCollisions;
         std::array<double,AC> totalACCollisions;
+        std::array<double,AC> lastCollision;
 
         double totalInternalCol;
         std::array<double,AC> totalInternalACCol;
@@ -113,6 +116,7 @@ component STA : public TypeII
     	ACs priorities, meaning: 0 = BK, 1 = BE, 2 = VI, 3 = VO*/
         std::array<double, AC> backoffCounters;
         std::array<int, AC> backoffStages;
+        std::array<int, AC> previousStage;
         std::array<double,AC> AIFS;
 
         //Halving the cycle statistics
@@ -183,13 +187,15 @@ void STA :: Start()
     ACToTx = -1;
     transmitted = 0;
     sx = 0;
+    totalTransmissions = 0;
 
     for(int i = 0; i < AC; i++)
     {
         stationStickiness.at(i) = system_stickiness; //Could individual AC stickiness parameter be interesting?
         droppedAC.at(i) = 0;
         backlogged.at(i) = 0;
-        backoffStages.at(i) = 0;
+        backoffStages.at(i) = 1;
+        previousStage.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
         consecutiveSx.at(i) = 0;
@@ -201,6 +207,7 @@ void STA :: Start()
         changeStage.at(i) = 0;
         halved.at(i) = 0;
         resetSuccessfull.at(i) = 0;
+        lastCollision.at(i) = 0;
     }
 	
 };
@@ -214,6 +221,7 @@ void STA :: Stop()
         cout << "AC " << it << endl;
         cout << "\t* Final Stickiness: " << stationStickiness.at(it) << " (system's: " << system_stickiness << ")." << endl;
         cout << "\t* Total transmission attempts for AC " << it << ": " << transmissions.at(it) << endl;
+        totalTransmissions += transmissions.at(it);
         cout << "\t+ Total Packets sent for AC " << it << ": " << packetsSent.at(it) << endl;
         
         if(packetsSent.at(it) > 0){
@@ -291,17 +299,12 @@ void STA :: Stop()
     //////////////////////////////////////////////////////////////////////
     //Dumping station information into a file for further processing
     //////////////////////////////////////////////////////////////////////
-    // dumpStationLog(node_id, overallThroughput, totalCollisions, totalHalved);
-    string logName = "sta-";
-    string staNum = to_string(node_id);
-    string end = ".log";
-    logName = logName + staNum + end;
+    string logName = "sta-" + to_string(node_id) + ".log";
     string routeToFile = "Results/stations/";
     routeToFile = routeToFile + logName;
-
     ofstream staFile;
     staFile.open(routeToFile.c_str(), ios::app);
-    staFile << node_id << " " << overallThroughput << " " << totalCollisions << " " << totalHalved << endl;
+    dumpStationLog(nodesInSim, node_id, staFile, overallThroughput, totalCollisions/totalTransmissions, totalHalved);
     staFile.close();
     
 };
@@ -483,6 +486,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     {
                         //Collision metrics
                         totalACCollisions.at(i)++;
+                        lastCollision.at(i) = SimTime();
 
                         //----------------------------
                         //Reversing a halving
@@ -494,7 +498,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                     maxStage = MAXSTAGE_EDCA[i];
                                 }
 
-                                backoffStages.at(i) = min( (backoffStages.at(i) + 1), maxStage );
+                                backoffStages.at(i) = min( previousStage.at(i), maxStage );
                                 resetSuccessfull.at(i) = 0;
                         }
                         //----------------------------
@@ -593,6 +597,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
 
     //Fix any dropping of packets due to internal collisions
+    //This should not happen in CSMA/ECAqos
     if(ACToTx >= 0)
     {
         for(int i = 0; i < ACToTx; i++)
@@ -683,7 +688,7 @@ void STA :: in_slot(SLOT_notification &slot)
         analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
         MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
         changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
-        scheduleMap, resetSuccessfull);
+        scheduleMap, resetSuccessfull, previousStage);
     }
     
 

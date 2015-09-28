@@ -79,6 +79,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 	{
 		// Node
 		stas[n].node_id = n;
+		stas[n].nodesInSim = Nodes;
 		stas[n].K = 1000;
 		stas[n].system_stickiness = Stickiness;
 		stas[n].ECA = ECA;
@@ -197,6 +198,7 @@ void SlottedCSMA :: Stop()
 	array <double,AC> totalACColECA = {};
 	double totalCol = channel.collision_slots;
 	double sumOfCol = 0.0;
+	double lastCollision = 0.0;
 
 	array <double,AC> totalIntACCol = {};
 	double totalIntCol = 0.0;
@@ -308,6 +310,8 @@ void SlottedCSMA :: Stop()
 			totalSource += (sources[i].packetsInAC.at(j));
 			sourceForAC.at(j) += (sources[i].packetsInAC.at(j));
 
+			if(lastCollision < stas[i].lastCollision.at(j)) lastCollision = stas[i].lastCollision.at(j);
+
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
 		totalErasedPackets += (stas[i].erased);
@@ -333,6 +337,7 @@ void SlottedCSMA :: Stop()
 	file << "#53 avgTimeBtSxTxBK-ECA 	54. avgTimeBtSxTxBE-ECA 	55. avgTimeBtSxTxVI-ECA 	56. avgTimeBtSxTxVO-ECA" << endl;
 	file << "#57. fractBKCollisionsEDCA	58. fractBECollisionsEDCA 	59. fractVICollisionsEDCA 	60. fractVOCollisionsEDCA" << endl;
 	file << "#61. fractBKCollisionsECA 	62. fractBECollisionsECA 	63. fractVICollisionsECA 	64. fractVOCollisionsECA" << endl;
+	file << "#65. lastCollision" << endl;
 	
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -507,6 +512,9 @@ void SlottedCSMA :: Stop()
 		}
 	}
 
+	//65
+	file << lastCollision << " ";
+
 	file << endl;
 
 
@@ -643,7 +651,7 @@ void SlottedCSMA :: Stop()
 		cout << "\t\tAC " << i << ": " << (double)(totalACColECA.at(i)/ECAnodes) << endl;
 	}		
 
-	cout << stas[0].ECA << endl;
+	cout << "\n11. Last Collision: " << lastCollision << endl;
 
 };
 

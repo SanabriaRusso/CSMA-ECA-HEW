@@ -118,7 +118,7 @@ void Channel :: Start()
 	aggregation = 0;
 	errorProbability = 0;
 
-	rate = 11;
+	rate = 48;
 
 	slot_time.Set(SimTime()); // Let's go!	
 	

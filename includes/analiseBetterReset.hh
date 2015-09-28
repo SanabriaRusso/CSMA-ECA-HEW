@@ -7,12 +7,12 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 	std::array<int,AC> backlog, std::array<int,AC> &resetAttempt, SLOT_notification slot, std::array<int, AC> &shouldReset,
 	std::array<int,AC> &resetThresholds, int node, std::array<int,AC> &changeStage, std::array<double,AC> &reset,
 	std::array<int, AC> &stationStickiness, int systemStickiness, std::array<double,AC> &analysisCounter, 
-	double timer, std::bitset< 512 > &scheduleMap, std::array<int,AC> &resetSx){
+	double timer, std::bitset< 512 > &scheduleMap, std::array<int,AC> &resetSx, std::array<int,AC> &previousStage){
 
 	int CWmin [AC] = { 16, 32, 16, 8 }; //slots
 	int newStage = 0;
 	int halving = 1;	//Just halving (not reseting) the schedule in each attempt
-	int dynamicStickiness = 1;	//Incresing the stickiness to a fixed value each time the schedule is modified
+	int dynamicStickiness = 0;	//Incresing the stickiness to a fixed value each time the schedule is modified
 	int conservativeApproach = 0;	//Determines which threshold unleashes the analysis of the scheduleMap
 
 
@@ -106,9 +106,7 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 						}
 						//*/DEBUG
 						// cout << endl;
-
 						// cout << "Counting from " << increments << " to " << analysisCounter.at(i) -1 << endl;
-
 
 						// If we found the shorter schedule, stop looking.
 						if(slotAvailable == 0)
@@ -151,11 +149,12 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 						consecutiveSx.at(i) = 0;
 						changeStage.at(i) = 0;
 						reset.at(i)++;
-						resetSx.at(i) = 1;
+						resetSx.at(i) = 1;	//Announcing the chage was made
 						// */DEBUG
 						// cout << "**(" << timer << ")Node " << node << endl;
 						// cout << "***Making the change from stage " << stages.at(i);
 						// cout << " to " << newStage << " now" << endl;
+						previousStage.at(i) = stages.at(i);
 						stages.at(i) = newStage;
 						scheduleMap.reset();
 						// cout << "Next analysis to ocurr in slot " << (int)slot.num + (int)newDeterministicBackoff + 2 << endl;

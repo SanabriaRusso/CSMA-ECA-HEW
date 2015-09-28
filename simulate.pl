@@ -14,7 +14,7 @@ my %help = (
 				'--help'	=> 1
 			);
 
-die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs\n") 
+die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
 my $rep = $ARGV[0];
@@ -27,7 +27,7 @@ my $errors = $ARGV[6];
 my $EDCA_share = $ARGV[7];
 my $ECA = $ARGV[8];
 my $numACs = $ARGV[9];
-my $length = 1000;
+my $length = $ARGV[10];
 my $batch = 1;
 my $drift = 0;
 my $maxAggregation = 0;
