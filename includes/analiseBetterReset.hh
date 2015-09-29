@@ -11,8 +11,8 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 
 	int CWmin [AC] = { 16, 32, 16, 8 }; //slots
 	int newStage = 0;
-	int halving = 1;	//Just halving (not reseting) the schedule in each attempt
-	int dynamicStickiness = 0;	//Incresing the stickiness to a fixed value each time the schedule is modified
+	int halving = 0;	//Just halving (not reseting) the schedule in each attempt
+	int dynamicStickiness = 1;	//Incresing the stickiness to a fixed value each time the schedule is modified
 	int conservativeApproach = 0;	//Determines which threshold unleashes the analysis of the scheduleMap
 
 

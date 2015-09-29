@@ -663,7 +663,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
         if(backoffCounters.at(ACToTx) == 0)
         {
-            packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare);
+            packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare, ECA);
             // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
             // << ". " << packet.aggregation << " packets." << endl;
 
