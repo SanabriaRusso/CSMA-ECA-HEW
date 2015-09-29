@@ -304,7 +304,7 @@ void STA :: Stop()
     routeToFile = routeToFile + logName;
     ofstream staFile;
     staFile.open(routeToFile.c_str(), ios::app);
-    dumpStationLog(nodesInSim, node_id, staFile, overallThroughput, totalCollisions/totalTransmissions, totalHalved);
+    dumpStationLog(nodesInSim, node_id, ECA, staFile, overallThroughput, totalCollisions/totalTransmissions, totalHalved);
     staFile.close();
     
 };
