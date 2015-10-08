@@ -15,7 +15,7 @@ void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC>
 	superPacket.at(accessCategory).fairShare = fairShare; //to decide tx duration in channel.hh
 	
 	int packets = 1;
-	if(fairShare == 1 && ECA != 0)
+	if(fairShare == 1)
 	{
 		packets = std::min( (int)pow(2,stages.at(accessCategory)), Queues.at(accessCategory).QueueSize() );
 	}

@@ -6,11 +6,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 	double &counter, int &system_stickiness, int &id, int &sx, int &ECA, double &AIFS, const int defaultAIFS[AC]){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-	int CWmin [4] = { 32, 32, 16, 8 };
-
-	// int CWmin [4] = { 64, 64, 32, 16 };
-	// int CWmin [4] = { 128, 128, 64, 32 };
-	// int CWmin [4] = { 1024, 1024, 1024, 1024 };
+	int CWmin [4] = { 16, 32, 16, 8 };
 
 	if(backlog == 1)
 	{
@@ -29,7 +25,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 
 			else
 			{
-				counter = rand() % (int)  (pow(2,backoffStage) * CWmin[ac] );
+				counter = rand() % (int)  (pow(2,backoffStage) * CWmin[ac] -1)  + 1;
 				// cout << "---Node " << id << " AC: " << ac << " DCF: " << counter << endl;
 			}
 		}else
@@ -40,7 +36,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 				// cout << "+++Node " << id << " AC: " << AC << " ECA (hyst): " << counter << endl;				
 			}else
 			{
-				counter = rand() % (int) (pow(2,backoffStage) * CWmin[ac] );
+				counter = rand() % (int) (pow(2,backoffStage) * CWmin[ac] -1 ) + 1;
 				// cout << "---Node " << id << " AC: " << AC << " DCF (col): " << counter << endl;
 			}
 			

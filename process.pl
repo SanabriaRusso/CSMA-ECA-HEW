@@ -1,4 +1,4 @@
-#!/bin/perl
+#!/usr/local/bin/perl
 use warnings;
 use strict;
 use Data::Dumper qw(Dumper);

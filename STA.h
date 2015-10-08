@@ -304,7 +304,8 @@ void STA :: Stop()
     routeToFile = routeToFile + logName;
     ofstream staFile;
     staFile.open(routeToFile.c_str(), ios::app);
-    dumpStationLog(nodesInSim, node_id, ECA, staFile, overallThroughput, totalCollisions/totalTransmissions, totalHalved);
+    dumpStationLog(nodesInSim, node_id, ECA, staFile, overallThroughput, 
+        totalCollisions/totalTransmissions, totalHalved, backoffStages);
     staFile.close();
     
 };
@@ -488,21 +489,6 @@ void STA :: in_slot(SLOT_notification &slot)
                         totalACCollisions.at(i)++;
                         lastCollision.at(i) = SimTime();
 
-                        //----------------------------
-                        //Reversing a halving
-                        if(resetSuccessfull.at(i) == 1)
-                        {
-                                int maxStage = MAXSTAGE_ECA[i];
-                                if(ECA == 0)
-                                {
-                                    maxStage = MAXSTAGE_EDCA[i];
-                                }
-
-                                backoffStages.at(i) = min( previousStage.at(i), maxStage );
-                                resetSuccessfull.at(i) = 0;
-                        }
-                        //----------------------------
-
                         //Retransmission metrics
                         totalACRet.at(i)++;
                         retAttemptAC.at(i)++;
@@ -540,6 +526,20 @@ void STA :: in_slot(SLOT_notification &slot)
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
                             if(stationStickiness.at(i) == 0) //subjecting the halving statistics to the level of stickiness
                             {
+                                //----------------------------
+                                //Reversing a halving
+                                if(resetSuccessfull.at(i) == 1)
+                                {
+                                        int maxStage = MAXSTAGE_ECA[i];
+                                        if(ECA == 0)
+                                        {
+                                            maxStage = MAXSTAGE_EDCA[i];
+                                        }
+
+                                        backoffStages.at(i) = min( previousStage.at(i), maxStage );
+                                        resetSuccessfull.at(i) = 0;
+                                }
+                                //----------------------------
                                 // cout << "(" << SimTime() <<") ---Station " << node_id << ": AC " << ACToTx << " collided. (slot " << slot.num << ")" << endl;
                                 consecutiveSx.at(i) = 0;
                                 halvingAttempt.at(i) = 0;

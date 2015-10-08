@@ -10,7 +10,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	superPacket.at(acToTx).tx_time = txTime;
 	superPacket.at(acToTx).accessCategory = acToTx;
 
-	if(fairShare == 1 && ECA != 0)
+	if(fairShare == 1)
 	{		
 		superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), 
 			Queues.at(acToTx).QueueSize() );

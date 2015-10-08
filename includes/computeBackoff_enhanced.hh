@@ -107,7 +107,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 
 		while ( (compareBackoffs != match) || (compareCycles != match) )
 		{
-			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1);
+			randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1) + 1;
 
 			//Avoiding internal collisions with the randomBackoff
 			for(int i = 0; i < AC; i++)

@@ -118,7 +118,7 @@ void Channel :: Start()
 	aggregation = 0;
 	errorProbability = 0;
 
-	rate = 48;
+	rate = 65;
 
 	slot_time.Set(SimTime()); // Let's go!	
 	
@@ -324,6 +324,8 @@ void Channel :: in_packet(Packet &packet)
 					//Last 9 is an empty slot and 7.5 is CWmin/2
 					succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS11 + 9.0 * 7.5 * 1e-06;
 					break;
+				case 65:
+					succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			}
 
 	// cout << succ_tx_duration << endl;
