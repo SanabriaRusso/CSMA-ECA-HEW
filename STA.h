@@ -26,7 +26,7 @@
 
 
 //Suggested value is MAXSTAGE+1
-#define MAX_RET 7
+#define MAX_RET 6
 
 //Number of access categories
 #define AC 4
