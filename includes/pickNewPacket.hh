@@ -11,6 +11,7 @@ void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC>
 	Packet packet = Queues.at(accessCategory).GetFirstPacket();
 	packet.contention_time = pickupTime;
 	superPacket.at(accessCategory).contention_time = packet.contention_time;
+	superPacket.at(accessCategory).queuing_time = packet.queuing_time;
 	superPacket.at(accessCategory).startContentionStage = stages.at(accessCategory);
 	superPacket.at(accessCategory).fairShare = fairShare; //to decide tx duration in channel.hh
 	

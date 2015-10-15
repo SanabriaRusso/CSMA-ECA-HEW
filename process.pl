@@ -56,7 +56,8 @@ print $fw
 #108 avgTimeBtSxTxViECA     #110 avgTimeBtSxTxVoECA         #112 BKCollisionsEDCA
 #114 BECollisionsEDCA       #116 VICollisionsEDCA           #118 VOCollisionsEDCA
 #120 BKCollisionsECA        #122 BECollisionsECA            #124 VICollisionsECA
-#126 VOCollisionsEDCA       #128 lastCollision\n");
+#126 VOCollisionsEDCA       #128 lastCollision              #130 avgQueuingDelayBK
+#132 avgQueuingDelayBE      #134 avgQueuingDelayVI          #136 avgQueuingDelayVO\n");
 
 OUTTER: foreach($lowNodes .. $highNodes)
 {

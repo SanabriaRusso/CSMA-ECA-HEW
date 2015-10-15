@@ -110,6 +110,10 @@ component STA : public TypeII
 
         //Time statistics
         std::array<double,AC> accumTimeBetweenSxTx;
+        std::array<double,AC> accumQueueingDelay;
+
+        //Simulation acceleration
+        int alwaysSaturated;
 
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
@@ -162,9 +166,8 @@ void STA :: Start()
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT
-
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
+    changingSchedule = 0; // 0 = noScheReset, 1 = scheReset
     if(ECA == 0 || ECA == 3){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
@@ -288,6 +291,7 @@ void STA :: Stop()
     for(int i = 0; i < AC; i++)
     {
         totalHalved += halved.at(i);
+        accumQueueingDelay.at(i) /= (droppedAC.at(i) + packetsSent.at(i));
     }
     cout << "+ Overall times some deterministic backoff was changed : " << totalHalved << endl;
     // cout << "***DEBUG: final backoff stage" << endl;
@@ -295,6 +299,13 @@ void STA :: Stop()
     // {
     //     cout << "\tAC " << i << ": " << backoffStages.at(i) << endl;
     // }
+
+    cout << "+ Average delay (queuing + contention)" << endl;
+    for(int i = 0; i < AC; i++){
+        cout << "\tAC " << i << ": " << accumQueueingDelay.at(i) << endl;
+    }
+
+
 
     //////////////////////////////////////////////////////////////////////
     //Dumping station information into a file for further processing
@@ -406,7 +417,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
-                            sx, droppedAC.at(i), queueEmpties, slot.error);
+                            sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), alwaysSaturated);
 
                         // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
                     
@@ -502,7 +513,7 @@ void STA :: in_slot(SLOT_notification &slot)
                             accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
-                                fairShare, sx, droppedAC.at(i), queueEmpties, slot.error);
+                                fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), alwaysSaturated);
 
                             stationStickiness.at(i) = system_stickiness;
 
@@ -613,7 +624,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                     erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
-                        fairShare, sx, droppedAC.at(i), queueEmpties, slot.error);
+                        fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), alwaysSaturated);
 
                     stationStickiness.at(i) = system_stickiness;
 
@@ -700,6 +711,7 @@ void STA :: in_packet(Packet &packet)
 
     if( Queues.at(packet.accessCategory).QueueSize()  < K )
     {
+        packet.queuing_time = SimTime();
         Queues.at(packet.accessCategory).PutPacket(packet);
     }else
     {

@@ -138,6 +138,8 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		{
 			sources[i].packet_rate = Bandwidth/(PacketLength * 8);
 			stas[i].saturated = 1;
+			stas[i].alwaysSaturated = 1;
+			sources[i].alwaysSat = stas[i].alwaysSaturated;
 			if(Bandwidth < 10e6) stas[i].saturated = 0;
 			
 		}
@@ -217,6 +219,7 @@ void SlottedCSMA :: Stop()
 	double overallFairnessDenom = 0.0;
 
 	array <double,AC> avgTimeBetweenACSxTx = {};
+	array <double,AC> avgQueueingDelay = {};
 	array <double,AC> avgTimeBetweenACSxTxEDCA = {};
 	array <double,AC> avgTimeBetweenACSxTxECA = {};
 
@@ -296,6 +299,7 @@ void SlottedCSMA :: Stop()
 			if(stas[i].sxTx.at(j) > 0)
 			{
 				avgTimeBetweenACSxTx.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
+				avgQueueingDelay.at(j) += stas[i].accumQueueingDelay.at(j);
 				if(stas[i].ECA == 0)
 				{
 					avgTimeBetweenACSxTxEDCA.at(j) += (stas[i].accumTimeBetweenSxTx.at(j) / stas[i].sxTx.at(j));
@@ -337,8 +341,9 @@ void SlottedCSMA :: Stop()
 	file << "#53 avgTimeBtSxTxBK-ECA 	54. avgTimeBtSxTxBE-ECA 	55. avgTimeBtSxTxVI-ECA 	56. avgTimeBtSxTxVO-ECA" << endl;
 	file << "#57. fractBKCollisionsEDCA	58. fractBECollisionsEDCA 	59. fractVICollisionsEDCA 	60. fractVOCollisionsEDCA" << endl;
 	file << "#61. fractBKCollisionsECA 	62. fractBECollisionsECA 	63. fractVICollisionsECA 	64. fractVOCollisionsECA" << endl;
-	file << "#65. lastCollision" << endl;
-	
+	file << "#65. lastCollision			66. avgQueueingDelayBK		67. avgQueueingDelayBE		68.avgQueueingDelayVI" << endl;
+	file << "#69. avgQueueingDelayVO" << endl;
+
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
 	//3 - 6
@@ -509,11 +514,22 @@ void SlottedCSMA :: Stop()
 		if(totalACColECA.at(i) != 0)
 		{
 			file << (double)(totalACColECA.at(i)/ECAnodes) << " ";
+		}else{
+			file << "0 ";
 		}
 	}
 
 	//65
 	file << lastCollision << " ";
+
+	//66-69
+	for(int i = 0; i < AC; i++){
+		if(avgQueueingDelay.at(i) > 0){
+			file << avgQueueingDelay.at(i)/Nodes << " ";
+		}else{
+			file << "0 ";
+		}
+	}
 
 	file << endl;
 
@@ -652,6 +668,13 @@ void SlottedCSMA :: Stop()
 	}		
 
 	cout << "\n11. Last Collision: " << lastCollision << endl;
+
+	cout << "\n12.Average queuing + contention time for each AC:" << endl;
+
+	for(int i = 0; i < AC; i++)
+	{
+		cout << "\tAC " << i << ": " << avgQueueingDelay.at(i)/Nodes << endl;
+	}
 
 };
 

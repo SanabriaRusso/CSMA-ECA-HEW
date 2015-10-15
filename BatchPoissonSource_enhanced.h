@@ -27,9 +27,11 @@ component BatchPoissonSource : public TypeII
 		long int seq;
 		int MaxBatch;	
 		double packet_rate;
+		double lambda;
 		int categories;
 		int packetGeneration;
 		double packetsGenerated;
+		int alwaysSat;
 		std::array<double,AC> packetsInAC;
 
 		int BEShare;
@@ -111,11 +113,15 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 	int RB = (int) Random(MaxBatch)+1;
 	
 	packet.L = L;
-	packet.queuing_time = SimTime();
 	out(packet);
 	packetsGenerated += 1;
 	packetsInAC.at(packet.accessCategory) += 1;
-
-	inter_packet_timer.Set(SimTime()+Exponential(RB/packet_rate));	
+	lambda = RB/packet_rate;
+	if(packetsGenerated > MAXSEQ){
+		if(alwaysSat == 1){
+			lambda = 1;
+		}
+	}
+	inter_packet_timer.Set(SimTime()+Exponential(lambda));	
 };
 

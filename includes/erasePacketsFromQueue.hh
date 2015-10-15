@@ -3,7 +3,8 @@
 using namespace std;
 
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
-    int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected)
+    int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected,
+    double &qDelay, double now, int alwaysSat)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
@@ -13,7 +14,8 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     {
         if(sx == 1)
         {
-            packetDisposal = std::min( (aggregation - affected), (int)Queues.at(cat).QueueSize() );
+            packetDisposal = aggregation - affected;
+            if(alwaysSat == 0) packetDisposal = std::min( (aggregation - affected), (int)Queues.at(cat).QueueSize() );
 
             // if(packetDisposal == 0) 
             // {
@@ -25,11 +27,13 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         {
             if(fairShare == 1)
             {
-                packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
+                packetDisposal = (int)pow(2,packet.startContentionStage);
+                if(alwaysSat == 0) packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
                     (int)Queues.at(cat).QueueSize() );
             }else
             {
-                packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
+                packetDisposal = aggregation;
+                if(alwaysSat == 0) packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
             }
 
             // if(packetDisposal == 0)
@@ -43,7 +47,12 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         }
         
         // cout << "\tOld queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
-        for(int i = 0; i < packetDisposal; i++) Queues.at(cat).DelFirstPacket();
+        for(int i = 0; i < packetDisposal; i++){       
+            Packet pkt;
+            if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
+            qDelay += now - pkt.queuing_time;
+            if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
+        }
         // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
 
 
