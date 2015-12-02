@@ -1,8 +1,0 @@
-Channel.h
-STA.h
-Sim_SlottedCSMA.cc
-includes/analiseBetterReset.hh
-includes/computeBackoff.hh
-includes/computeBackoff_enhanced.hh
-includes/selectMACProtocol.hh
-simulate.pl

@@ -138,7 +138,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		{
 			sources[i].packet_rate = Bandwidth/(PacketLength * 8);
 			stas[i].saturated = 1;
-			stas[i].alwaysSaturated = 1;
+			stas[i].alwaysSaturated = 0;
 			sources[i].alwaysSat = stas[i].alwaysSaturated;
 			if(Bandwidth < 10e6) stas[i].saturated = 0;
 			
@@ -227,6 +227,8 @@ void SlottedCSMA :: Stop()
 
 	double totalSource = 0.0;
 	array <double,AC> sourceForAC = {};
+    array <double,AC> avgBackoffStageECA = {};
+    array <double,AC> avgBackoffStageDCF = {};
 
 
 
@@ -315,6 +317,12 @@ void SlottedCSMA :: Stop()
 			sourceForAC.at(j) += (sources[i].packetsInAC.at(j));
 
 			if(lastCollision < stas[i].lastCollision.at(j)) lastCollision = stas[i].lastCollision.at(j);
+            
+            if(stas[i].ECA == 0){
+                avgBackoffStageDCF.at(j) += stas[i].backoffStagesFinal.at(j);
+            }else{
+                avgBackoffStageECA.at(j) += stas[i].backoffStagesFinal.at(j);
+            }
 
 		}
 		totalIncommingPackets += (stas[i].incommingPackets);
@@ -342,7 +350,7 @@ void SlottedCSMA :: Stop()
 	file << "#57. fractBKCollisionsEDCA	58. fractBECollisionsEDCA 	59. fractVICollisionsEDCA 	60. fractVOCollisionsEDCA" << endl;
 	file << "#61. fractBKCollisionsECA 	62. fractBECollisionsECA 	63. fractVICollisionsECA 	64. fractVOCollisionsECA" << endl;
 	file << "#65. lastCollision			66. avgQueueingDelayBK		67. avgQueueingDelayBE		68.avgQueueingDelayVI" << endl;
-	file << "#69. avgQueueingDelayVO" << endl;
+	file << "#69. avgQueueingDelayVO    70. avgBackoffStageECABK    71. avgBackoffStageDCFBK	72. percentageEDCA_" << endl;
 
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -530,6 +538,22 @@ void SlottedCSMA :: Stop()
 			file << "0 ";
 		}
 	}
+    
+    //70-71
+    if(avgBackoffStageECA.at(0) > 0){
+        file << avgBackoffStageECA.at(0)/(Nodes*percentageEDCA_) << " ";
+    }else{
+        file << "0 ";
+    }
+    
+    if(avgBackoffStageDCF.at(0) > 0){
+        file << avgBackoffStageDCF.at(0)/(Nodes*percentageEDCA_) << " ";
+    }else{
+        file << "0 ";
+    }
+
+    //72
+    file << percentageEDCA_ << " ";
 
 	file << endl;
 
@@ -636,7 +660,7 @@ void SlottedCSMA :: Stop()
 	{
 		cout << "\t\tAC " << i << ": " << totalACthroughputEDCA.at(i) << endl;
 	}
-	cout << "\t-EDCA nodes (" << EDCAnodes << "): " << totalThroughputECA << endl;
+	cout << "\t-CSMA/ECA nodes (" << EDCAnodes << "): " << totalThroughputECA << endl;
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\t\tAC " << i << ": " << totalACthroughputECA.at(i) << endl;
@@ -669,12 +693,18 @@ void SlottedCSMA :: Stop()
 
 	cout << "\n11. Last Collision: " << lastCollision << endl;
 
-	cout << "\n12.Average queuing + contention time for each AC:" << endl;
+	cout << "\n12. Average queuing + contention time for each AC:" << endl;
 
 	for(int i = 0; i < AC; i++)
 	{
 		cout << "\tAC " << i << ": " << avgQueueingDelay.at(i)/Nodes << endl;
 	}
+    
+    cout << "\n13. Average final Backoff Stage (BK only)" << endl;
+    cout << "\tDCF: " << avgBackoffStageDCF.at(0)/(Nodes*percentageEDCA_) << endl;
+    cout << "\tECA: " << avgBackoffStageECA.at(0)/(Nodes*percentageEDCA_) << endl;
+
+    cout << "\n14. Percetage of EDCA stations: " << percentageEDCA_*100 << "%" << endl;
 
 };
 

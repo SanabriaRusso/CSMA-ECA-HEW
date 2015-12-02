@@ -5,9 +5,9 @@ use Data::Dumper qw(Dumper);
 use Statistics::Basic qw(:all);
  
 my @inputData;
-my $highNodes = 0;
-my $lowNodes = 10000;
-my $outputFile = 'Results/processed_toPlot.txt';
+my $highEDCA = 0;
+my $lowEDCA = 100;
+my $outputFile = 'Results/processed_varEDCA.txt';
 
 ####Finding the nodes limits based on the file.
 my $filename = $ARGV[0];
@@ -21,13 +21,17 @@ while (my $row = <$fh>)
     {
         chomp($row);
         @inputData = split(/\s+/, $row);
-        $highNodes = $inputData[0]
-            if ($highNodes < $inputData[0]);
-        $lowNodes = $inputData[0]
-            if ($lowNodes > $inputData[0]);
+        $highEDCA = $inputData[71]
+            if ($highEDCA < $inputData[71]);
+        $lowEDCA = $inputData[71]
+            if ($lowEDCA > $inputData[71]);
     }
 
 }
+
+####Normalizing the shares of EDCA
+$highEDCA *= 100;
+$lowEDCA *= 100;
 
 ####Finding the metrics and outputting the results to file.
 open(my $fw, ">", $outputFile)
@@ -58,9 +62,9 @@ print $fw
 #120 BKCollisionsECA        #122 BECollisionsECA            #124 VICollisionsECA
 #126 VOCollisionsEDCA       #128 lastCollision              #130 avgQueuingDelayBK
 #132 avgQueuingDelayBE      #134 avgQueuingDelayVI          #136 avgQueuingDelayVO
-#138 avgBackoffStageECABK   #140 avgBackoffStageDCFBK\n");
+#138 avgBackoffStageECABK   #140 avgBackoffStageDCFBK       #142 percentageEDCA\n");
 
-OUTTER: foreach($lowNodes .. $highNodes)
+OUTTER: foreach($lowEDCA .. $highEDCA)
 {
     open(my $fh, "<", $filename)
         or die "Could not open file $filename $!";
@@ -74,7 +78,7 @@ OUTTER: foreach($lowNodes .. $highNodes)
         {
             chomp($row);
             @inputData = split(/\s+/, $row);
-            if ($inputData[0] == $_)
+            if ($inputData[71] == $_)
             {
                 $thereIsData = 1;
                 foreach my $i (1 .. $#inputData)

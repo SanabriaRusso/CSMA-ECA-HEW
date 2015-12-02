@@ -35,8 +35,8 @@
 extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
 extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
 extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
-extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
-// extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
+// extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
+extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
 using namespace std;
@@ -114,6 +114,9 @@ component STA : public TypeII
 
         //Simulation acceleration
         int alwaysSaturated;
+    
+        //End of simulation statistic
+        std::array<int, AC> backoffStagesFinal;
 
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
@@ -167,8 +170,8 @@ void STA :: Start()
 
     //--------------------IMPORTANT
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    changingSchedule = 0; // 0 = noScheReset, 1 = scheReset
-    if(ECA == 0 || ECA == 3){
+    changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
+    if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
     }
@@ -217,6 +220,8 @@ void STA :: Start()
 
 void STA :: Stop()
 {
+    //End of simulation statistics
+    backoffStagesFinal = backoffStages;
 
     cout << "\n***Node-" << node_id << "**" <<endl;
     for(int it = 0; it < AC; it++)

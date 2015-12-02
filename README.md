@@ -24,3 +24,6 @@ This attempt will modify:
 	-Better queuing mechanisms: in previous attempts the saturated queue made the simulations to take too long.
 	-Better channel models: in order to comply with the scenarios, new channel models need to be addressed.
 	-Implementation of coverage areas and communication ranges.
+
+Personal:
+Important files for making the figures are found in ../tmp/plot/multipleAC/paper
