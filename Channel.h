@@ -18,10 +18,13 @@
 #define SIFS 10e-06
 #define LDBPS 256
 #define TSYM 4e-06
+#define TSYM11ax 16e-06
 #define ECA_AIFS_TIME 28e-06
 #define SIG_EXT 6e-06
 			
 #include "Aux.h"
+#include "includes/subCarriers.hh"
+#include "includes/subCarriers11ax.hh"
 
 component Channel : public TypeII
 {
@@ -65,6 +68,7 @@ component Channel : public TypeII
 		int aggregation;
 		float errorProbability;
 		int rate;	//	are we using the 48mbps metrics for tx duration?
+		int channelWidth; // bandwidth
 		
 		//gathering statistics about the collision's evolution in time
      	ofstream slotsInTime;
@@ -118,7 +122,8 @@ void Channel :: Start()
 	aggregation = 0;
 	errorProbability = 0;
 
-	rate = 65;
+	rate = 65; // mark 100 for 802.11ac and 1000 for 802.11ax
+	channelWidth = 20; // MHz
 
 	slot_time.Set(SimTime()); // Let's go!	
 	
@@ -284,58 +289,117 @@ void Channel :: in_packet(Packet &packet)
 		// 	break;
 			
 		// default:
-			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+	succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+	collision_duration = succ_tx_duration;
 	// }
 
-			double ACK;
-			double frame;
-			switch(rate)
+	double ACK;
+	double frame;
+
+	//For 802.11ac and ax:
+	double ofdmBits;
+	double basicOfdmRate;
+	double Ysb; // number of subcarriers
+	int Ym = 6; // bits / symbol
+	double Yc = 3/4; // Coding rate
+	int Nu = 1; //number of users
+	double T_RTS, T_CTS, T_BAR, T_BA;
+	int RTS = 160;
+	int CTS = 128;
+	int MH = 240; // MAC header in bits
+	int SF = 16; // service field?
+	int TB = 18;
+	int MD = 32;
+	int BA = 30 * 8; //Compressed version
+	int BAR = 24 * 8;
+
+	int M = 4; //number of antennas
+	double phy;
+
+	switch(rate)
+	{
+		case 48:
+			//JUST FOR SINGLE FRAME TRANSMISSIONS.
+			//IT CURRENTLY DOES NOT SUPPORT AGGREGATION
+
+			//Calculating the duration of a transmission in 48Mbps according to durations-wifi-ofdm.xlsx
+			// (bits for ack are: service, MAC, FCS, tail)
+			// ACK = PLCP + ceil((bits)/NDBPS)* SymbolTime + pause
+			ACK = 20.0 + ceil(134.0/192.0) * 4.0 + 6.0;
+
+			// (bits are: service, MAC Header, LLC Header, IP Header, UDP Header, PAYLOAD, FCS, Tail).
+			// T = PLCP + ceil((bits)/NDBPS)* SymbolTime + pause + SIFS + ACK + DIFS + CWaverage*SLOT;
+			frame = 20.0 + ceil((L_max*8.0 + 534.0)/192.0) * 4.0 + 6.0;
+
+			//Last 9 is an empty slot and 7.5 is CWmin/2
+			succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS + 9.0 * 7.5 * 1e-06;
+			collision_duration = succ_tx_duration;
+
+			// cout << succ_tx_duration << endl;
+			break;
+		case 11:
+			//JUST FOR SINGLE FRAME TRANSMISSIONS.
+			//IT CURRENTLY DOES NOT SUPPORT AGGREGATION
+			//Calculating the duration of a transmission in 11Mbps according to 
+			// 80211_TransmissionTime.xls and durations-wifi-ofdm.xlsx
+			// (bits ack: Service, MAC, FCS) = 14 bytes.
+			// ACK = PLCP + PLCPpreable + ceil((bits)/rate)
+			ACK = 24 + 72 + ceil((14*8.0)/11.0);
+			// (bits are: MAC Header, LLC Header, IP header, UDP header, PAYLOAD, FCS)
+			// frame = PLCP + PLCPpreable + ceil((bits)/rate)
+			frame = 24 + 72 + ceil(((24 + 8 + 20 + 8 + L_max + 4)*8.0) / 11.0);
+			// T = frame + SIFS + ACK + DIFS + CWaverage*SLOT;
+			//Last 9 is an empty slot and 7.5 is CWmin/2
+			succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS11 + 9.0 * 7.5 * 1e-06;
+			collision_duration = succ_tx_duration;
+			break;
+		case 65:
+			// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+			//This is the TON version
+			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+			collision_duration = succ_tx_duration;
+		case 100:
+			// 802.11ac according to Boris's calculations
+			//succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + frame + SIFS + T_BAR + SIFS + T_BA + DIFS + SLOT
+			Ysb = subCarriers (channelWidth);
+			ofdmBits = Ysb * Ym * Yc * Nu;
+			basicOfdmRate = subCarriers (20) * 1 * 1/2;
+			phy = 36e-6 + (M * TSYM);
+			T_RTS = phy + ceil ((SF + RTS + TB) / basicOfdmRate) * TSYM;
+			T_CTS = phy + ceil ((SF + CTS + TB) / basicOfdmRate) * TSYM;
+			T_BAR = phy + ceil ((SF + BAR + TB) / basicOfdmRate) * TSYM;
+			T_BA = phy + ceil ((SF + BA + TB) / basicOfdmRate) * TSYM;
+			if (aggregation > 1)
 			{
-				case 48:
-					//JUST FOR SINGLE FRAME TRANSMISSIONS.
-					//IT CURRENTLY DOES NOT SUPPORT AGGREGATION
-
-					//Calculating the duration of a transmission in 48Mbps according to durations-wifi-ofdm.xlsx
-					// (bits for ack are: service, MAC, FCS, tail)
-					// ACK = PLCP + ceil((bits)/NDBPS)* SymbolTime + pause
-					ACK = 20.0 + ceil(134.0/192.0) * 4.0 + 6.0;
-
-					// (bits are: service, MAC Header, LLC Header, IP Header, UDP Header, PAYLOAD, FCS, Tail).
-					// T = PLCP + ceil((bits)/NDBPS)* SymbolTime + pause + SIFS + ACK + DIFS + CWaverage*SLOT;
-					frame = 20.0 + ceil((L_max*8.0 + 534.0)/192.0) * 4.0 + 6.0;
-
-					//Last 9 is an empty slot and 7.5 is CWmin/2
-					succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS + 9.0 * 7.5 * 1e-06;
-
-					// cout << succ_tx_duration << endl;
-					break;
-				case 11:
-					//JUST FOR SINGLE FRAME TRANSMISSIONS.
-					//IT CURRENTLY DOES NOT SUPPORT AGGREGATION
-					//Calculating the duration of a transmission in 11Mbps according to 
-					// 80211_TransmissionTime.xls and durations-wifi-ofdm.xlsx
-					// (bits ack: Service, MAC, FCS) = 14 bytes.
-					// ACK = PLCP + PLCPpreable + ceil((bits)/rate)
-					ACK = 24 + 72 + ceil((14*8.0)/11.0);
-					// (bits are: MAC Header, LLC Header, IP header, UDP header, PAYLOAD, FCS)
-					// frame = PLCP + PLCPpreable + ceil((bits)/rate)
-					frame = 24 + 72 + ceil(((24 + 8 + 20 + 8 + L_max + 4)*8.0) / 11.0);
-					// T = frame + SIFS + ACK + DIFS + CWaverage*SLOT;
-					//Last 9 is an empty slot and 7.5 is CWmin/2
-					succ_tx_duration = frame * 1e-06 + SIFS + ACK * 1e-06 + DIFS11 + 9.0 * 7.5 * 1e-06;
-					break;
-				case 65:
-					// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
-					//This is the TON version
-					succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max*8)) + TB) / ofdmBits) * TSYM;
+			}else
+			{
+				frame = phy + ceil ((SF + MH + (L_max * 8) + TB) / ofdmBits) * TSYM;
 			}
-
-	// cout << succ_tx_duration << endl;
-	collision_duration = succ_tx_duration;
-	
-	/*succ_tx_duration = ((PLCP_PREAMBLE + PLCP_HEADER)/PHYRATE) + ((aggregation*L_max*8 + MAC_H)/DATARATE) + SIFS + ((PLCP_PREAMBLE + PLCP_HEADER)/PHYRATE) + (L_ack/PHYRATE) + DIFS;
-	collision_duration = ((PLCP_PREAMBLE + PLCP_HEADER)/PHYRATE) + ((aggregation*L_max*8 + MAC_H)/DATARATE) + SIFS + DIFS + ((144 + 48 + 112)/PHYRATE);*/
-	
-	
+			succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + frame + SIFS + T_BAR + SIFS + T_BA + DIFS + SLOT;
+			collision_duration =  T_RTS + SIFS + T_CTS + DIFS + SLOT;
+			break;
+		case 1000:
+			// 802.11ax according to Boris's calculations
+			// succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + T_DATA + SIFS + T_BAR + SIFS + T_BA + DIFS + Te
+			Ysb = subCarriers11ax (channelWidth);
+			ofdmBits = Ysb * Ym * Yc * Nu;
+			basicOfdmRate = subCarriers11ax (20) * 1 * 1/2;
+			phy = 36e-6 + (M * TSYM11ax);
+			T_RTS = phy + ceil ((SF + RTS + TB) / basicOfdmRate) * TSYM11ax;
+			T_CTS = phy + ceil ((SF + CTS + TB) / basicOfdmRate) * TSYM11ax;
+			T_BAR = phy + ceil ((SF + BAR + TB) / basicOfdmRate) * TSYM11ax;
+			T_BA = phy + ceil ((SF + BA + TB) / basicOfdmRate) * TSYM11ax;
+			if (aggregation > 1)
+			{
+				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max*8)) + TB) / ofdmBits) * TSYM11ax;
+			}else
+			{
+				frame = phy + ceil ((SF + MH + (L_max * 8) + TB) / ofdmBits) * TSYM11ax;
+			}
+			succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + frame + SIFS + T_BAR + SIFS + T_BA + DIFS + SLOT;
+			collision_duration =  T_RTS + SIFS + T_CTS + DIFS + SLOT;
+			break;
+	}
 }
 
