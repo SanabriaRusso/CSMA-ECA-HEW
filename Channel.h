@@ -21,6 +21,10 @@
 #define TSYM11ax 16e-06
 #define ECA_AIFS_TIME 28e-06
 #define SIG_EXT 6e-06
+
+//New DIFS and SIFS for HEW protocols
+#define SIFSHEW 16e-06
+#define DIFSHEW 34e-06
 			
 #include "Aux.h"
 #include "includes/subCarriers.hh"
@@ -69,6 +73,7 @@ component Channel : public TypeII
 		float errorProbability;
 		int rate;	//	are we using the 48mbps metrics for tx duration?
 		int channelWidth; // bandwidth
+		bool QoS; // RTS/CTS
 		
 		//gathering statistics about the collision's evolution in time
      	ofstream slotsInTime;
@@ -93,8 +98,8 @@ void Channel :: Start()
 {
 	number_of_transmissions_in_current_slot = 0;
 	affected = 0;
-	succ_tx_duration = 0;
-	collision_duration = 0;
+	succ_tx_duration = 0.0;
+	collision_duration = 0.0;
 	empty_slot_duration = 9e-06;
 
 	collision_slots = 0;
@@ -123,6 +128,7 @@ void Channel :: Start()
 	errorProbability = 0;
 
 	rate = 65; // mark 100 for 802.11ac and 1000 for 802.11ax
+	QoS = true;
 	channelWidth = 20; // MHz
 
 	slot_time.Set(SimTime()); // Let's go!	
@@ -295,23 +301,22 @@ void Channel :: in_packet(Packet &packet)
 
 	double ACK;
 	double frame;
-
 	//For 802.11ac and ax:
 	double ofdmBits;
 	double basicOfdmRate;
-	double Ysb; // number of subcarriers
-	int Ym = 6; // bits / symbol
-	double Yc = 3/4; // Coding rate
-	int Nu = 1; //number of users
+	int Ysb; // number of subcarriers
+	double Ym = 6; // bits / symbol
+	double Yc = 3.0/4.0; // Coding rate
+	double Nu = 1; //number of users
 	double T_RTS, T_CTS, T_BAR, T_BA;
-	int RTS = 160;
-	int CTS = 128;
-	int MH = 240; // MAC header in bits
-	int SF = 16; // service field?
-	int TB = 18;
-	int MD = 32;
-	int BA = 30 * 8; //Compressed version
-	int BAR = 24 * 8;
+	double RTS = 160;
+	double CTS = 128;
+	double MH = 240; // MAC header in bits
+	double SF = 16; // service field?
+	double TB = 18;
+	double MD = 32;
+	double BA = 30 * 8; //Compressed version
+	double BAR = 24 * 8;
 
 	int M = 4; //number of antennas
 	double phy;
@@ -358,6 +363,7 @@ void Channel :: in_packet(Packet &packet)
 			//This is the TON version
 			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			collision_duration = succ_tx_duration;
+			break;
 		case 100:
 			// 802.11ac according to Boris's calculations
 			//succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + frame + SIFS + T_BAR + SIFS + T_BA + DIFS + SLOT
@@ -369,15 +375,23 @@ void Channel :: in_packet(Packet &packet)
 			T_CTS = phy + ceil ((SF + CTS + TB) / basicOfdmRate) * TSYM;
 			T_BAR = phy + ceil ((SF + BAR + TB) / basicOfdmRate) * TSYM;
 			T_BA = phy + ceil ((SF + BA + TB) / basicOfdmRate) * TSYM;
+
 			if (aggregation > 1)
 			{
-				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max*8)) + TB) / ofdmBits) * TSYM;
+				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max * 8.0)) + TB) / ofdmBits) * TSYM;
 			}else
 			{
-				frame = phy + ceil ((SF + MH + (L_max * 8) + TB) / ofdmBits) * TSYM;
+				frame = phy + (ceil ((SF + MH + (L_max * 8.0) + TB) / ofdmBits)) * TSYM;
+
 			}
-			succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + frame + SIFS + T_BAR + SIFS + T_BA + DIFS + SLOT;
-			collision_duration =  T_RTS + SIFS + T_CTS + DIFS + SLOT;
+			if (!QoS)
+			{
+				T_RTS = 0.0;
+				T_CTS = 0.0;
+			}
+
+			succ_tx_duration = T_RTS + SIFSHEW + T_CTS + SIFSHEW + frame + SIFSHEW + T_BAR + SIFSHEW + T_BA + DIFSHEW + SLOT;
+			collision_duration =  T_RTS + SIFSHEW + T_CTS + DIFSHEW + SLOT;
 			break;
 		case 1000:
 			// 802.11ax according to Boris's calculations
@@ -397,8 +411,16 @@ void Channel :: in_packet(Packet &packet)
 			{
 				frame = phy + ceil ((SF + MH + (L_max * 8) + TB) / ofdmBits) * TSYM11ax;
 			}
-			succ_tx_duration = T_RTS + SIFS + T_CTS + SIFS + frame + SIFS + T_BAR + SIFS + T_BA + DIFS + SLOT;
-			collision_duration =  T_RTS + SIFS + T_CTS + DIFS + SLOT;
+			if (!QoS)
+			{
+				T_RTS = 0.0;
+				T_CTS = 0.0;
+			}
+
+			succ_tx_duration = T_RTS + SIFSHEW + T_CTS + SIFSHEW + frame + SIFSHEW + T_BAR + SIFSHEW + T_BA + DIFSHEW + SLOT;
+			collision_duration =  T_RTS + SIFSHEW + T_CTS + DIFSHEW + SLOT;
+			break;
+		default:
 			break;
 	}
 }

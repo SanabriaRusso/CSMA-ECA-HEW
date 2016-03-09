@@ -4,20 +4,16 @@ int subCarriers11ax (int bandwidth){
 	int Ysb;
 	switch (bandwidth) 
 	{
-	    case 20: 
-	        Ysb = 52;
-	        break;
-	    case 40:
-	        Ysb = 108;    
-	        break;
-	    case 80:
+	    case 20:
 	        Ysb = 234;
-	        break;
+	    case 40:
+	        Ysb = 468;    
+	    case 80:
+	        Ysb = 980;
 	    case 160:
-	        Ysb = 468;
-    		break;
+	        Ysb = 1960;
 		default:
-			Ysb = 52;
+			Ysb = 234;
 			break;
 	}
 	return Ysb;
