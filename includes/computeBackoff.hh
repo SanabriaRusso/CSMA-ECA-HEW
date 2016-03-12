@@ -6,7 +6,7 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 	double &counter, int &system_stickiness, int &id, int &sx, int &ECA, double &AIFS, const int defaultAIFS[AC]){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-	int CWmin [4] = { 16, 32, 16, 8 };
+	int CWmin [4] = { 32, 32, 16, 8 };
 
 	if(backlog == 1)
 	{

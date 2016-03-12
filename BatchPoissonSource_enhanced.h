@@ -15,11 +15,30 @@ component BatchPoissonSource : public TypeII
 
 		// Timer
 		Timer <trigger_t> inter_packet_timer;
-		
+		Timer <trigger_t> on_off_VO;
+		Timer <trigger_t> on_off_VI;
+		Timer <trigger_t> source_VO;
+		Timer <trigger_t> source_VI;
+		Timer <trigger_t> source_BE;
+		Timer <trigger_t> source_BK;
+
 		inport inline void new_packet(trigger_t& t);
+		inport inline void new_VO_packet(trigger_t& t0);
+		inport inline void new_VI_packet(trigger_t& t1);
+		inport inline void new_BE_packet(trigger_t& t2);
+		inport inline void new_BK_packet(trigger_t& t3);
+		inport inline void onOffVO(trigger_t& t4);
+		inport inline void onOffVI(trigger_t& t5);
+
 
 		BatchPoissonSource () { 
 			connect inter_packet_timer.to_component,new_packet;
+			connect on_off_VO.to_component,onOffVO;
+			connect on_off_VI.to_component,onOffVI;
+			connect source_VO.to_component,new_VO_packet;
+			connect source_VI.to_component,new_VI_packet;
+			connect source_BE.to_component,new_BE_packet;
+			connect source_BK.to_component,new_BK_packet;
 		}
 
 	public:
@@ -27,24 +46,39 @@ component BatchPoissonSource : public TypeII
 		long int seq;
 		int MaxBatch;	
 		double packet_rate;
+		double vo_rate, vi_rate;
+		double g711Payload;
+		double g711PacketInterval;
 		double lambda;
 		int categories;
 		int packetGeneration;
 		double packetsGenerated;
 		int alwaysSat;
+		bool QoS;
 		std::array<double,AC> packetsInAC;
 
 		int BEShare;
 		int BKShare;
 		int VIShare;
 		int VOShare;
+
+		double onPeriodVO, onPeriodVI, offPeriodVO, offPeriodVI;
+		double lastSwitchVO, lastSwitchVI;
+		bool onVO, onVI;
 	
 	public:
 		void Setup();
 		void Start();
 		void Stop();
+		void registerStatistics(Packet &p);
 			
 };
+
+void BatchPoissonSource :: registerStatistics (Packet &p)
+{
+	packetsGenerated += 1;
+	packetsInAC.at(p.accessCategory) += 1;
+}
 
 void BatchPoissonSource :: Setup()
 {
@@ -53,7 +87,33 @@ void BatchPoissonSource :: Setup()
 
 void BatchPoissonSource :: Start()
 {
-	if(packet_rate > 0) inter_packet_timer.Set(Exponential(1/packet_rate));
+	onPeriodVO = 0.3;
+	offPeriodVO = 0.5;
+	onPeriodVI = 0.5;
+	offPeriodVI = 0.3;
+	onVI = true;
+	onVO = true;
+
+	//Defined by G.711 packet size and source rate
+	g711Payload = 80 * 8;
+	g711PacketInterval = 10e-3;
+	vo_rate = g711Payload / g711PacketInterval;
+	vi_rate = vo_rate;
+
+	if (QoS)
+	{
+		source_BE.Set(Exponential(1/packet_rate));
+		source_BK.Set(Exponential(1/packet_rate));
+		on_off_VO.Set(SimTime ());
+		on_off_VI.Set(SimTime ());
+		lastSwitchVO = SimTime ();
+		lastSwitchVI = SimTime ();
+
+	}else
+	{
+		inter_packet_timer.Set(Exponential(1/packet_rate));
+	}
+
 	seq = 0;
 };
 	
@@ -61,6 +121,98 @@ void BatchPoissonSource :: Stop()
 {
 
 };
+
+void BatchPoissonSource :: onOffVO(trigger_t &)
+{
+	if (onVO)
+	{
+		if (SimTime () - lastSwitchVO >= onPeriodVO)
+		{
+			onVO = false;
+			on_off_VO.Set(SimTime() + offPeriodVO);
+			lastSwitchVO = SimTime();
+		}else
+		{
+			source_VO.Set(SimTime());
+			on_off_VO.Set(SimTime() + onPeriodVO);
+		}
+	}else
+	{
+		if (SimTime () - lastSwitchVO >= offPeriodVO)
+		{
+			onVO = true;
+			source_VO.Set(SimTime());
+			on_off_VO.Set(SimTime() + onPeriodVO);
+		}
+	}
+}
+
+void BatchPoissonSource :: new_VO_packet(trigger_t &)
+{
+	Packet pkt;
+	if (onVO)
+	{
+		pkt.accessCategory = 0;
+		pkt.L = g711Payload;
+		out (pkt);
+		registerStatistics (pkt);
+		source_VO.Set(SimTime () + Exponential(1/vo_rate));
+	}
+}
+
+void BatchPoissonSource :: onOffVI(trigger_t &)
+{
+	if (onVI)
+	{
+		if (SimTime () - lastSwitchVI >= onPeriodVI)
+		{
+			onVI = false;
+			on_off_VI.Set(SimTime() + offPeriodVI);
+			lastSwitchVI = SimTime();
+		}else
+		{
+			source_VI.Set(SimTime());
+			on_off_VI.Set(SimTime() + onPeriodVI);
+		}
+	}else
+	{
+		if (SimTime () - lastSwitchVI >= offPeriodVI)
+		{
+			onVI = true;
+			source_VI.Set(SimTime());
+			on_off_VI.Set(SimTime() + onPeriodVI);
+		}
+	}
+}
+
+void BatchPoissonSource :: new_VI_packet(trigger_t &)
+{
+	Packet pkt;
+	if (onVI)
+	{
+		pkt.accessCategory = 1;
+		pkt.L = g711Payload;
+		out (pkt);
+		registerStatistics (pkt);
+		source_VI.Set(SimTime () + Exponential(1/vi_rate));
+	}
+}
+void BatchPoissonSource :: new_BE_packet(trigger_t &)
+{
+	Packet pkt;
+	pkt.accessCategory = 2;
+	out(pkt);
+	registerStatistics (pkt);
+	source_BE.Set(SimTime () + Exponential (1/packet_rate));
+}
+void BatchPoissonSource :: new_BK_packet(trigger_t &)
+{
+	Packet pkt;
+	pkt.accessCategory = 3;
+	out(pkt);
+	registerStatistics (pkt);
+	source_BK.Set(SimTime () + Exponential (1/packet_rate));
+}
 
 void BatchPoissonSource :: new_packet(trigger_t &)
 {
