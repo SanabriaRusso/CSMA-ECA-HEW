@@ -6,6 +6,13 @@
 
 #define MAXSEQ 1024
 #define AC 4
+//a 16 frames GOP, with 3 B frames (G16-B3), H.264/AVC
+#define GOPSIZE 16
+#define Iav 31992
+#define Pav 23463
+#define Bav 2623
+// IBPBPBPBPBPBPBPB
+extern "C" const double gop [GOPSIZE] = {Iav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav};
 
 component BatchPoissonSource : public TypeII
 {
@@ -57,6 +64,9 @@ component BatchPoissonSource : public TypeII
 		bool QoS;
 		std::array<double,AC> packetsInAC;
 
+		//H.264/AVC
+		int gopPos;
+
 		int BEShare;
 		int BKShare;
 		int VIShare;
@@ -71,6 +81,7 @@ component BatchPoissonSource : public TypeII
 		void Start();
 		void Stop();
 		void registerStatistics(Packet &p);
+		double pickFrameFromH264Gop (int &pos);
 			
 };
 
@@ -78,6 +89,16 @@ void BatchPoissonSource :: registerStatistics (Packet &p)
 {
 	packetsGenerated += 1;
 	packetsInAC.at(p.accessCategory) += 1;
+}
+
+double BatchPoissonSource :: pickFrameFromH264Gop (int &pos)
+{
+	double size = 0.0;
+	size = gop[pos];
+
+	pos++;
+	if (pos == GOPSIZE) pos = 0;
+	return size;
 }
 
 void BatchPoissonSource :: Setup()
@@ -89,26 +110,24 @@ void BatchPoissonSource :: Start()
 {
 	onPeriodVO = 0.3;
 	offPeriodVO = 0.5;
-	onPeriodVI = 0.5;
-	offPeriodVI = 0.3;
-	onVI = true;
+	onPeriodVI = 1;
+	offPeriodVI = 0.1;
 	onVO = true;
+	onVI = true;
 
 	//Defined by G.711 packet size and source rate
 	g711Payload = 80 * 8;
 	g711PacketInterval = 10e-3;
 	vo_rate = g711Payload / g711PacketInterval;
-	vi_rate = vo_rate;
-
 	if (QoS)
 	{
+		gopPos = 0;
 		source_BE.Set(Exponential(1/packet_rate));
 		source_BK.Set(Exponential(1/packet_rate));
-		on_off_VO.Set(SimTime ());
 		on_off_VI.Set(SimTime ());
+		on_off_VO.Set(SimTime ());
 		lastSwitchVO = SimTime ();
 		lastSwitchVI = SimTime ();
-
 	}else
 	{
 		inter_packet_timer.Set(Exponential(1/packet_rate));
@@ -124,26 +143,32 @@ void BatchPoissonSource :: Stop()
 
 void BatchPoissonSource :: onOffVO(trigger_t &)
 {
-	if (onVO)
+	if (onPeriodVO > 0)
 	{
-		if (SimTime () - lastSwitchVO >= onPeriodVO)
+		if (onVO)
 		{
-			onVO = false;
-			on_off_VO.Set(SimTime() + offPeriodVO);
-			lastSwitchVO = SimTime();
+			if (SimTime () - lastSwitchVO >= onPeriodVO)
+			{
+				onVO = false;
+				on_off_VO.Set(SimTime() + offPeriodVO);
+				lastSwitchVO = SimTime();
+			}else
+			{
+				source_VO.Set(SimTime());
+				on_off_VO.Set(SimTime() + onPeriodVO);
+			}
 		}else
 		{
-			source_VO.Set(SimTime());
-			on_off_VO.Set(SimTime() + onPeriodVO);
+			if (SimTime () - lastSwitchVO >= offPeriodVO)
+			{
+				onVO = true;
+				source_VO.Set(SimTime());
+				on_off_VO.Set(SimTime() + onPeriodVO);
+			}
 		}
 	}else
 	{
-		if (SimTime () - lastSwitchVO >= offPeriodVO)
-		{
-			onVO = true;
-			source_VO.Set(SimTime());
-			on_off_VO.Set(SimTime() + onPeriodVO);
-		}
+		source_VO.Set(SimTime());
 	}
 }
 
@@ -152,7 +177,7 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 	Packet pkt;
 	if (onVO)
 	{
-		pkt.accessCategory = 0;
+		pkt.accessCategory = 3;
 		pkt.L = g711Payload;
 		out (pkt);
 		registerStatistics (pkt);
@@ -162,45 +187,55 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 
 void BatchPoissonSource :: onOffVI(trigger_t &)
 {
-	if (onVI)
+	if (onPeriodVI > 0)
 	{
-		if (SimTime () - lastSwitchVI >= onPeriodVI)
+		if (onVI)
 		{
-			onVI = false;
-			on_off_VI.Set(SimTime() + offPeriodVI);
-			lastSwitchVI = SimTime();
+			if (SimTime() - lastSwitchVI >= onPeriodVI)
+			{
+				onVI = false;
+				on_off_VI.Set(SimTime() + offPeriodVI);
+				lastSwitchVI = SimTime ();
+			}else
+			{
+				source_VI.Set(SimTime ());
+				on_off_VI.Set(SimTime () + onPeriodVI);
+			}
 		}else
 		{
-			source_VI.Set(SimTime());
-			on_off_VI.Set(SimTime() + onPeriodVI);
+			if (SimTime () - lastSwitchVO >= offPeriodVO)
+			{
+				onVI = true;
+				source_VI.Set(SimTime());
+				on_off_VI.Set(SimTime() + onPeriodVI);
+			}
 		}
 	}else
 	{
-		if (SimTime () - lastSwitchVI >= offPeriodVI)
-		{
-			onVI = true;
-			source_VI.Set(SimTime());
-			on_off_VI.Set(SimTime() + onPeriodVI);
-		}
+		source_VI.Set(SimTime ());
 	}
 }
 
 void BatchPoissonSource :: new_VI_packet(trigger_t &)
 {
 	Packet pkt;
+	//Average of the ones tested for h264/AVC with a variable bitrate adaptaion algorithm
+	double vi_rate = 16e6 / ((Iav + Pav + Bav) / 3);
 	if (onVI)
 	{
-		pkt.accessCategory = 1;
-		pkt.L = g711Payload;
-		out (pkt);
+		pkt.L = pickFrameFromH264Gop (gopPos);
+		cout << pkt.L << endl;
+		pkt.accessCategory = 2;
+		out(pkt);
 		registerStatistics (pkt);
-		source_VI.Set(SimTime () + Exponential(1/vi_rate));
+		source_VI.Set(SimTime () + Exponential (1/vi_rate));
 	}
+
 }
 void BatchPoissonSource :: new_BE_packet(trigger_t &)
 {
 	Packet pkt;
-	pkt.accessCategory = 2;
+	pkt.accessCategory = 1;
 	out(pkt);
 	registerStatistics (pkt);
 	source_BE.Set(SimTime () + Exponential (1/packet_rate));
@@ -208,12 +243,13 @@ void BatchPoissonSource :: new_BE_packet(trigger_t &)
 void BatchPoissonSource :: new_BK_packet(trigger_t &)
 {
 	Packet pkt;
-	pkt.accessCategory = 3;
+	pkt.accessCategory = 0;
 	out(pkt);
 	registerStatistics (pkt);
 	source_BK.Set(SimTime () + Exponential (1/packet_rate));
 }
 
+// Old implementation without G.711 and H.264/AVC configuration
 void BatchPoissonSource :: new_packet(trigger_t &)
 {
 	packetGeneration = rand() % (int) (100);
