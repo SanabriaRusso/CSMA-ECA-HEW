@@ -20,6 +20,7 @@ template <class DATATYPE> class FIFO
 		void DelFirstPacket();		
 		void PutPacket(DATATYPE &packet);	
 		int QueueSize();
+		DATATYPE GetPacket(int &i);
 };
 
 template <class DATATYPE> DATATYPE FIFO <DATATYPE> :: GetFirstPacket()
@@ -42,6 +43,11 @@ template <class DATATYPE> int FIFO <DATATYPE> :: QueueSize()
 {
 	return(m_queue.size());
 }; 
+
+template <class DATATYPE> DATATYPE FIFO <DATATYPE> :: GetPacket(int &i)
+{
+	return(m_queue.at(i));
+};
 
 // If required, there are also functions like "put_the_packet_at_position_X" or "delete_packet_placed_in_position_X"
 

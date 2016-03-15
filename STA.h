@@ -23,6 +23,7 @@
 #include "includes/analiseResetCycle.hh"
 #include "includes/analiseBetterReset.hh"
 #include "includes/dumpStationLog.hh"
+#include "includes/getPayloadForTxDuration.hh"
 
 
 //Suggested value is MAXSTAGE+1
@@ -690,6 +691,7 @@ void STA :: in_slot(SLOT_notification &slot)
             packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare, ECA);
             // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
             // << ". " << packet.aggregation << " packets." << endl;
+            packet.L = getPayloadForTxDuration(packet, Queues);
 
             transmissions.at(ACToTx)++;
             transmitted = 1;
