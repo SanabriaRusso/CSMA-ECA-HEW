@@ -87,7 +87,9 @@ component STA : public TypeII
         std::array<double,AC> sxTx;
         std::array<double,AC> consecutiveSx;
         std::array<double,AC> packetsSent; //successfully sent packets per AC
+        std::array<double,AC> bitsSent; //total payload bits sent
         double overallSentPackets;
+        double overallSentBits;
         std::array<double,AC> overallACThroughput;
         double overallThroughput;
         int saturated;
@@ -231,12 +233,14 @@ void STA :: Stop()
         cout << "\t* Total transmission attempts for AC " << it << ": " << transmissions.at(it) << endl;
         totalTransmissions += transmissions.at(it);
         cout << "\t+ Total Packets sent for AC " << it << ": " << packetsSent.at(it) << endl;
+        cout << "\t+ Total bits sent for AC " << it << ": " << bitsSent.at(it) << endl;
         
         if(packetsSent.at(it) > 0){
-            overallACThroughput.at(it) = (packetsSent.at(it) * L * 8.)/SimTime();
+            overallACThroughput.at(it) = bitsSent.at(it)/SimTime();
         }
         cout << "\t+ Throughput for AC " << it << ": " << overallACThroughput.at(it) << endl;
         overallSentPackets += packetsSent.at(it);
+        overallSentBits += bitsSent.at(it);
 
         if(sxTx.at(it) == 0) sxTx.at(it)++;   //Avoiding divisions by 0.
         //Adding the contention time for the last transmission attempt
@@ -266,10 +270,10 @@ void STA :: Stop()
     }
     cout << "+ Overall successful transmissions: " << overallSentPackets << endl;
     
-    overallThroughput = (overallSentPackets * L * 8.) / SimTime();
+    overallThroughput = overallSentBits / SimTime();
     cout << "+ Overall throughput for this station: " << overallThroughput << endl;
 
-    cout << "- Overal Collisions for this station: " << totalCollisions << endl;
+    cout << "- Overall Collisions for this station: " << totalCollisions << endl;
 
     cout << "- Overall retransmissions: " << totalRetransmissions << endl;
 
@@ -386,7 +390,8 @@ void STA :: in_slot(SLOT_notification &slot)
             if(transmitted == 1)
             {
                 sx = 1; //it was a successful transmission
-                //All other stations should decrement their respective counters
+                /* All other stations should decrement their respective counters accouting 
+                 * for the extra empty slot after DIFS */
                 for(int i = 0; i < AC; i++)
                 {
                     if(i != packet.accessCategory){
@@ -422,7 +427,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
-                            sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), alwaysSaturated);
+                            sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
+                            alwaysSaturated, bitsSent.at(i));
 
                         // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
                     
@@ -518,7 +524,8 @@ void STA :: in_slot(SLOT_notification &slot)
                             accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
-                                fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), alwaysSaturated);
+                                fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
+                                alwaysSaturated, bitsSent.at(i));
 
                             stationStickiness.at(i) = system_stickiness;
 
@@ -629,7 +636,8 @@ void STA :: in_slot(SLOT_notification &slot)
                     accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                     erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
-                        fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), alwaysSaturated);
+                        fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
+                        alwaysSaturated, bitsSent.at(i));
 
                     stationStickiness.at(i) = system_stickiness;
 
@@ -713,7 +721,6 @@ void STA :: in_slot(SLOT_notification &slot)
 void STA :: in_packet(Packet &packet)
 {
     incommingPackets++;
-
     if( Queues.at(packet.accessCategory).QueueSize()  < K )
     {
         packet.queuing_time = SimTime();

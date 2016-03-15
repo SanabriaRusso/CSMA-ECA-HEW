@@ -53,7 +53,7 @@ component BatchPoissonSource : public TypeII
 		long int seq;
 		int MaxBatch;	
 		double packet_rate;
-		double vo_rate, vi_rate;
+		double vo_rate, vi_rate, bandwidthVO;
 		double g711Payload;
 		double g711PacketInterval;
 		double lambda;
@@ -108,6 +108,8 @@ void BatchPoissonSource :: Setup()
 
 void BatchPoissonSource :: Start()
 {
+	QoS = true;
+
 	onPeriodVO = 0.3;
 	offPeriodVO = 0.5;
 	onPeriodVI = 1;
@@ -118,7 +120,10 @@ void BatchPoissonSource :: Start()
 	//Defined by G.711 packet size and source rate
 	g711Payload = 80 * 8;
 	g711PacketInterval = 10e-3;
-	vo_rate = g711Payload / g711PacketInterval;
+	bandwidthVO = g711Payload / g711PacketInterval;
+	vo_rate = bandwidthVO / g711Payload;
+	//Average of the ones tested for h264/AVC with a variable bitrate adaptaion algorithm
+	vi_rate = 15e6 / Bav;
 	if (QoS)
 	{
 		gopPos = 0;
@@ -138,6 +143,9 @@ void BatchPoissonSource :: Start()
 	
 void BatchPoissonSource :: Stop()
 {
+	// cout << "VO: " << vo_rate << ", bandwidthVO: " << bandwidthVO << endl;
+	// cout << "VI: " << vi_rate << endl;
+	// cout << "The rest: " << packet_rate << endl;
 
 };
 
@@ -179,9 +187,13 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 	{
 		pkt.accessCategory = 3;
 		pkt.L = g711Payload;
+		pkt.seq = seq;
+		seq ++;
 		out (pkt);
 		registerStatistics (pkt);
-		source_VO.Set(SimTime () + Exponential(1/vo_rate));
+		int RB = (int) Random(MaxBatch)+1;
+		lambda = RB / vo_rate;
+		source_VO.Set(SimTime () + Exponential(lambda));
 	}
 }
 
@@ -219,16 +231,17 @@ void BatchPoissonSource :: onOffVI(trigger_t &)
 void BatchPoissonSource :: new_VI_packet(trigger_t &)
 {
 	Packet pkt;
-	//Average of the ones tested for h264/AVC with a variable bitrate adaptaion algorithm
-	double vi_rate = 16e6 / ((Iav + Pav + Bav) / 3);
 	if (onVI)
 	{
 		pkt.L = pickFrameFromH264Gop (gopPos);
-		cout << pkt.L << endl;
 		pkt.accessCategory = 2;
+		pkt.seq = seq;
+		seq ++;
 		out(pkt);
 		registerStatistics (pkt);
-		source_VI.Set(SimTime () + Exponential (1/vi_rate));
+		int RB = (int) Random(MaxBatch)+1;
+		lambda = RB / vi_rate;
+		source_VI.Set(SimTime () + Exponential (lambda));
 	}
 
 }
@@ -236,17 +249,27 @@ void BatchPoissonSource :: new_BE_packet(trigger_t &)
 {
 	Packet pkt;
 	pkt.accessCategory = 1;
+	pkt.L = L;
+	pkt.seq = seq;
+	seq ++;
 	out(pkt);
 	registerStatistics (pkt);
-	source_BE.Set(SimTime () + Exponential (1/packet_rate));
+	int RB = (int) Random(MaxBatch)+1;
+	lambda = RB / packet_rate;
+	source_BE.Set(SimTime () + Exponential (lambda));
 }
 void BatchPoissonSource :: new_BK_packet(trigger_t &)
 {
 	Packet pkt;
 	pkt.accessCategory = 0;
+	pkt.L = L;
+	pkt.seq = seq;
+	seq ++;
 	out(pkt);
 	registerStatistics (pkt);
-	source_BK.Set(SimTime () + Exponential (1/packet_rate));
+	int RB = (int) Random(MaxBatch)+1;
+	lambda = RB / packet_rate;
+	source_BK.Set(SimTime () + Exponential (lambda));
 }
 
 // Old implementation without G.711 and H.264/AVC configuration
@@ -301,6 +324,8 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 	int RB = (int) Random(MaxBatch)+1;
 	
 	packet.L = L;
+	packet.seq = seq;
+	seq ++;
 	out(packet);
 	packetsGenerated += 1;
 	packetsInAC.at(packet.accessCategory) += 1;

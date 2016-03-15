@@ -22,9 +22,7 @@ using namespace std;
 component SlottedCSMA : public CostSimEng
 {
 	public:
-		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, 
-			int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, 
-			float percentageDCF, int maxAggregation, int howManyACs, bool QoS, int simSeed);
+		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int howManyACs, int simSeed);
 		void Stop();
 		void Start();		
 
@@ -47,9 +45,7 @@ component SlottedCSMA : public CostSimEng
 
 };
 
-void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, 
-	int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, 
-	int maxAggregation, int howManyACs, bool QoS, int simSeed)
+void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int howManyACs, int simSeed)
 {
 	SimId = Sim_Id;
 	Nodes = NumNodes;
@@ -145,7 +141,6 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 			stas[i].saturated = 1;
 			stas[i].alwaysSaturated = 0;
 			sources[i].alwaysSat = stas[i].alwaysSaturated;
-			if (howManyACs == 4) sources[i].QoS = QoS;
 			if(Bandwidth < 10e6) stas[i].saturated = 0;
 			
 		}
@@ -731,7 +726,6 @@ int main(int argc, char *argv[])
 	int maxAggregation;
 	int howManyACs;
 	int simSeed;
-	bool QoS = true;
 	
 	if(argc < 12) 
 	{
@@ -845,7 +839,7 @@ int main(int argc, char *argv[])
 		
 	test.StopTime(SimTime);
 
-	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, ECA, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, howManyACs, QoS, simSeed);
+	test.Setup(MaxSimIter,NumNodes,PacketLength,Bandwidth,Batch,Stickiness, ECA, fairShare, channelErrors, slotDrift, percentageEDCA, maxAggregation, howManyACs, simSeed);
 	
 	test.Run();
 

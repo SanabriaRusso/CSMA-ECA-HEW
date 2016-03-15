@@ -46,7 +46,7 @@ switch ($ECA){
 	case 0 {
 		$stickiness = 0;
 		$fairShare = 0;
-		
+		$EDCA_share = 1;
 	}
 	case 1 {
 		$stickiness = 1;

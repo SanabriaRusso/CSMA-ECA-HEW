@@ -423,5 +423,6 @@ void Channel :: in_packet(Packet &packet)
 		default:
 			break;
 	}
+	cout << L_max << " " << succ_tx_duration << endl;
 }
 

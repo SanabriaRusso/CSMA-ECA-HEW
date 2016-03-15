@@ -4,7 +4,7 @@ using namespace std;
 
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
     int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected,
-    double &qDelay, double now, int alwaysSat)
+    double &qDelay, double now, int alwaysSat, double &bitsSentByAc)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
@@ -51,6 +51,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             Packet pkt;
             if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
             qDelay += now - pkt.queuing_time;
+            if (sx == 1) bitsSentByAc += pkt.L * 8;
             if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
         }
         // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
