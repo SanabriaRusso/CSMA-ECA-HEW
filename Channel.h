@@ -320,6 +320,7 @@ void Channel :: in_packet(Packet &packet)
 
 	int M = 4; //number of antennas
 	double phy;
+	int variableAggregation = packet.QoS;
 
 	switch(rate)
 	{
@@ -361,6 +362,8 @@ void Channel :: in_packet(Packet &packet)
 		case 65:
 			// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			//This is the TON version
+			if (variableAggregation > 0)
+				aggregation = variableAggregation;
 			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			collision_duration = succ_tx_duration;
 			break;
@@ -378,6 +381,8 @@ void Channel :: in_packet(Packet &packet)
 
 			if (aggregation > 1)
 			{
+				if (variableAggregation > 0)
+					aggregation = variableAggregation;
 				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max * 8.0)) + TB) / ofdmBits) * TSYM;
 			}else
 			{
@@ -423,6 +428,7 @@ void Channel :: in_packet(Packet &packet)
 		default:
 			break;
 	}
-	// cout << "Channel, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Load: " << packet.L << endl;
+	// cout << "Channel, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Load: " << packet.L 
+	// << ", duration: " << succ_tx_duration << endl;
 }
 

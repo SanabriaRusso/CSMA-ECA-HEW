@@ -14,6 +14,8 @@ struct Packet
 	int aggregation; //used whenever fairShare is activated
 	int accessCategory; // 0 = best-effort, 1 = background, 2 = video, 3 = voice
 	int startContentionStage;
+	//set in STA :: preparePacketForTransmission
+	int QoS; // 1 if variable frame size, to avoid over estimating in Channel.h
 };
 
 struct SLOT_notification

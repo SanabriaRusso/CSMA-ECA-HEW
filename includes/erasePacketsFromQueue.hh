@@ -4,7 +4,7 @@ using namespace std;
 
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
     int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected,
-    double &qDelay, double now, int alwaysSat, double &bitsSentByAc)
+    double &qDelay, double now, int alwaysSat, double &bitsSentByAc, double &bitsFromSuperPacket)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
@@ -47,13 +47,27 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         }
         
         // cout << "\tOld queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
+        double bits = 0.0;
         for(int i = 0; i < packetDisposal; i++){       
             Packet pkt;
             if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
             qDelay += now - pkt.queuing_time;
-            if (sx == 1) bitsSentByAc += pkt.L * 8;
-            // cout << "Summing, Ac-" << pkt.accessCategory << ": Seq: " << pkt.seq << ": Load: " << pkt.L*8 << endl;
+
+            /* DEBUG */
+            if (sx == 1)
+            {
+            //     bitsSentByAc += pkt.L * 8;
+                bits += pkt.L;
+            }
+            // cout << "Summing, Ac-" << pkt.accessCategory << ": Seq: " << pkt.seq << ": Load: " << pkt.L << endl;
+            /*//////////////*/
+            
             if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
+        }
+        if (sx == 1) 
+        {
+            bitsSentByAc += bitsFromSuperPacket*8;
+            // cout << "Should be equal: " << bits << ", sent from super packet: " << bitsFromSuperPacket << endl;
         }
         // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
 

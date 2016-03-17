@@ -6,5 +6,6 @@ long int getPayloadForTxDuration (Packet &packet, std::array<FIFO <Packet>, AC> 
 	{	
 		load += Queues.at(packet.accessCategory).GetPacket(i).L;
 	}
+	// cout << "Ac-" << packet.accessCategory << ": fairShare: " << limit << ": load: " << load << endl;
 	return load;
 }

@@ -108,7 +108,7 @@ double BatchPoissonSource :: pickFrameFromH264Gop (int &pos)
 	size = gop[pos];
 	if (changingFrameSize)
 		frameSizeCoefficient = ((rand() % (int) 100.0)/100.0) + 1.0;
-	size *= frameSizeCoefficient;
+	size *= sqrt(frameSizeCoefficient);
 
 	return size;
 }
@@ -268,8 +268,7 @@ void BatchPoissonSource :: new_BE_packet(trigger_t &)
 	seq ++;
 	out(pkt);
 	registerStatistics (pkt);
-	int RB = (int) Random(MaxBatch)+1;
-	double lambda = RB / packet_rate;
+	double lambda = 1 / packet_rate;
 	source_BE.Set(SimTime () + Exponential (lambda));
 }
 void BatchPoissonSource :: new_BK_packet(trigger_t &)
@@ -281,8 +280,7 @@ void BatchPoissonSource :: new_BK_packet(trigger_t &)
 	seq ++;
 	out(pkt);
 	registerStatistics (pkt);
-	int RB = (int) Random(MaxBatch)+1;
-	double lambda = RB / packet_rate;
+	double lambda = 1 / packet_rate;
 	source_BK.Set(SimTime () + Exponential (lambda));
 }
 
