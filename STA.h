@@ -217,6 +217,7 @@ void STA :: Start()
         halved.at(i) = 0;
         resetSuccessfull.at(i) = 0;
         lastCollision.at(i) = 0;
+        bitsSent.at(i) = 0.0;
     }
 	
 };
@@ -727,6 +728,7 @@ void STA :: in_packet(Packet &packet)
     {
         packet.queuing_time = SimTime();
         Queues.at(packet.accessCategory).PutPacket(packet);
+        // cout << "Arriving, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Load: " << packet.L << endl;
     }else
     {
         blockedPackets.at(packet.accessCategory)++;

@@ -52,6 +52,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
             qDelay += now - pkt.queuing_time;
             if (sx == 1) bitsSentByAc += pkt.L * 8;
+            // cout << "Summing, Ac-" << pkt.accessCategory << ": Seq: " << pkt.seq << ": Load: " << pkt.L*8 << endl;
             if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
         }
         // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;

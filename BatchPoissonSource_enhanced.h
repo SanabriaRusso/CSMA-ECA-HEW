@@ -6,13 +6,23 @@
 
 #define MAXSEQ 1024
 #define AC 4
-//a 16 frames GOP, with 3 B frames (G16-B3), H.264/AVC
+//Rate of G.711
+#define avgVoRate 64e3 //bps
+/*
+ * Defining traffic source characteristics for CIF enconding of 720p source
+ *
+ * a 16 frames GOP, with 3 B frames per I/P frames (G16-B3), H.264/AVC 
+ */
 #define GOPSIZE 16
-#define Iav 31992
-#define Pav 23463
-#define Bav 2623
-// IBPBPBPBPBPBPBPB
-extern "C" const double gop [GOPSIZE] = {Iav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav,Pav,Bav};
+/*Average frame sizes (Bytes) for a PSNR of 43.5dB, average bitrate 1e6 bits/s*/
+#define Iav 5658
+#define Pav 1634
+#define Bav 348
+//Average covariance for the frame size at specified PSNR.
+#define CoV 2
+#define avgViRate 3e5 //again, matching the PSNR
+// IBBBPBBBPBBBPBBB
+extern "C" const double gop [GOPSIZE] = {Iav,Bav,Bav,Bav,Pav,Bav,Bav,Bav,Pav,Bav,Bav,Bav,Pav,Bav,Bav,Bav};
 
 component BatchPoissonSource : public TypeII
 {
@@ -56,12 +66,12 @@ component BatchPoissonSource : public TypeII
 		double vo_rate, vi_rate, bandwidthVO;
 		double g711Payload;
 		double g711PacketInterval;
-		double lambda;
 		int categories;
 		int packetGeneration;
 		double packetsGenerated;
 		int alwaysSat;
 		bool QoS;
+		bool changingFrameSize;
 		std::array<double,AC> packetsInAC;
 
 		//H.264/AVC
@@ -94,10 +104,12 @@ void BatchPoissonSource :: registerStatistics (Packet &p)
 double BatchPoissonSource :: pickFrameFromH264Gop (int &pos)
 {
 	double size = 0.0;
+	double frameSizeCoefficient = 1;
 	size = gop[pos];
+	if (changingFrameSize)
+		frameSizeCoefficient = ((rand() % (int) 100.0)/100.0) + 1.0;
+	size *= frameSizeCoefficient;
 
-	pos++;
-	if (pos == GOPSIZE) pos = 0;
 	return size;
 }
 
@@ -109,10 +121,11 @@ void BatchPoissonSource :: Setup()
 void BatchPoissonSource :: Start()
 {
 	QoS = true;
+	changingFrameSize = true;
 
-	onPeriodVO = 0.3;
+	onPeriodVO = 0.0;
 	offPeriodVO = 0.5;
-	onPeriodVI = 1;
+	onPeriodVI = 0;
 	offPeriodVI = 0.1;
 	onVO = true;
 	onVI = true;
@@ -120,10 +133,9 @@ void BatchPoissonSource :: Start()
 	//Defined by G.711 packet size and source rate
 	g711Payload = 80 * 8;
 	g711PacketInterval = 10e-3;
-	bandwidthVO = g711Payload / g711PacketInterval;
-	vo_rate = bandwidthVO / g711Payload;
+	vo_rate = avgVoRate / g711Payload;
 	//Average of the ones tested for h264/AVC with a variable bitrate adaptaion algorithm
-	vi_rate = 15e6 / Bav;
+	vi_rate = avgViRate / (Iav*8);
 	if (QoS)
 	{
 		gopPos = 0;
@@ -186,13 +198,12 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 	if (onVO)
 	{
 		pkt.accessCategory = 3;
-		pkt.L = g711Payload;
+		pkt.L = g711Payload / 8;
 		pkt.seq = seq;
 		seq ++;
 		out (pkt);
 		registerStatistics (pkt);
-		int RB = (int) Random(MaxBatch)+1;
-		lambda = RB / vo_rate;
+		double lambda = 1 / vo_rate;
 		source_VO.Set(SimTime () + Exponential(lambda));
 	}
 }
@@ -238,9 +249,12 @@ void BatchPoissonSource :: new_VI_packet(trigger_t &)
 		pkt.seq = seq;
 		seq ++;
 		out(pkt);
+
+		gopPos++;
+		if (gopPos == GOPSIZE) gopPos = 0;
 		registerStatistics (pkt);
-		int RB = (int) Random(MaxBatch)+1;
-		lambda = RB / vi_rate;
+		vi_rate = avgViRate / ((pickFrameFromH264Gop (gopPos)) * 8);
+		double lambda = 1 / vi_rate;
 		source_VI.Set(SimTime () + Exponential (lambda));
 	}
 
@@ -255,7 +269,7 @@ void BatchPoissonSource :: new_BE_packet(trigger_t &)
 	out(pkt);
 	registerStatistics (pkt);
 	int RB = (int) Random(MaxBatch)+1;
-	lambda = RB / packet_rate;
+	double lambda = RB / packet_rate;
 	source_BE.Set(SimTime () + Exponential (lambda));
 }
 void BatchPoissonSource :: new_BK_packet(trigger_t &)
@@ -268,7 +282,7 @@ void BatchPoissonSource :: new_BK_packet(trigger_t &)
 	out(pkt);
 	registerStatistics (pkt);
 	int RB = (int) Random(MaxBatch)+1;
-	lambda = RB / packet_rate;
+	double lambda = RB / packet_rate;
 	source_BK.Set(SimTime () + Exponential (lambda));
 }
 
@@ -329,7 +343,7 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 	out(packet);
 	packetsGenerated += 1;
 	packetsInAC.at(packet.accessCategory) += 1;
-	lambda = RB/packet_rate;
+	double lambda = RB/packet_rate;
 	if(packetsGenerated > MAXSEQ){
 		if(alwaysSat == 1){
 			lambda = 1;
