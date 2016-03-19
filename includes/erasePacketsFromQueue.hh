@@ -4,7 +4,8 @@ using namespace std;
 
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
     int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected,
-    double &qDelay, double now, int alwaysSat, double &bitsSentByAc, double &bitsFromSuperPacket)
+    double &qDelay, double now, int alwaysSat, double &bitsSentByAc, double &bitsFromSuperPacket, 
+    std::vector<int> errorInFrame)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
@@ -14,8 +15,9 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     {
         if(sx == 1)
         {
-            packetDisposal = aggregation - affected;
-            if(alwaysSat == 0) packetDisposal = std::min( (aggregation - affected), (int)Queues.at(cat).QueueSize() );
+            packetDisposal = std::min (aggregation, (int)Queues.at(cat).QueueSize());
+            // packetDisposal = aggregation - affected;
+            // if(alwaysSat == 0) packetDisposal = std::min( (aggregation - affected), (int)Queues.at(cat).QueueSize() );
 
             // if(packetDisposal == 0) 
             // {
@@ -27,47 +29,38 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         {
             if(fairShare == 1)
             {
-                packetDisposal = (int)pow(2,packet.startContentionStage);
-                if(alwaysSat == 0) packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
+                packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
                     (int)Queues.at(cat).QueueSize() );
             }else
             {
-                packetDisposal = aggregation;
-                if(alwaysSat == 0) packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
+                packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
             }
-
-            // if(packetDisposal == 0)
-            // {
-            //     cout << "*****ALARM: " << id << endl;
-            // }
-            // cout << "STA-" << id << " Dropping. Erasing: " << packetDisposal << endl;
-            
-
             dropped+= packetDisposal;
         }
         
         // cout << "\tOld queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
-        double bits = 0.0;
-        for(int i = 0; i < packetDisposal; i++){       
+        double bits = 0.0; //local debug variable
+        for(int i = 0; i < packetDisposal; i++)
+        {       
             Packet pkt;
-            if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
-            qDelay += now - pkt.queuing_time;
-
-            /* DEBUG */
+            pkt = Queues.at(cat).GetFirstPacket();
+            // if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
             if (sx == 1)
             {
-            //     bitsSentByAc += pkt.L * 8;
-                bits += pkt.L;
+                // cout << "Frame-" << i << ": " << errorInFrame.at(i) << endl;
+                if (errorInFrame.at(i) == 0)
+                {
+                    bits += pkt.L;
+                    bitsSentByAc += pkt.L * 8;
+                    qDelay += now - pkt.queuing_time;
+                    Queues.at(cat).DelFirstPacket();
+                }
+            }else
+            {
+                Queues.at(cat).DelFirstPacket();
             }
             // cout << "Summing, Ac-" << pkt.accessCategory << ": Seq: " << pkt.seq << ": Load: " << pkt.L << endl;
-            /*//////////////*/
-            
-            if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
-        }
-        if (sx == 1) 
-        {
-            bitsSentByAc += bitsFromSuperPacket*8;
-            // cout << "Should be equal: " << bits << ", sent from super packet: " << bitsFromSuperPacket << endl;
+            // if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
         }
         // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
 

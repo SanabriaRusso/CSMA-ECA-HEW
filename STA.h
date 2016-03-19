@@ -419,7 +419,6 @@ void STA :: in_slot(SLOT_notification &slot)
 				    {
                         //Gathering statistics from last transmission
                         packetsSent.at(i) += (packet.aggregation - slot.error);
-                        // cout << "Packets sent: " << int(packet.aggregation - slot.error) << endl;
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
                         if(resetSuccessfull.at(i) == 1) resetSuccessfull.at(i); //for reversing a halving after collisions. Here, nothing.
@@ -431,7 +430,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                             sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                            alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket);
+                            alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
 
                         // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
                     
@@ -528,7 +527,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                                 fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                                alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket);
+                                alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
 
                             stationStickiness.at(i) = system_stickiness;
 
@@ -640,7 +639,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                     erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                         fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                        alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket);
+                        alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
 
                     stationStickiness.at(i) = system_stickiness;
 

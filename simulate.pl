@@ -1,5 +1,4 @@
 #!/usr/local/bin/perl
-
 use warnings;
 use strict;
 use Switch;
@@ -17,77 +16,103 @@ my %help = (
 die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
-my $rep = $ARGV[0];
-my $time = $ARGV[1];
-my $Nmax = $ARGV[2];
-my $Nmin = $ARGV[3];
-my $jump = $ARGV[4];
-my $bandwidth = $ARGV[5];
-my $errors = $ARGV[6];
-my $EDCA_share = $ARGV[7];
-my $ECA = $ARGV[8];
-my $numACs = $ARGV[9];
-my $length = $ARGV[10];
+my $rep = 5;
+my $time = 100;
+my $Nmax = 50;
+my $Nmin = 2;
+my $jump = 1;
+my $bandwidth = 65e6;
+my $errors = 0;
+my $numACs = 4;
+my $length = 1470;
 my $batch = 1;
 my $drift = 0;
 my $maxAggregation = 0;
+my $ECA = 1;
+my $stickiness = 1;
+my $fairShare = 1;
+my $EDCA_share = 0;
 
-my $stickiness = 0;
-my $fairShare = 0;
-
-print ("Going to simulate:\n");
-if ($Nmax == $Nmin){
-	print ("\t$rep repetitions of $time seconds, ", $Nmin, " stations, $bandwidth Mbps, errors $errors and ECA $ECA with $numACs ACs.\n\n\n");	
-}else{
-	print ("\t$rep repetitions jumping $jump of $time seconds, ", ($Nmax - $Nmin), " stations, $bandwidth Mbps, errors $errors and ECA $ECA with $numACs ACs.\n\n\n");
-}
-
-switch ($ECA){
-	case 0 {
+my $scenario = $ARGV[0];
+switch ($scenario){
+	case "single"{
+		print "single Test\n";
+		$rep = 1;
+		$time = 10;
+		$Nmax = 1;
+		$Nmin = 1;
+		$ECA = 1;
+		$stickiness = 1;
+		$fairShare = 1;
+		$errors = 0.1;
+	}
+	case "EDCA"{
+		print "EDCA\n";
+		$ECA = 0;
 		$stickiness = 0;
 		$fairShare = 0;
 		$EDCA_share = 1;
 	}
-	case 1 {
-		$stickiness = 1;
-		$fairShare = 0;
-		
+	case "ECA"{
+		print "CSMA/ECAqos: Full ECA\n";
+		$stickiness = 2;
 	}
-	case 2 {
-		$ECA = 1;
-		$stickiness = 1;
-		$fairShare = 1;
-		
-	}
-	case 3 {
-		$ECA = 1; 
+	case "ECA1"{
+		print "ECA1: HystOnly\n";
 		$stickiness = 2;
 		$fairShare = 0;
-		
-	}
-	case 4 {
-		$ECA = 1;
-		$stickiness = 1;
-		$fairShare = 1;
-	}
-	case 5 {
-		$ECA = 1;
-		$stickiness = 2;
-		$fairShare = 1;
-	}
-	case 6 {
-		$ECA = 0;
-		$stickiness = 0;
-		$fairShare = 0;
-		$maxAggregation = 1 ;
-	}
-	case 7 {
-		$ECA = 0;
-		$stickiness = 0;
-		$fairShare = 1;
-		$maxAggregation = 0;
 	}
 }
+
+print ("Going to simulate:\n");
+print ("\tScenario: $scenario\n\n\n");
+
+# switch ($ECA){
+# 	case 0 {
+# 		$stickiness = 0;
+# 		$fairShare = 0;
+# 		$EDCA_share = 1;
+# 	}
+# 	case 1 {
+# 		$stickiness = 1;
+# 		$fairShare = 0;
+		
+# 	}
+# 	case 2 {
+# 		$ECA = 1;
+# 		$stickiness = 1;
+# 		$fairShare = 1;
+		
+# 	}
+# 	case 3 {
+# 		$ECA = 1; 
+# 		$stickiness = 2;
+# 		$fairShare = 0;
+		
+# 	}
+# 	case 4 {
+# 		$ECA = 1;
+# 		$stickiness = 1;
+# 		$fairShare = 1;
+# 	}
+# 	case 5 {
+# 		$ECA = 1;
+# 		$stickiness = 2;
+# 		$fairShare = 1;
+# 	}
+# 	case 6 {
+# 		$ECA = 0;
+# 		$stickiness = 0;
+# 		$fairShare = 0;
+# 		$maxAggregation = 1 ;
+# 	}
+# 	case 7 {
+# 		$ECA = 0;
+# 		$stickiness = 0;
+# 		$fairShare = 1;
+# 		$maxAggregation = 0;
+# 	}
+# }
 
 my $compile = './build_local';
 my @command;
@@ -101,7 +126,6 @@ foreach ($Nmin .. $Nmax)
 {
 	push @jumps, $_
 		if $_ % $jump == 0;
-
 }
 push @jumps, $Nmax
 	if $jumps[-1] != $Nmax;
@@ -120,21 +144,21 @@ OUTTER: foreach my $i (@jumps){
 }
 
 
-#Calling the parser
+# #Calling the parser
 my $parserFile = 'process.pl';
-my $parseSlots = 'analyseSlots.pl';
+# my $parseSlots = 'analyseSlots.pl';
 my $dataFile = 'Results/output.txt';
-my $slotsFile = 'Results/slotsInTime.txt';
+# my $slotsFile = 'Results/slotsInTime.txt';
 my @parseCommand = ("./$parserFile $dataFile");
 system(@parseCommand);
 (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
-@parseCommand = ("./$parseSlots $slotsFile");
-system(@parseCommand);
-(print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
+# @parseCommand = ("./$parseSlots $slotsFile");
+# system(@parseCommand);
+# (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);
 
-#my $simulation = "$bandwidth-$ECA-$stickiness-$fairShare-$errors";
-#my @mail = ("./sendMail $simulation");
-#system(@mail);
+my $simulation = "$scenario";
+my @mail = ("./sendMail $simulation");
+# system(@mail);
 
 
 

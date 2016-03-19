@@ -64,6 +64,7 @@ component Channel : public TypeII
 	private:
 		double number_of_transmissions_in_current_slot;
 		int affected;	//number of packets affected by a channel error
+		std::vector<int> affectedFrames;
 		double succ_tx_duration, collision_duration; // Depends on the packet(s) size(s)
 		double empty_slot_duration;
 		double TBack;
@@ -124,10 +125,11 @@ void Channel :: Start()
 	TBack = 32e-06 + ceil((16 + 256 + 6)/LDBPS) * TSYM;
 	totalBitsSent = 0;
 
-	aggregation = 0;
+	aggregation = 1;
 	errorProbability = 0;
+	affectedFrames.assign (aggregation, 0);
 
-	rate = 65; // mark 100 for 802.11ac and 1000 for 802.11ax
+	rate = 1000; // mark 100 for 802.11ac and 1000 for 802.11ax
 	QoS = true;
 	channelWidth = 20; // MHz
 
@@ -172,9 +174,12 @@ void Channel :: NewSlot(trigger_t &)
 	slot.status = number_of_transmissions_in_current_slot;
 	slot.num = slotNum;
 	slot.error = affected;
+	slot.affectedFrames.assign(affectedFrames.size (),0); 
+	slot.affectedFrames = affectedFrames;
 
 	number_of_transmissions_in_current_slot = 0;
 	affected = 0;
+	affectedFrames.assign (1,0);
 	L_max = 0;
 
 	for(int n = 0; n < Nodes; n++) out_slot[n](slot); // We send the SLOT notification to all connected nodes
@@ -257,12 +262,14 @@ void Channel :: in_packet(Packet &packet)
 	switch(model)
 	{
 
-		case 0:
+		case false:
 			number_of_transmissions_in_current_slot++;
 			break;
 
-		case 1:
-			for(int i = 1; i <= aggregation; i++)
+		case true:
+			affectedFrames.clear();
+			affectedFrames.assign (aggregation, 0);
+			for(int i = 0; i < aggregation; i++)
 			{
 			    //If the channel error probability is contained inside the system error margin,
 			    //then something wrong is going to happen with the transmissions in this slot
@@ -270,8 +277,12 @@ void Channel :: in_packet(Packet &packet)
 				errorProbability = rand() % (int) 100;
 				if( (errorProbability > 0) && (errorProbability <= (int)(error*100)) )
 				{
+					affectedFrames.at(i) = 1;
 					affected++;
-				}		
+				}else
+				{
+					packet.allSeq.at(i) = 0;
+				}
 			}
 			if(affected > 0)
 			{
@@ -295,8 +306,8 @@ void Channel :: in_packet(Packet &packet)
 		// 	break;
 			
 		// default:
-	succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
-	collision_duration = succ_tx_duration;
+	// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+	// collision_duration = succ_tx_duration;
 	// }
 
 	double ACK;
@@ -321,6 +332,7 @@ void Channel :: in_packet(Packet &packet)
 	int M = 4; //number of antennas
 	double phy;
 	int variableAggregation = packet.QoS;
+	int coefficient = 1;
 
 	switch(rate)
 	{
@@ -363,8 +375,13 @@ void Channel :: in_packet(Packet &packet)
 			// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			//This is the TON version
 			if (variableAggregation > 0)
-				aggregation = variableAggregation;
-			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
+			{
+				coefficient = variableAggregation;
+			}else
+			{
+				coefficient = aggregation;
+			}
+			succ_tx_duration = (SIFS + 32e-06 + ceil((16 + coefficient*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			collision_duration = succ_tx_duration;
 			break;
 		case 100:
@@ -382,8 +399,13 @@ void Channel :: in_packet(Packet &packet)
 			if (aggregation > 1)
 			{
 				if (variableAggregation > 0)
-					aggregation = variableAggregation;
-				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max * 8.0)) + TB) / ofdmBits) * TSYM;
+				{
+					coefficient = variableAggregation;
+				}else
+				{
+					coefficient = aggregation;
+				}
+				frame = phy + ceil ((SF + coefficient * (MD + MH + (L_max * 8.0)) + TB) / ofdmBits) * TSYM;
 			}else
 			{
 				frame = phy + (ceil ((SF + MH + (L_max * 8.0) + TB) / ofdmBits)) * TSYM;
@@ -411,7 +433,14 @@ void Channel :: in_packet(Packet &packet)
 			T_BA = phy + ceil ((SF + BA + TB) / basicOfdmRate) * TSYM11ax;
 			if (aggregation > 1)
 			{
-				frame = phy + ceil ((SF + aggregation * (MD + MH + (L_max*8)) + TB) / ofdmBits) * TSYM11ax;
+				if (variableAggregation > 0)
+				{
+					coefficient = variableAggregation;
+				}else
+				{
+					coefficient = aggregation;
+				}
+				frame = phy + ceil ((SF + coefficient * (MD + MH + (L_max*8)) + TB) / ofdmBits) * TSYM11ax;
 			}else
 			{
 				frame = phy + ceil ((SF + MH + (L_max * 8) + TB) / ofdmBits) * TSYM11ax;

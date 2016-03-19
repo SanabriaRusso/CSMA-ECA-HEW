@@ -6,7 +6,8 @@ struct Packet
 	int source;
 	int destination;
 	long int L;
-	long int seq;
+	long int seq; //current packet seq
+	std::vector<long int> allSeq; //used with FairShare
 	double tx_time; //time at which a packet is transmitted
 	double queuing_time; //time at which the packet is deposited at end of the queue
 	double contention_time;
@@ -23,6 +24,7 @@ struct SLOT_notification
 	int status; 			// 0 = empty, 1 = succ. tx, >1 = collision
 	signed long long num;	// slot number
 	int error;				// 0 = noError, other = number of packets affected by the error
+	std::vector<int> affectedFrames; // which frames were affected. Simulating aMPDU
 };
 
 
