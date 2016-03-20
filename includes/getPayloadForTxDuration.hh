@@ -8,6 +8,7 @@ long int getPayloadForTxDuration (Packet &packet, std::array<FIFO <Packet>, AC> 
 		load += Queues.at(packet.accessCategory).GetPacket(i).L;
 		packet.allSeq.at (i) = Queues.at(packet.accessCategory).GetPacket(i).seq;
 	}
+	// cout << "allSeq size: " << packet.allSeq.size () << endl;
 	// cout << "Ac-" << packet.accessCategory << ": fairShare: " << limit << ": load: " << load << endl;
 	return load;
 }

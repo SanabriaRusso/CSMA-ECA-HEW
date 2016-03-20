@@ -32,6 +32,7 @@ my $ECA = 1;
 my $stickiness = 1;
 my $fairShare = 1;
 my $EDCA_share = 0;
+my $saturated = 0;
 
 my $scenario = $ARGV[0];
 switch ($scenario){
@@ -44,7 +45,8 @@ switch ($scenario){
 		$ECA = 1;
 		$stickiness = 1;
 		$fairShare = 1;
-		$errors = 0.1;
+		$errors = 0.1
+			if ($saturated == 0);
 	}
 	case "EDCA"{
 		print "EDCA\n";
@@ -52,15 +54,21 @@ switch ($scenario){
 		$stickiness = 0;
 		$fairShare = 0;
 		$EDCA_share = 1;
+		$errors = 0.1
+			if ($saturated == 0);
 	}
 	case "ECA"{
 		print "CSMA/ECAqos: Full ECA\n";
 		$stickiness = 2;
+		$errors = 0.1
+			if ($saturated == 0);
 	}
 	case "ECA1"{
 		print "ECA1: HystOnly\n";
 		$stickiness = 2;
 		$fairShare = 0;
+		$errors = 0.1
+			if ($saturated == 0);
 	}
 }
 

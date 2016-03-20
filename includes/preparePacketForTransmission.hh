@@ -21,6 +21,16 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 		superPacket.at(acToTx).aggregation = 1;
 	}
 
+	int limit = superPacket.at(acToTx).aggregation;
+	superPacket.at(acToTx).allSeq.assign (limit,0);
+	long int load = 0;
+	for(int i = 0; i < limit; i++)
+	{	
+		load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(i).L;
+		superPacket.at(acToTx).allSeq.at (i) = Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(i).seq;
+	}
+	superPacket.at(acToTx).L = load;
+
 	// cout << "Sending: " << superPacket.at(acToTx).aggregation << endl;
 
 	return((Packet)(superPacket.at(acToTx)));

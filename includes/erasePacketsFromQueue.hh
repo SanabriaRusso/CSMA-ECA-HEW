@@ -16,15 +16,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         if(sx == 1)
         {
             packetDisposal = std::min (aggregation, (int)Queues.at(cat).QueueSize());
-            // packetDisposal = aggregation - affected;
-            // if(alwaysSat == 0) packetDisposal = std::min( (aggregation - affected), (int)Queues.at(cat).QueueSize() );
-
-            // if(packetDisposal == 0) 
-            // {
-            //     cout << "*****ALARM: " << id << endl;
-            // }
-            // cout << "STA-" << id << " Success. Erasing: " << packetDisposal << endl;
-            // cout << "STA-" << id << " aggregation: " << aggregation << " affected: " << affected << ", Q: " <<  (int)Queues.at(cat).QueueSize() << endl;
+            assert(packetDisposal == packet.allSeq.size ());
         }else
         {
             if(fairShare == 1)
@@ -38,32 +30,34 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             dropped+= packetDisposal;
         }
         
-        // cout << "\tOld queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
         double bits = 0.0; //local debug variable
-        for(int i = 0; i < packetDisposal; i++)
-        {       
+        FIFO <Packet> Q;
+        int framesWithError = 0;
+        int goodFrames = 0;
+        int initSize = Queues.at(cat).QueueSize ();
+        for (int i = 0; i < packetDisposal; i++)
+        {
             Packet pkt;
-            pkt = Queues.at(cat).GetFirstPacket();
-            // if(alwaysSat == 0) pkt = Queues.at(cat).GetFirstPacket();
             if (sx == 1)
             {
-                // cout << "Frame-" << i << ": " << errorInFrame.at(i) << endl;
-                if (errorInFrame.at(i) == 0)
+                pkt = Queues.at(cat).GetFirstPacket();    
+                if (errorInFrame.at(i) == 1) 
                 {
+                    Q.PutPacket(pkt);
+                    framesWithError ++;
+                }else{
+                    goodFrames ++;
                     bits += pkt.L;
                     bitsSentByAc += pkt.L * 8;
                     qDelay += now - pkt.queuing_time;
-                    Queues.at(cat).DelFirstPacket();
                 }
-            }else
-            {
-                Queues.at(cat).DelFirstPacket();
             }
-            // cout << "Summing, Ac-" << pkt.accessCategory << ": Seq: " << pkt.seq << ": Load: " << pkt.L << endl;
-            // if(alwaysSat == 0) Queues.at(cat).DelFirstPacket();
+            Queues.at(cat).DelFirstPacket ();
         }
-        // cout << "\tNew queue: " << Queues.at(packet.accessCategory).QueueSize() << endl;
-
+        if (Q.QueueSize () > 0)
+            Queues.at(cat).PushFront (Q);
+        assert(Q.QueueSize () == 0);
+        assert(Queues.at(cat).QueueSize() == initSize - goodFrames);
 
         if (Queues.at(cat).QueueSize() > 0)
         {   

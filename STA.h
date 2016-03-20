@@ -418,22 +418,23 @@ void STA :: in_slot(SLOT_notification &slot)
 				    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//this category transmitted the last packet
 				    {
                         //Gathering statistics from last transmission
+                        int debugErrorFrames = 0;
+                        for (int e = 0; e < slot.affectedFrames.size (); e++)
+                        {
+                            debugErrorFrames += slot.affectedFrames.at(e);
+                        }
+                        assert(slot.error == debugErrorFrames);
                         packetsSent.at(i) += (packet.aggregation - slot.error);
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
                         if(resetSuccessfull.at(i) == 1) resetSuccessfull.at(i); //for reversing a halving after collisions. Here, nothing.
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
-                        // cout << "STA-" << node_id << ": AC: " << i << ". Transmitted " <<
-                        // packet.aggregation << " packets." << endl;
-
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                             sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
                             alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
 
-                        // cout << "(" << SimTime() << ") 1) STA-" << node_id << ": AC: " << i << ". Backlog: " << backlogged.at(i) << endl;
-                    
                         /*****NEW PACKET IS PICKED************
                         **************************************/
                         if(stationStickiness.at(i) <= system_stickiness)        //Avoid resetting stickiness if schedule was reduced using dynamic stickiness
@@ -690,9 +691,6 @@ void STA :: in_slot(SLOT_notification &slot)
         if(backoffCounters.at(ACToTx) == 0)
         {
             packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare, ECA);
-            packet.L = getPayloadForTxDuration(packet, Queues);
-            // cout << "(" << SimTime() << ") +++Station: " << node_id << ": will transmit AC " << ACToTx
-            // << ". " << packet.aggregation << " packets, " << "payload: " << packet.L << endl;
             transmissions.at(ACToTx)++;
             bitsFromSuperPacket = packet.L;
             transmitted = 1;
@@ -704,14 +702,6 @@ void STA :: in_slot(SLOT_notification &slot)
     //Limiting it to ECA with hysteresis only
     if( (changingSchedule == 1) && (ECA == 1) && (system_stickiness > 0) )
     {
-        // analiseHalvingCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
-        //     MAXSTAGE, backlogged, halvingAttempt, slot.status, shouldHalve, halvingThresholds, node_id, 
-        //     changeStage, halved, stationStickiness, system_stickiness);
-
-        // analiseResetCycle(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
-        //     MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
-        //     changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime());
-
         analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
         MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
         changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
