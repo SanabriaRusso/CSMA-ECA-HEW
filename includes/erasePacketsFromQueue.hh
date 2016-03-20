@@ -32,9 +32,6 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         
         double bits = 0.0; //local debug variable
         FIFO <Packet> Q;
-        int framesWithError = 0;
-        int goodFrames = 0;
-        int initSize = Queues.at(cat).QueueSize ();
         for (int i = 0; i < packetDisposal; i++)
         {
             Packet pkt;
@@ -44,9 +41,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                 if (errorInFrame.at(i) == 1) 
                 {
                     Q.PutPacket(pkt);
-                    framesWithError ++;
                 }else{
-                    goodFrames ++;
                     bits += pkt.L;
                     bitsSentByAc += pkt.L * 8;
                     qDelay += now - pkt.queuing_time;
@@ -57,7 +52,6 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         if (Q.QueueSize () > 0)
             Queues.at(cat).PushFront (Q);
         assert(Q.QueueSize () == 0);
-        assert(Queues.at(cat).QueueSize() == initSize - goodFrames);
 
         if (Queues.at(cat).QueueSize() > 0)
         {   
