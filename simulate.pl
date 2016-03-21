@@ -16,7 +16,7 @@ my %help = (
 die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
-my $rep = 5;
+my $rep = 10;
 my $time = 100;
 my $Nmax = 50;
 my $Nmin = 2;
@@ -166,7 +166,7 @@ system(@parseCommand);
 
 my $simulation = "$scenario";
 my @mail = ("./sendMail $simulation");
-# system(@mail);
+system(@mail);
 
 
 

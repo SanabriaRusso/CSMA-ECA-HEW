@@ -123,8 +123,8 @@ void BatchPoissonSource :: Start()
 	QoS = true;
 	changingFrameSize = true;
 
-	onPeriodVO = 0.0;
-	offPeriodVO = 0.5;
+	onPeriodVO = 0.5;
+	offPeriodVO = 0.25;
 	onPeriodVI = 0;
 	offPeriodVI = 0.1;
 	onVO = true;
