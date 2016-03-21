@@ -374,6 +374,8 @@ void Channel :: in_packet(Packet &packet)
 		case 65:
 			// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
 			//This is the TON version
+
+			//Here, variable aggregation is wrong!
 			if (variableAggregation > 0)
 			{
 				coefficient = variableAggregation;
@@ -398,14 +400,7 @@ void Channel :: in_packet(Packet &packet)
 
 			if (aggregation > 1)
 			{
-				if (variableAggregation > 0)
-				{
-					coefficient = variableAggregation;
-				}else
-				{
-					coefficient = aggregation;
-				}
-				frame = phy + ceil ((SF + coefficient * (MD + MH + (L_max * 8.0)) + TB) / ofdmBits) * TSYM;
+				frame = phy + ceil ((SF + aggregation * (MD + MH) + (L_max * 8.0) + TB) / ofdmBits) * TSYM;
 			}else
 			{
 				frame = phy + (ceil ((SF + MH + (L_max * 8.0) + TB) / ofdmBits)) * TSYM;
@@ -433,7 +428,7 @@ void Channel :: in_packet(Packet &packet)
 			T_BA = phy + ceil ((SF + BA + TB) / basicOfdmRate) * TSYM11ax;
 			if (aggregation > 1)
 			{
-				frame = phy + ceil ((SF + aggregation * (MD + MH) + (L_max*8)) + TB) / ofdmBits) * TSYM11ax;
+				frame = phy + ceil ((SF + aggregation * (MD + MH) + (L_max*8) + TB) / ofdmBits) * TSYM11ax;
 			}else
 			{
 				frame = phy + ceil ((SF + MH + (L_max * 8) + TB) / ofdmBits) * TSYM11ax;
