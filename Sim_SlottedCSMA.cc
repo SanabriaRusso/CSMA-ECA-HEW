@@ -140,10 +140,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		{
 			sources[i].packet_rate = Bandwidth/(PacketLength * 8);
 			stas[i].saturated = 1;
-			stas[i].alwaysSaturated = 0;
-			sources[i].alwaysSat = stas[i].alwaysSaturated;
 			if(Bandwidth < 10e6) stas[i].saturated = 0;
-			
 		}
 	// }
 	//*DEBUG

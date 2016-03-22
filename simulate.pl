@@ -32,7 +32,7 @@ my $ECA = 1;
 my $stickiness = 1;
 my $fairShare = 1;
 my $EDCA_share = 0;
-my $saturated = 0;
+my $saturated = 1;
 
 my $scenario = $ARGV[0];
 switch ($scenario){
@@ -45,8 +45,8 @@ switch ($scenario){
 		$ECA = 1;
 		$stickiness = 1;
 		$fairShare = 1;
-		$errors = 0.1
-			if ($saturated == 0);
+		$errors = 0;
+			# if ($saturated == 0);
 	}
 	case "EDCA"{
 		print "EDCA\n";
@@ -74,53 +74,6 @@ switch ($scenario){
 
 print ("Going to simulate:\n");
 print ("\tScenario: $scenario\n\n\n");
-
-# switch ($ECA){
-# 	case 0 {
-# 		$stickiness = 0;
-# 		$fairShare = 0;
-# 		$EDCA_share = 1;
-# 	}
-# 	case 1 {
-# 		$stickiness = 1;
-# 		$fairShare = 0;
-		
-# 	}
-# 	case 2 {
-# 		$ECA = 1;
-# 		$stickiness = 1;
-# 		$fairShare = 1;
-		
-# 	}
-# 	case 3 {
-# 		$ECA = 1; 
-# 		$stickiness = 2;
-# 		$fairShare = 0;
-		
-# 	}
-# 	case 4 {
-# 		$ECA = 1;
-# 		$stickiness = 1;
-# 		$fairShare = 1;
-# 	}
-# 	case 5 {
-# 		$ECA = 1;
-# 		$stickiness = 2;
-# 		$fairShare = 1;
-# 	}
-# 	case 6 {
-# 		$ECA = 0;
-# 		$stickiness = 0;
-# 		$fairShare = 0;
-# 		$maxAggregation = 1 ;
-# 	}
-# 	case 7 {
-# 		$ECA = 0;
-# 		$stickiness = 0;
-# 		$fairShare = 1;
-# 		$maxAggregation = 0;
-# 	}
-# }
 
 my $compile = './build_local';
 my @command;
@@ -166,7 +119,7 @@ system(@parseCommand);
 
 my $simulation = "$scenario";
 my @mail = ("./sendMail $simulation");
-system(@mail);
+# system(@mail);
 
 
 

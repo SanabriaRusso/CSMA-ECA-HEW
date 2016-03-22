@@ -117,7 +117,7 @@ component STA : public TypeII
         std::array<double,AC> accumQueueingDelay;
 
         //Simulation acceleration
-        int alwaysSaturated;
+        bool alwaysSaturated; // it may squew results related to queues
     
         //End of simulation statistic
         std::array<int, AC> backoffStagesFinal;
@@ -174,7 +174,8 @@ void STA :: Start()
 
     //--------------------IMPORTANT
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
+    changingSchedule = 0; // 0 = noScheReset, 1 = scheReset
+    alwaysSaturated = true;
     if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
