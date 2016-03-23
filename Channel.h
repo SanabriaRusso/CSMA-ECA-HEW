@@ -1,7 +1,7 @@
 /*
 	Channel Component
 */
-
+#define AC 4
 #define DATARATE 11E6 // Data Transmission Rate
 #define PHYRATE 1E6
 
@@ -75,6 +75,7 @@ component Channel : public TypeII
 		int rate;	//	are we using the 48mbps metrics for tx duration?
 		int channelWidth; // bandwidth
 		bool QoS; // RTS/CTS
+		std::vector<double> biggestTxDuration, biggestFrameSize;
 		
 		//gathering statistics about the collision's evolution in time
      	ofstream slotsInTime;
@@ -128,6 +129,8 @@ void Channel :: Start()
 	aggregation = 1;
 	errorProbability = 0;
 	affectedFrames.assign (aggregation, 0);
+	biggestFrameSize.assign (AC, 0.0);
+	biggestTxDuration.assign (AC, 0.0);
 
 	rate = 1000; // mark 100 for 802.11ac and 1000 for 802.11ax
 	QoS = true;
@@ -145,6 +148,11 @@ void Channel :: Stop()
 	printf("---- Channel ----\n");
 	printf("Slot Status Probabilities (channel point of view): Empty = %e, Succesful = %e, Collision = %e \n",empty_slots/total_slots,succesful_slots/total_slots,collision_slots/total_slots);
 	printf("Total packets sent to the Channel: %d\n", (int)succesful_slots);
+	printf("Longest transmission durations and biggest frame sizes per AC:\n");
+	for (int i = 0; i < AC; i++)
+	{
+		cout << "\t-AC-" << i << ": " << biggestTxDuration.at(i) << "s. Size: " << biggestFrameSize.at(i) << "B." << endl;
+	}
 	printf("\n\n");
 
 
@@ -259,6 +267,8 @@ void Channel :: in_packet(Packet &packet)
 	aggregation = packet.aggregation;
 
 	int model = channelModel;
+	int ac = packet.accessCategory;
+
 	switch(model)
 	{
 
@@ -297,18 +307,6 @@ void Channel :: in_packet(Packet &packet)
 			number_of_transmissions_in_current_slot++;
 			break;
 	}
-
-	// switch(packet.fairShare)
-	// {
-		// Uncomment for QoS testings with AIFS
-		// case 1:
-		// 	succ_tx_duration = ECA_AIFS_TIME + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration;
-		// 	break;
-			
-		// default:
-	// succ_tx_duration = (SIFS + 32e-06 + ceil((16 + aggregation*(32+(L_max*8)+288) + 6)/LDBPS)*TSYM + SIFS + TBack + DIFS + empty_slot_duration);
-	// collision_duration = succ_tx_duration;
-	// }
 
 	double ACK;
 	double frame;
@@ -445,7 +443,15 @@ void Channel :: in_packet(Packet &packet)
 		default:
 			break;
 	}
-	// cout << "Channel, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Load: " << packet.L 
+	if (number_of_transmissions_in_current_slot == 1)
+	{
+		if (biggestTxDuration.at(ac) < succ_tx_duration)
+			biggestTxDuration.at(ac) = succ_tx_duration;
+		if (packet.L > biggestFrameSize.at(ac))
+			biggestFrameSize.at(ac) = packet.L;
+	}
+
+	// cout << "Channel, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Aggregation: " << aggregation << ": Load: " << L_max 
 	// << ", duration: " << succ_tx_duration << endl;
 }
 

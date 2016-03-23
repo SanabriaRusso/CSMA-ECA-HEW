@@ -6,7 +6,8 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 	std::array<int,AC> backlog, std::array<int,AC> &resetAttempt, SLOT_notification slot, std::array<int, AC> &shouldReset,
 	std::array<int,AC> &resetThresholds, int node, std::array<int,AC> &changeStage, std::array<double,AC> &reset,
 	std::array<int, AC> &stationStickiness, int systemStickiness, std::array<double,AC> &analysisCounter, 
-	double timer, std::bitset< 512 > &scheduleMap, std::array<int,AC> &resetSx, std::array<int,AC> &previousStage){
+	double timer, std::bitset< 512 > &scheduleMap, std::array<int,AC> &resetSx, std::array<int,AC> &previousStage,
+	bool &alwaysSaturated){
 
 	int CWmin [AC] = { 32, 32, 16, 8 }; //slots
 	int newStage = 0;

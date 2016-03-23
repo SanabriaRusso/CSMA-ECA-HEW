@@ -6,10 +6,14 @@
 
 #define MAXSEQ 1024
 #define AC 4
-#define SATURATIONCOEFFICIENT 50
+#define SATURATIONCOEFFICIENT 1000
 
-//Rate of G.711
-#define avgVoRate 64e3 //bps
+//Rate of G.723.1
+#define avgVoRate 6.4e3 //bps
+#define VAF 0.443 //Voice Activity Factor
+#define avgVoON 11.54
+#define avgVoOFF 11.98
+#define epsilon 1e-3
 /*
  * Defining traffic source characteristics for CIF enconding of 720p source
  *
@@ -66,8 +70,8 @@ component BatchPoissonSource : public TypeII
 		int MaxBatch;	
 		double packet_rate;
 		double vo_rate, vi_rate, bandwidthVO;
-		double g711Payload;
-		double g711PacketInterval;
+		double g7231Payload;
+		double g7231PacketInterval;
 		int categories;
 		int packetGeneration;
 		double packetsGenerated;
@@ -126,17 +130,18 @@ void BatchPoissonSource :: Start()
 	changingFrameSize = true;
 	saturated = true;
 
-	onPeriodVO = 0.5;
-	offPeriodVO = 0.25;
+	//Determining on and off periods according to a Geom-APD-W2
+	onPeriodVO = (VAF * (avgVoON + avgVoOFF)) * 1.0;
+	offPeriodVO = ((1 - VAF) * (avgVoON + avgVoOFF)) * 1.0;
 	onPeriodVI = 0;
 	offPeriodVI = 0.1;
 	onVO = true;
 	onVI = true;
 
-	//Defined by G.711 packet size and source rate
-	g711Payload = 80 * 8;
-	g711PacketInterval = 10e-3;
-	vo_rate = avgVoRate / g711Payload;
+	//Defined by G.723.1 packet size and source rate
+	g7231Payload = 24 * 8;
+	g7231PacketInterval = 30e-3;
+	vo_rate = avgVoRate / g7231Payload;
 	if (saturated) vo_rate *= SATURATIONCOEFFICIENT;
 	//Average of the ones tested for h264/AVC with a variable bitrate adaptaion algorithm
 	vi_rate = avgViRate / (Iav*8);
@@ -171,25 +176,32 @@ void BatchPoissonSource :: Stop()
 
 void BatchPoissonSource :: onOffVO(trigger_t &)
 {
+	// cout << "on off: " << SimTime () << " onVo: " << onVO << endl;
 	if (saturated) onPeriodVO = 0;
+
 	if (onPeriodVO > 0)
 	{
 		if (onVO)
 		{
 			if (SimTime () - lastSwitchVO >= onPeriodVO)
 			{
+				// cout << "Turning OFF source" << endl;
 				onVO = false;
 				on_off_VO.Set(SimTime() + offPeriodVO);
 				lastSwitchVO = SimTime();
 			}else
 			{
+				// cout << "Just starting the ON phase for the first time" << endl;
 				source_VO.Set(SimTime());
 				on_off_VO.Set(SimTime() + onPeriodVO);
 			}
 		}else
 		{
-			if (SimTime () - lastSwitchVO >= offPeriodVO)
+			// cout << "Attempting to turn source on again" << endl;
+			// cout << "SimTime: " << SimTime () << ", lastSwitchVO: " << lastSwitchVO << ", offPeriodVO: " << offPeriodVO << endl;
+			if (SimTime () - lastSwitchVO >= offPeriodVO - epsilon)
 			{
+				// cout << "turn source on again" << endl;
 				onVO = true;
 				source_VO.Set(SimTime());
 				on_off_VO.Set(SimTime() + onPeriodVO);
@@ -207,7 +219,7 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 	if (onVO)
 	{
 		pkt.accessCategory = 3;
-		pkt.L = g711Payload / 8;
+		pkt.L = g7231Payload / 8;
 		pkt.seq = seq;
 		seq ++;
 		voSeq ++;
@@ -215,8 +227,10 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 		registerStatistics (pkt);
 		double lambda = 1 / vo_rate;
 		double nextVoPacket = SimTime() + Exponential(lambda);
-		if (!(saturated == true && voSeq == MAXSEQ)) 
+		if (! ((saturated == true) && (voSeq == MAXSEQ)) ) 
+		{
 			source_VO.Set(nextVoPacket);
+		}
 	}
 }
 

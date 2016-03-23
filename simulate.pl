@@ -16,7 +16,7 @@ my %help = (
 die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
-my $rep = 10;
+my $rep = 5;
 my $time = 100;
 my $Nmax = 50;
 my $Nmin = 2;
@@ -39,14 +39,14 @@ switch ($scenario){
 	case "single"{
 		print "single Test\n";
 		$rep = 1;
-		$time = 10;
-		$Nmax = 1;
-		$Nmin = 1;
+		$time = 30;
+		$Nmax = 30;
+		$Nmin = 30;
 		$ECA = 1;
 		$stickiness = 1;
 		$fairShare = 1;
-		$errors = 0;
-			# if ($saturated == 0);
+		$errors = 0.1
+			if ($saturated == 0);
 	}
 	case "EDCA"{
 		print "EDCA\n";
@@ -59,13 +59,13 @@ switch ($scenario){
 	}
 	case "ECA"{
 		print "CSMA/ECAqos: Full ECA\n";
-		$stickiness = 2;
+		$stickiness = 1;
 		$errors = 0.1
 			if ($saturated == 0);
 	}
 	case "ECA1"{
 		print "ECA1: HystOnly\n";
-		$stickiness = 2;
+		$stickiness = 1;
 		$fairShare = 0;
 		$errors = 0.1
 			if ($saturated == 0);
@@ -100,7 +100,7 @@ OUTTER: foreach my $i (@jumps){
 		print ("****Iteration #$j of $rep.\n");
 		print ("**** @command\n");
 		system(@command);
-		(print ("\n\n********Execution failed\n\tQuitting iterations\n") and last OUTTER) if ($? != 0);
+		(print ("\n\n********Execution failed\n\tQuitting iterations\n") and die "Quit\n") if ($? != 0);
 	}
 }
 
@@ -119,7 +119,8 @@ system(@parseCommand);
 
 my $simulation = "$scenario";
 my @mail = ("./sendMail $simulation");
-# system(@mail);
+system(@mail)
+	if ($simulation ne "single");
 
 
 

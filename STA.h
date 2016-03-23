@@ -173,9 +173,11 @@ void STA :: Start()
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT
-    backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    changingSchedule = 0; // 0 = noScheReset, 1 = scheReset
     alwaysSaturated = true;
+    backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
+    changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
+    if (alwaysSaturated)
+        changingSchedule = 0;
     if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
@@ -256,6 +258,8 @@ void STA :: Stop()
         overallPacketsInQueue += packetsInQueue.at(it);
         cout << "\t* Queue AC " << it << ": " << packetsInQueue.at(it) << endl;
         cout << "\t* Number of queue flushes for AC " << it << ": " << queueEmpties.at(it) << endl;
+        if (alwaysSaturated)
+            assert(queueEmpties.at(it) == 0);
 
         totalCollisions += totalACCollisions.at(it);
         totalInternalCol += totalInternalACCol.at(it);
@@ -706,7 +710,7 @@ void STA :: in_slot(SLOT_notification &slot)
         analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
         MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 
         changeStage, halved, stationStickiness, system_stickiness, analysisCounter, SimTime(), 
-        scheduleMap, resetSuccessfull, previousStage);
+        scheduleMap, resetSuccessfull, previousStage, alwaysSaturated);
     }
     
 
