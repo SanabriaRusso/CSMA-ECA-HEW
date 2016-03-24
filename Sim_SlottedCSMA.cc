@@ -16,7 +16,7 @@
 #include "BatchPoissonSource_enhanced.h"
 #include "stats/stats.h"
 
-
+#define AC 4
 
 using namespace std;
 
@@ -95,7 +95,7 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		sources[n].L = PacketLength;
 		sources[n].categories = howManyACs;
 		sources[n].packetsGenerated = 0;
-		for(int i = 0; i < 4; i++) sources[n].packetsInAC.at(i) = 0;		
+		for(int i = 0; i < AC; i++) sources[n].packetsInAC.at(i) = 0;		
 
 		// The percentage of generated packets destined to a specific AC
 		// This distribution of the load produces predictable plots
@@ -578,7 +578,7 @@ void SlottedCSMA :: Stop()
 	cout << "1.1 Packet generation rate: " << Bandwidth_ << endl;
 	for(int i = 0; i < AC; i++)
 	{
-		cout << "\tAC " << i << ": " << overallTx.at(i) << ". Total Throughput for AC (Mbps): " 
+		cout << "\tAC " << i << ": " << overallTx.at(i) << ". Total Throughput for AC: " 
 			<< totalACthroughput.at(i) << endl;;
 
 	}

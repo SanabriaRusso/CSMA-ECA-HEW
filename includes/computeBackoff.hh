@@ -6,11 +6,11 @@ void computeBackoff(int &backlog, FIFO <Packet> &Queue, int &ac, int &stickiness
 	double &counter, int &system_stickiness, int &id, int &sx, int &ECA, double &AIFS, const int defaultAIFS[AC]){
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
-	int CWmin [4] = { 32, 32, 16, 8 };
+	int CWmin [AC] = { 32, 32, 16, 8 };
 
 	if(backlog == 1)
 	{
-		//cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
+		// cout << "Node " << id << ". AC" << AC << " Old counter: " << counter << endl;
 		if(sx == 1)
 		{
 			if(ECA == 1)

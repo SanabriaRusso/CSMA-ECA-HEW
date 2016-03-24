@@ -6,13 +6,18 @@
 
 #define MAXSEQ 1024
 #define AC 4
-#define SATURATIONCOEFFICIENT 1000
+#define SATURATIONCOEFFICIENT 100000
 
-//Rate of G.723.1
-#define avgVoRate 6.4e3 //bps
+//Rate of G.723.1=6.4kbps, G.711=64kbps, iLBC=15.2kbps
 #define VAF 0.443 //Voice Activity Factor
-#define avgVoON 11.54
-#define avgVoOFF 11.98
+
+//For G.723.1
+// #define avgVoON 11.54
+// #define avgVoOFF 11.98
+//For iLBC
+#define avgVoON 11.23
+#define avgVoOFF 11.31
+//
 #define epsilon 1e-3
 /*
  * Defining traffic source characteristics for CIF enconding of 720p source
@@ -25,7 +30,7 @@
 #define Pav 1634
 #define Bav 348
 //Average covariance for the frame size at specified PSNR.
-#define CoV 2
+#define CoV 2 //not used, but means that frames can double their average size
 #define avgViRate 3e5 //again, matching the PSNR
 // IBBBPBBBPBBBPBBB
 extern "C" const double gop [GOPSIZE] = {Iav,Bav,Bav,Bav,Pav,Bav,Bav,Bav,Pav,Bav,Bav,Bav,Pav,Bav,Bav,Bav};
@@ -70,8 +75,8 @@ component BatchPoissonSource : public TypeII
 		int MaxBatch;	
 		double packet_rate;
 		double vo_rate, vi_rate, bandwidthVO;
-		double g7231Payload;
-		double g7231PacketInterval;
+		double voPayload;
+		double voPacketInterval;
 		int categories;
 		int packetGeneration;
 		double packetsGenerated;
@@ -98,6 +103,7 @@ component BatchPoissonSource : public TypeII
 		void Stop();
 		void registerStatistics(Packet &p);
 		double pickFrameFromH264Gop (int &pos);
+		void saturateSources();
 			
 };
 
@@ -119,6 +125,15 @@ double BatchPoissonSource :: pickFrameFromH264Gop (int &pos)
 	return size;
 }
 
+void BatchPoissonSource :: saturateSources ()
+{
+	assert(saturated);
+	source_VO.Set(SimTime ());
+	source_VI.Set(SimTime ());
+	source_BK.Set(SimTime ());
+	source_BE.Set(SimTime ());
+}
+
 void BatchPoissonSource :: Setup()
 {
 
@@ -133,51 +148,56 @@ void BatchPoissonSource :: Start()
 	//Determining on and off periods according to a Geom-APD-W2
 	onPeriodVO = (VAF * (avgVoON + avgVoOFF)) * 1.0;
 	offPeriodVO = ((1 - VAF) * (avgVoON + avgVoOFF)) * 1.0;
-	onPeriodVI = 0;
+	if (saturated) onPeriodVO = 0;
+
+	onPeriodVI = 0; //on-off in video is off by default.
 	offPeriodVI = 0.1;
 	onVO = true;
 	onVI = true;
 
-	//Defined by G.723.1 packet size and source rate
-	g7231Payload = 24 * 8;
-	g7231PacketInterval = 30e-3;
-	vo_rate = avgVoRate / g7231Payload;
-	if (saturated) vo_rate *= SATURATIONCOEFFICIENT;
+	//Defined by G.723.1 size 24B, interval 30e-3, and on/off values
+	//Defined Internet Low Bit Rate Codec (iLBC) size 38B, interval 20e-3, and on/off values
+	//Define by G.711 frame size 80B, interval 10e-3, CBR
+	voPayload = 38 * 8;
+	voPacketInterval = 20e-3;
+	vo_rate = (voPayload / voPacketInterval) / voPayload;
 	//Average of the ones tested for h264/AVC with a variable bitrate adaptaion algorithm
 	vi_rate = avgViRate / (Iav*8);
-	if (QoS)
-	{
-		gopPos = 0;
-		source_BE.Set(Exponential(1/packet_rate));
-		source_BK.Set(Exponential(1/packet_rate));
-		on_off_VI.Set(SimTime ());
-		on_off_VO.Set(SimTime ());
-		lastSwitchVO = SimTime ();
-		lastSwitchVI = SimTime ();
-	}else
-	{
-		inter_packet_timer.Set(Exponential(1/packet_rate));
-	}
 
 	seq = 0;
 	voSeq = 0;
 	viSeq = 0;
 	beSeq = 0;
 	bkSeq = 0;
+	gopPos = 0;
+
+	if (!saturated)
+	{
+		if (QoS)
+		{
+			source_BE.Set(Exponential(1/packet_rate));
+			source_BK.Set(Exponential(1/packet_rate));
+			on_off_VI.Set(SimTime ());
+			on_off_VO.Set(SimTime ());
+			lastSwitchVO = SimTime ();
+			lastSwitchVI = SimTime ();
+		}else
+		{
+			inter_packet_timer.Set(Exponential(1/packet_rate));
+		}
+	}else
+	{
+		saturateSources();
+	}
 };
 	
 void BatchPoissonSource :: Stop()
 {
-	// cout << "VO: " << vo_rate << endl;
-	// cout << "VI: " << vi_rate << endl;
-	// cout << "The rest: " << packet_rate << endl;
-
 };
 
 void BatchPoissonSource :: onOffVO(trigger_t &)
 {
 	// cout << "on off: " << SimTime () << " onVo: " << onVO << endl;
-	if (saturated) onPeriodVO = 0;
 
 	if (onPeriodVO > 0)
 	{
@@ -215,28 +235,30 @@ void BatchPoissonSource :: onOffVO(trigger_t &)
 
 void BatchPoissonSource :: new_VO_packet(trigger_t &)
 {
-	Packet pkt;
-	if (onVO)
+	int rep = MAXSEQ;
+	if (!saturated) rep = 1;
+	for (int i = 0; i < rep; i++)
 	{
-		pkt.accessCategory = 3;
-		pkt.L = g7231Payload / 8;
-		pkt.seq = seq;
-		seq ++;
-		voSeq ++;
-		out (pkt);
-		registerStatistics (pkt);
-		double lambda = 1 / vo_rate;
-		double nextVoPacket = SimTime() + Exponential(lambda);
-		if (! ((saturated == true) && (voSeq == MAXSEQ)) ) 
+		Packet pkt;
+		if (onVO)
 		{
-			source_VO.Set(nextVoPacket);
+			pkt.accessCategory = 3;
+			pkt.L = voPayload / 8;
+			pkt.seq = seq;
+			seq ++;
+			voSeq ++;
+			out (pkt);
+			registerStatistics (pkt);
+			double lambda = 1 / vo_rate;
+			double nextVoPacket = SimTime() + Exponential(lambda);
+			if (!saturated)
+				source_VO.Set(nextVoPacket);
 		}
 	}
 }
 
 void BatchPoissonSource :: onOffVI(trigger_t &)
 {
-	if (saturated) onPeriodVI = 0;
 	if (onPeriodVI > 0)
 	{
 		if (onVI)
@@ -268,52 +290,69 @@ void BatchPoissonSource :: onOffVI(trigger_t &)
 
 void BatchPoissonSource :: new_VI_packet(trigger_t &)
 {
-	Packet pkt;
-	if (onVI)
+	int rep = MAXSEQ;
+	int size;
+	if (!saturated) rep = 1;
+	for (int i = 0; i < rep; i++)
 	{
-		pkt.L = pickFrameFromH264Gop (gopPos);
-		pkt.accessCategory = 2;
-		pkt.seq = seq;
-		seq ++;
-		viSeq ++;
-		out(pkt);
+		Packet pkt;
+		if (onVI)
+		{
+			// pkt.L = 1470;
+			size = pickFrameFromH264Gop (gopPos);
+			pkt.L = size;
+			pkt.accessCategory = 2;
+			pkt.seq = seq;
+			seq ++;
+			viSeq ++;
+			out(pkt);
 
-		gopPos++;
-		if (gopPos == GOPSIZE) gopPos = 0;
-		registerStatistics (pkt);
-		vi_rate = avgViRate / ((pickFrameFromH264Gop (gopPos)) * 8);
-		double lambda = 1 / vi_rate;
-		if (saturated) 
-			lambda /= SATURATIONCOEFFICIENT;
-		double nextViPacket = SimTime () + Exponential (lambda);
-		if (!(saturated == true && viSeq == MAXSEQ))
-			source_VI.Set(nextViPacket);
+			gopPos++;
+			if (gopPos == GOPSIZE) gopPos = 0;
+			registerStatistics (pkt);
+			vi_rate = avgViRate / (pkt.L * 8);
+			double lambda = 1 / vi_rate;
+			if (!saturated)
+				source_VI.Set(SimTime () + Exponential (lambda));
+		}
 	}
 
 }
 void BatchPoissonSource :: new_BE_packet(trigger_t &)
 {
-	Packet pkt;
-	pkt.accessCategory = 1;
-	pkt.L = L;
-	pkt.seq = seq;
-	seq ++;
-	out(pkt);
-	registerStatistics (pkt);
-	double lambda = 1 / packet_rate;
-	source_BE.Set(SimTime () + Exponential (lambda));
+	int rep = MAXSEQ;
+	if (!saturated) rep = 1;
+	for (int i = 0; i < rep; i++)
+	{
+		Packet pkt;
+		pkt.accessCategory = 1;
+		pkt.L = L;
+		pkt.seq = seq;
+		seq ++;
+		out(pkt);
+		registerStatistics (pkt);
+		double lambda = 1 / packet_rate;
+		if (!saturated)
+			source_BE.Set(SimTime () + Exponential (lambda));
+	}
 }
 void BatchPoissonSource :: new_BK_packet(trigger_t &)
 {
-	Packet pkt;
-	pkt.accessCategory = 0;
-	pkt.L = L;
-	pkt.seq = seq;
-	seq ++;
-	out(pkt);
-	registerStatistics (pkt);
-	double lambda = 1 / packet_rate;
-	source_BK.Set(SimTime () + Exponential (lambda));
+	int rep = MAXSEQ;
+	if (!saturated) rep = 1;
+	for (int i = 0; i < rep; i++)
+	{
+		Packet pkt;
+		pkt.accessCategory = 0;
+		pkt.L = L;
+		pkt.seq = seq;
+		seq ++;
+		out(pkt);
+		registerStatistics (pkt);
+		double lambda = 1 / packet_rate;
+		if (!saturated)
+			source_BK.Set(SimTime () + Exponential (lambda));
+	}
 }
 
 // Old implementation without G.711 and H.264/AVC configuration

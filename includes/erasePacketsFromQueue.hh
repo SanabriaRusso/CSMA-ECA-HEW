@@ -32,12 +32,12 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         
         double bits = 0.0; //local debug variable
         FIFO <Packet> Q;
+        Packet pkt;
         for (int i = 0; i < packetDisposal; i++)
         {
-            Packet pkt;
+            Packet pkt = Queues.at(cat).GetFirstPacket();
             if (sx == 1)
-            {
-                pkt = Queues.at(cat).GetFirstPacket();    
+            {  
                 if (errorInFrame.at(i) == 1) 
                 {
                     Q.PutPacket(pkt);
@@ -47,8 +47,15 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                     qDelay += now - pkt.queuing_time;
                 }
             }
-            if(!alwaysSat) Queues.at(cat).DelFirstPacket ();
+            Queues.at(cat).DelFirstPacket ();
+            if (alwaysSat)
+            {
+                Queues.at(cat).PutPacket (pkt);
+                assert (pkt.seq != Queues.at(cat).GetFirstPacket().seq);
+            }
         }
+        if (alwaysSat) //No errors in saturation.
+            assert (Q.QueueSize () == 0);
         if (Q.QueueSize () > 0)
             Queues.at(cat).PushFront (Q);
         assert(Q.QueueSize () == 0);

@@ -40,14 +40,15 @@ my $scenario = $ARGV[0];
 switch ($scenario){
 	case "single"{
 		print "single Test\n";
-		$rep = 1;
-		$time = 100;
-		$Nmax = 50;
-		$Nmin = 2;
+		$rep = 5;
+		$time = 30;
+		$Nmax = 40;
+		$Nmin = 35;
+		$EDCA_share = 1;
 		$ECA = 0;
 		$stickiness = 0;
 		$fairShare = 0;
-		$errors = 0
+		$errors = 0.1
 			if ($saturated == 0);
 		$EDCA_share = 0.5
 			if ($mixed == 1);
@@ -108,7 +109,7 @@ OUTTER: foreach my $i (@jumps){
 		print ("****Iteration #$j of $rep.\n");
 		print ("**** @command\n");
 		system(@command);
-		(print ("\n\n********Execution failed\n\tQuitting iterations\n") and die "Quit\n") if ($? != 0);
+		die "\n\n********Execution failed\n\tQuitting iterations\n" if ($? != 0); 
 	}
 }
 

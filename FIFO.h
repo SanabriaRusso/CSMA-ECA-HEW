@@ -67,6 +67,4 @@ template <class DATATYPE> void FIFO <DATATYPE> :: PushFront(FIFO <DATATYPE> &Q)
 	assert(init + qSize == m_queue.size ());
 };
 
-// If required, there are also functions like "put_the_packet_at_position_X" or "delete_packet_placed_in_position_X"
-
 #endif
