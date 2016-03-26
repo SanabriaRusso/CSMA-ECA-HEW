@@ -62,6 +62,7 @@ component STA : public TypeII
         int cut;
         int ECA;
         int backoffScheme;
+        bool TXOP;
 
         //Performance enhancement variables
         std::map<double,double> buffer;
@@ -172,17 +173,18 @@ void STA :: Start()
 	selectMACProtocol(node_id, ECA, system_stickiness, cut);
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
-    //--------------------IMPORTANT
+    //--------------------IMPORTANT--------------------//
     alwaysSaturated = true;
+    TXOP = true;
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
-    changingSchedule = 1; // 0 = noScheReset, 1 = scheReset
+    changingSchedule = 1; // 0 = noSchedReset, 1 = schedReset
     if (alwaysSaturated)
         changingSchedule = 0;
     if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
     }
-    //-----------------------------
+    //-------------------------------------------------//
 	
 	/*Initializing variables and arrays to avoid warning regarding
 	in-class initialization of non-static data members*/
@@ -342,7 +344,7 @@ void STA :: Stop()
 void STA :: in_slot(SLOT_notification &slot)
 {	
 
-    // cout << "\nNEW SLOT STA-" << node_id << ": " << slot.status << endl;
+    // cout << "\nNEW SLOT STA-" << node_id << ": " << slot.affectedFrames.at(0) << endl;
 	switch(slot.status)
 	{
 		case 0:
@@ -426,10 +428,9 @@ void STA :: in_slot(SLOT_notification &slot)
                         //Gathering statistics from last transmission
                         int debugErrorFrames = 0;
                         for (int e = 0; e < slot.affectedFrames.size (); e++)
-                        {
                             debugErrorFrames += slot.affectedFrames.at(e);
-                        }
                         assert(slot.error == debugErrorFrames);
+
                         packetsSent.at(i) += (packet.aggregation - slot.error);
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
@@ -439,7 +440,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                             sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                            alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
+                            alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP);
 
                         /*****NEW PACKET IS PICKED************
                         **************************************/
@@ -534,7 +535,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                                 fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                                alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
+                                alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP);
 
                             stationStickiness.at(i) = system_stickiness;
 
@@ -646,7 +647,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                     erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                         fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                        alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames);
+                        alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP);
 
                     stationStickiness.at(i) = system_stickiness;
 
@@ -696,7 +697,8 @@ void STA :: in_slot(SLOT_notification &slot)
 
         if(backoffCounters.at(ACToTx) == 0)
         {
-            packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, fairShare, ECA);
+            packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, 
+                fairShare, ECA, TXOP);
             transmissions.at(ACToTx)++;
             bitsFromSuperPacket = packet.L;
             transmitted = 1;

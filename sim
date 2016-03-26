@@ -16,7 +16,7 @@ my %help = (
 die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
-my $rep = 5;
+my $rep = 20;
 my $time = 100;
 my $Nmax = 50;
 my $Nmin = 2;
@@ -29,7 +29,7 @@ my $batch = 1;
 my $drift = 0;
 my $maxAggregation = 0;
 my $ECA = 1;
-my $stickiness = 1;
+my $stickiness = 2;
 my $fairShare = 1;
 my $EDCA_share = 0;
 
@@ -40,14 +40,15 @@ my $scenario = $ARGV[0];
 switch ($scenario){
 	case "single"{
 		print "single Test\n";
-		$rep = 5;
-		$time = 30;
-		$Nmax = 40;
-		$Nmin = 35;
-		$EDCA_share = 1;
+		$rep = 1;
+		$time = 10;
+		$Nmax = 1;
+		$Nmin = 1;
+		$EDCA_share = 0;
+		$numACs = 4;
 		$ECA = 0;
 		$stickiness = 0;
-		$fairShare = 0;
+		$fairShare = 1;
 		$errors = 0.1
 			if ($saturated == 0);
 		$EDCA_share = 0.5
@@ -57,14 +58,13 @@ switch ($scenario){
 		print "EDCA\n";
 		$ECA = 0;
 		$stickiness = 0;
-		$fairShare = 0;
+		$fairShare = 1;
 		$EDCA_share = 1;
 		$errors = 0.1
 			if ($saturated == 0);
 	}
 	case "ECA"{
 		print "CSMA/ECAqos: Full ECA\n";
-		$stickiness = 1;
 		$errors = 0.1
 			if ($saturated == 0);
 		$EDCA_share = 0.5
@@ -72,7 +72,6 @@ switch ($scenario){
 	}
 	case "ECA1"{
 		print "ECA1: HystOnly\n";
-		$stickiness = 1;
 		$fairShare = 0;
 		$errors = 0.1
 			if ($saturated == 0);

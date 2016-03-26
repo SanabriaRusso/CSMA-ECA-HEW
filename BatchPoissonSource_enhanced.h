@@ -81,6 +81,7 @@ component BatchPoissonSource : public TypeII
 		int packetGeneration;
 		double packetsGenerated;
 		bool saturated;
+		bool sameSizeFrames;
 		bool QoS;
 		bool changingFrameSize;
 		std::array<double,AC> packetsInAC;
@@ -128,10 +129,18 @@ double BatchPoissonSource :: pickFrameFromH264Gop (int &pos)
 void BatchPoissonSource :: saturateSources ()
 {
 	assert(saturated);
-	source_VO.Set(SimTime ());
-	source_VI.Set(SimTime ());
-	source_BK.Set(SimTime ());
-	source_BE.Set(SimTime ());
+	switch (categories)
+	{
+		case 1:
+			source_BK.Set(SimTime ());
+			break;
+		default:
+			source_VO.Set(SimTime ());
+			source_VI.Set(SimTime ());
+			source_BE.Set(SimTime ());
+			source_BK.Set(SimTime ());
+			break;
+	}
 }
 
 void BatchPoissonSource :: Setup()
@@ -144,6 +153,7 @@ void BatchPoissonSource :: Start()
 	QoS = true;
 	changingFrameSize = true;
 	saturated = true;
+	sameSizeFrames = false;
 
 	//Determining on and off periods according to a Geom-APD-W2
 	onPeriodVO = (VAF * (avgVoON + avgVoOFF)) * 1.0;
@@ -197,31 +207,24 @@ void BatchPoissonSource :: Stop()
 
 void BatchPoissonSource :: onOffVO(trigger_t &)
 {
-	// cout << "on off: " << SimTime () << " onVo: " << onVO << endl;
-
 	if (onPeriodVO > 0)
 	{
 		if (onVO)
 		{
 			if (SimTime () - lastSwitchVO >= onPeriodVO)
 			{
-				// cout << "Turning OFF source" << endl;
 				onVO = false;
 				on_off_VO.Set(SimTime() + offPeriodVO);
 				lastSwitchVO = SimTime();
 			}else
 			{
-				// cout << "Just starting the ON phase for the first time" << endl;
 				source_VO.Set(SimTime());
 				on_off_VO.Set(SimTime() + onPeriodVO);
 			}
 		}else
 		{
-			// cout << "Attempting to turn source on again" << endl;
-			// cout << "SimTime: " << SimTime () << ", lastSwitchVO: " << lastSwitchVO << ", offPeriodVO: " << offPeriodVO << endl;
 			if (SimTime () - lastSwitchVO >= offPeriodVO - epsilon)
 			{
-				// cout << "turn source on again" << endl;
 				onVO = true;
 				source_VO.Set(SimTime());
 				on_off_VO.Set(SimTime() + onPeriodVO);
@@ -244,6 +247,8 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 		{
 			pkt.accessCategory = 3;
 			pkt.L = voPayload / 8;
+			if (sameSizeFrames)
+				pkt.L = L;
 			pkt.seq = seq;
 			seq ++;
 			voSeq ++;
@@ -298,9 +303,10 @@ void BatchPoissonSource :: new_VI_packet(trigger_t &)
 		Packet pkt;
 		if (onVI)
 		{
-			// pkt.L = 1470;
 			size = pickFrameFromH264Gop (gopPos);
 			pkt.L = size;
+			if (sameSizeFrames)
+				pkt.L = L;
 			pkt.accessCategory = 2;
 			pkt.seq = seq;
 			seq ++;
@@ -413,11 +419,6 @@ void BatchPoissonSource :: new_packet(trigger_t &)
 	packetsGenerated += 1;
 	packetsInAC.at(packet.accessCategory) += 1;
 	double lambda = RB/packet_rate;
-	// if(packetsGenerated > MAXSEQ){
-	// 	if(alwaysSat == 1){
-	// 		lambda = 1;
-	// 	}
-	// }
 	inter_packet_timer.Set(SimTime()+Exponential(lambda));	
 };
 

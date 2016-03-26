@@ -5,7 +5,7 @@ using namespace std;
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
     int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected,
     double &qDelay, double now, bool &alwaysSat, double &bitsSentByAc, double &bitsFromSuperPacket, 
-    std::vector<int> errorInFrame)
+    std::vector<int> &errorInFrame, bool &TXOP)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
@@ -21,8 +21,14 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         {
             if(fairShare == 1)
             {
-                packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
-                    (int)Queues.at(cat).QueueSize() );
+                if (TXOP)
+                {   
+                    packetDisposal = std::min ((int)pow(2,aggregation),
+                        (int)Queues.at(cat).QueueSize() );
+                }else{
+                    packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
+                        (int)Queues.at(cat).QueueSize() );
+                }
             }else
             {
                 packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
@@ -56,6 +62,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
         }
         if (alwaysSat) //No errors in saturation.
             assert (Q.QueueSize () == 0);
+
         if (Q.QueueSize () > 0)
             Queues.at(cat).PushFront (Q);
         assert(Q.QueueSize () == 0);

@@ -184,13 +184,13 @@ void Channel :: NewSlot(trigger_t &)
 	slot.error = affected;
 	slot.affectedFrames.assign(affectedFrames.size (),0); 
 	slot.affectedFrames = affectedFrames;
-
+	
 	number_of_transmissions_in_current_slot = 0;
 	affected = 0;
 	affectedFrames.assign (1,0);
 	L_max = 0;
-
 	for(int n = 0; n < Nodes; n++) out_slot[n](slot); // We send the SLOT notification to all connected nodes
+
 
 	rx_time.Set(SimTime());	// To guarantee that the system works correctly. :)
 }
@@ -323,7 +323,7 @@ void Channel :: in_packet(Packet &packet)
 	double MH = 240; // MAC header in bits
 	double SF = 16; // service field?
 	double TB = 18;
-	double MD = 32;
+	double MD = 32; // MAC delimeter
 	double BA = 30 * 8; //Compressed version
 	double BAR = 24 * 8;
 

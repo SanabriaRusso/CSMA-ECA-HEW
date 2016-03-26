@@ -574,7 +574,7 @@ void SlottedCSMA :: Stop()
 		<< channel.empty_slots << endl << endl;
 	}
 
-	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (Mbps): " << totalThroughput << endl;
+	cout << "1. Total transmissions: " << totalTx << ". Total Throughput (bps): " << totalThroughput << endl;
 	cout << "1.1 Packet generation rate: " << Bandwidth_ << endl;
 	for(int i = 0; i < AC; i++)
 	{
