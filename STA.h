@@ -36,7 +36,6 @@
 extern "C" const int MAXSTAGE_ECA [AC] = { 5, 5, 5, 5 };
 extern "C" const int MAXSTAGE_EDCA [AC] = { 5, 5, 1, 1 };
 extern "C" const int ECA_AIFS [AC] = { 0, 0, 0, 0 };
-// extern "C" const int defaultAIFS [AC] = { 0, 0, 0, 0 };
 extern "C" const int defaultAIFS [AC] = { 7, 3, 2, 2 };
 
 
@@ -170,7 +169,7 @@ void STA :: Setup()
 
 void STA :: Start()
 {
-	selectMACProtocol(node_id, ECA, system_stickiness, cut);
+	selectMACProtocol(node_id, ECA, system_stickiness, cut, fairShare);
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT--------------------//
@@ -178,8 +177,7 @@ void STA :: Start()
     TXOP = true;
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     changingSchedule = 1; // 0 = noSchedReset, 1 = schedReset
-    if (alwaysSaturated)
-        changingSchedule = 0;
+
     if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
@@ -414,6 +412,8 @@ void STA :: in_slot(SLOT_notification &slot)
                                 if(ECA == 0){
                                     AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
                                     // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                                }else if (ECA == 1){
+                                    AIFS.at(i) = ECA_AIFS[i];
                                 }
                                 decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());    
                             }
@@ -440,7 +440,7 @@ void STA :: in_slot(SLOT_notification &slot)
                         //Erasing the packet(s) that was(were) sent
                         erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), fairShare, 
                             sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                            alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP);
+                            alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP, ECA);
 
                         /*****NEW PACKET IS PICKED************
                         **************************************/
@@ -487,8 +487,10 @@ void STA :: in_slot(SLOT_notification &slot)
                     if(backoffCounters.at(i) > 0)
                     {
                         if(ECA == 0){
-                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
-                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                            AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                            // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }else if (ECA == 1){
+                            AIFS.at(i) = ECA_AIFS[i];
                         }
                         decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                     }
@@ -506,8 +508,10 @@ void STA :: in_slot(SLOT_notification &slot)
                     if( (packet.accessCategory != i) && (backoffCounters.at(i) > 0) )
                     {
                         if(ECA == 0){
-                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
-                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                            AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                            // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }else if (ECA == 1){
+                            AIFS.at(i) = ECA_AIFS[i];
                         }
                         decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                     }
@@ -535,7 +539,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                             erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                                 fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                                alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP);
+                                alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP, ECA);
 
                             stationStickiness.at(i) = system_stickiness;
 
@@ -565,9 +569,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 {
                                         int maxStage = MAXSTAGE_ECA[i];
                                         if(ECA == 0)
-                                        {
                                             maxStage = MAXSTAGE_EDCA[i];
-                                        }
 
                                         backoffStages.at(i) = min( previousStage.at(i), maxStage );
                                         resetSuccessfull.at(i) = 0;
@@ -578,9 +580,7 @@ void STA :: in_slot(SLOT_notification &slot)
                                 halvingAttempt.at(i) = 0;
                                 int maxStage = MAXSTAGE_ECA[i];
                                 if(ECA == 0)
-                                {
                                     maxStage = MAXSTAGE_EDCA[i];
-                                }
 
                                 backoffStages.at(i) = min( (backoffStages.at(i) + 1), maxStage );
                             }
@@ -612,8 +612,10 @@ void STA :: in_slot(SLOT_notification &slot)
                     if(backoffCounters.at(i) > 0)
                     {
                         if(ECA == 0){
-                                AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
-                                // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                            AIFS.at(i) = defaultAIFS[i]; //Resetting AIFS for EDCA
+                            // cout << "Resetting AIFS " << (int)defaultAIFS[i] << endl;
+                        }else if (ECA == 1){
+                            AIFS.at(i) = ECA_AIFS[i];
                         }
                         decrement(i, backoffCounters.at(i), AIFS.at(i), node_id, SimTime());
                     }
@@ -647,7 +649,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
                     erasePacketsFromQueue(Queues, superPacket.at(i), node_id, backlogged.at(i), 
                         fairShare, sx, droppedAC.at(i), queueEmpties, slot.error, accumQueueingDelay.at(i), SimTime(), 
-                        alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP);
+                        alwaysSaturated, bitsSent.at(i), bitsFromSuperPacket, slot.affectedFrames, TXOP, ECA);
 
                     stationStickiness.at(i) = system_stickiness;
 
@@ -726,7 +728,7 @@ void STA :: in_packet(Packet &packet)
     {
         packet.queuing_time = SimTime();
         Queues.at(packet.accessCategory).PutPacket(packet);
-        // cout << "Arriving, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Load: " << packet.L << endl;
+        // cout << SimTime () << "- Arriving, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Load: " << packet.L << endl;
     }else
     {
         blockedPackets.at(packet.accessCategory)++;

@@ -2,7 +2,7 @@ using namespace std;
 
 //ECA = 0 means EDCA
 
-void selectMACProtocol(const int node_id, int &ECA, int stickiness, int cut){
+void selectMACProtocol(const int node_id, int &ECA, int stickiness, int cut, int fairShare){
 	switch(cut)
 	{
 		case 0:
@@ -20,5 +20,9 @@ void selectMACProtocol(const int node_id, int &ECA, int stickiness, int cut){
 			{
 				ECA = 0;
 			}
+	}
+	if (ECA == 0 && fairShare == 1)
+	{
+		ECA = 0;
 	}
 }

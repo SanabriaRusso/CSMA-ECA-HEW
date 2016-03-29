@@ -5,11 +5,12 @@ using namespace std;
 void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet, int id, 
     int &backlogged, int fairShare, int sx, double &dropped, std::array<double,AC> &qEmpty, int &affected,
     double &qDelay, double now, bool &alwaysSat, double &bitsSentByAc, double &bitsFromSuperPacket, 
-    std::vector<int> &errorInFrame, bool &TXOP)
+    std::vector<int> &errorInFrame, bool &TXOP, int ECA)
 {
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
     int cat = (int)packet.accessCategory;
+    int stage = 0;
 
     if(cat >= 0)
     {
@@ -22,11 +23,21 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             if(fairShare == 1)
             {
                 if (TXOP)
-                {   
-                    packetDisposal = std::min ((int)pow(2,aggregation),
-                        (int)Queues.at(cat).QueueSize() );
-                }else{
-                    packetDisposal = std::min( (int)pow(2, packet.startContentionStage), 
+                {
+                    if (ECA == 0)   
+                    {
+                        packetDisposal = std::min (aggregation, (int)Queues.at(cat).QueueSize() );
+
+                    }else{
+                        if (cat > 1)
+                            stage = packet.startContentionStage;
+                        packetDisposal = std::min( (int)pow(2, stage), (int)Queues.at(cat).QueueSize() );
+                    }
+                }else
+                {
+                    if (cat > 1)
+                        stage = packet.startContentionStage;
+                    packetDisposal = std::min( (int)pow(2, stage), 
                         (int)Queues.at(cat).QueueSize() );
                 }
             }else
@@ -48,16 +59,19 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                 {
                     Q.PutPacket(pkt);
                 }else{
-                    bits += pkt.L;
+                    bits += pkt.L * 8;
                     bitsSentByAc += pkt.L * 8;
+                    // cout << "seq: " << pkt.seq << ", AC-" << cat << ": " << pkt.L << endl;
                     qDelay += now - pkt.queuing_time;
                 }
             }
             Queues.at(cat).DelFirstPacket ();
             if (alwaysSat)
             {
+                pkt.queuing_time = now;
                 Queues.at(cat).PutPacket (pkt);
-                assert (pkt.seq != Queues.at(cat).GetFirstPacket().seq);
+                // cout << Queues.at(cat).GetFirstPacket().seq << " " << pkt.seq << endl;
+                assert (Queues.at(cat).GetFirstPacket().seq != pkt.seq);
             }
         }
         if (alwaysSat) //No errors in saturation.

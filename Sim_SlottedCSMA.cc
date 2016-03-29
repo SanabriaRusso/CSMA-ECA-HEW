@@ -23,7 +23,7 @@ using namespace std;
 component SlottedCSMA : public CostSimEng
 {
 	public:
-		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int howManyACs, int simSeed);
+		void Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift,float percentageDCF, int maxAggregation, int howManyACs, long simSeed);
 		void Stop();
 		void Start();		
 
@@ -46,7 +46,7 @@ component SlottedCSMA : public CostSimEng
 
 };
 
-void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int howManyACs, int simSeed)
+void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Bandwidth, int Batch, int Stickiness, int ECA, int fairShare, float channelErrors, float slotDrift, float percentageEDCA, int maxAggregation, int howManyACs, long simSeed)
 {
 	SimId = Sim_Id;
 	Nodes = NumNodes;
@@ -107,48 +107,12 @@ void SlottedCSMA :: Setup(int Sim_Id, int NumNodes, int PacketLength, double Ban
 		sources[n].MaxBatch = Batch;
 	}
 
-	// Still traffic source
-	// Implementing a faster source
-	// If bandwidth is below 10e6, half the stations will have said bandwidth,
-	// while the other half will have ten times that value.
-	// This creates a mixed saturation/non-saturation environment which is used to test the schedule reset.
-	// if(Bandwidth < 10e6)
-	// {
-	// 	for(int i = 0; i < NumNodes/4; i++)
-	// 	{
-	// 		sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
-	// 		stas[i].saturated = 0;
-	// 	}
-	// 	for(int i = NumNodes/4; i < NumNodes/2; i++)
-	// 	{
-	// 		sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
-	// 		stas[i].saturated = 1;
-	// 	}	
-	// 	for(int i = NumNodes/2; i < (3*NumNodes/4); i++)
-	// 	{
-	// 		sources[i].packet_rate = Bandwidth/(PacketLength * 8);		
-	// 		stas[i].saturated = 0;
-	// 	}
-	// 	for(int i = (3*NumNodes/4); i < NumNodes; i++)
-	// 	{
-	// 		sources[i].packet_rate = (Bandwidth*10)/(PacketLength * 8);			
-	// 		stas[i].saturated = 1;
-	// 	}	
-	// }else
-	// {
 		for(int i = 0; i < NumNodes; i++)
 		{
 			sources[i].packet_rate = Bandwidth/(PacketLength * 8);
 			stas[i].saturated = 1;
 			if(Bandwidth < 10e6) stas[i].saturated = 0;
 		}
-	// }
-	//*DEBUG
-	// for(int i = 0; i < NumNodes; i++)
-	// {
-	// 	cout << "Node-" << i << " packet rate: " << sources[i].packet_rate << endl;
-	// }
-	//End traffic source
 	
 	// Connections
 	for(int n=0;n<NumNodes;n++)
@@ -723,7 +687,7 @@ int main(int argc, char *argv[])
 	float percentageEDCA;
 	int maxAggregation;
 	int howManyACs;
-	int simSeed;
+	long simSeed;
 	
 	if(argc < 12) 
 	{
@@ -779,7 +743,7 @@ int main(int argc, char *argv[])
 			percentageEDCA = 1; // // float 0-1
 			maxAggregation = 0;
 			howManyACs = 4; // default is CSMA/ECAqos with 4 ACs
-			simSeed = 2234; //Simulation seed
+			simSeed = 200; //Simulation seed
 		}
 	}else
 	{
@@ -806,7 +770,7 @@ int main(int argc, char *argv[])
 		simSeed = atof(argv[14]); //Simulation seed
 	}
 
-	printf("\n####################### Simulation (Seed: %d) #######################\n",simSeed);
+	printf("\n####################### Simulation (Seed: %ld) #######################\n",simSeed);
 	if(Stickiness > 0)
 	{
 		if(ECA > 0)
@@ -825,15 +789,18 @@ int main(int argc, char *argv[])
 	}else
 	{
 		cout << "####################### CSMA/CA #######################" << endl;
+		if (fairShare >0)
+			cout << "#######################AMPDU#######################" << endl;
 	}
 	
 	if(percentageEDCA > 0) cout << "####################### Mixed setup " << percentageEDCA*100 << "% EDCA #######################" << endl;
 		
 	SlottedCSMA test;
 
-	//test.Seed=(long int)6*rand();
+	// test.Seed=(long int)6*rand();
 	
 	test.Seed = simSeed;
+	cout << "#######################SEED: " << simSeed << endl;
 		
 	test.StopTime(SimTime);
 

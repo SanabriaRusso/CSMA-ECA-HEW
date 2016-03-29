@@ -16,8 +16,8 @@ my %help = (
 die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
-my $rep = 20;
-my $time = 100;
+my $rep = 50;
+my $time = 20;
 my $Nmax = 50;
 my $Nmin = 2;
 my $jump = 1;
@@ -29,7 +29,7 @@ my $batch = 1;
 my $drift = 0;
 my $maxAggregation = 0;
 my $ECA = 1;
-my $stickiness = 2;
+my $stickiness = 1;
 my $fairShare = 1;
 my $EDCA_share = 0;
 
@@ -41,13 +41,13 @@ switch ($scenario){
 	case "single"{
 		print "single Test\n";
 		$rep = 1;
-		$time = 10;
-		$Nmax = 1;
-		$Nmin = 1;
+		$time = 20;
+		$Nmax = 10;
+		$Nmin = 10;
 		$EDCA_share = 0;
 		$numACs = 4;
-		$ECA = 0;
-		$stickiness = 0;
+		$ECA = 1;
+		$stickiness = 1;
 		$fairShare = 1;
 		$errors = 0.1
 			if ($saturated == 0);
@@ -103,6 +103,7 @@ push @jumps, $Nmax
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
+		$seed = $j;
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA_share $maxAggregation $numACs $seed"); 
 		print ("\n\n****Node #$i of $Nmax ($?).\n");
 		print ("****Iteration #$j of $rep.\n");

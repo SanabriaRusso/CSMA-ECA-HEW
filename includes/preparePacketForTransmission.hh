@@ -21,9 +21,11 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	superPacket.at(acToTx).QoS = 0;
 
 	if(fairShare == 1)
-	{		
-		superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), 
-			Queues.at(acToTx).QueueSize() );
+	{
+		superPacket.at(acToTx).aggregation = std::min(1, Queues.at(acToTx).QueueSize() );
+		if (acToTx > 1)		
+			superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), 
+				Queues.at(acToTx).QueueSize() );
 		superPacket.at(acToTx).QoS = 1;
 
 		if (TXOP)
@@ -43,6 +45,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 						}
 					}
 					if ((viFrames > 1) && (load > maxViFrame)) viFrames --;
+					if (ECA == 1) viFrames = std::min(viFrames, superPacket.at(acToTx).aggregation);
 					superPacket.at(acToTx).aggregation = std::min(viFrames, Queues.at(acToTx).QueueSize() );
 					break;
 				case 3:
@@ -58,6 +61,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 						}
 					}
 					if ((voFrames > 1) && (load > maxVoFrame)) voFrames --;
+					if (ECA == 1) voFrames = std::min(voFrames, superPacket.at(acToTx).aggregation);
 					superPacket.at(acToTx).aggregation = std::min(voFrames, Queues.at(acToTx).QueueSize() );
 					break;
 				default:
@@ -77,6 +81,10 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	{	
 		load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(i).L;
 		superPacket.at(acToTx).allSeq.at (i) = Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(i).seq;
+		if (i == 0)
+			superPacket.at(acToTx).firstMPDUSeq = superPacket.at(acToTx).allSeq.at (i);
+		if (i == limit -1)
+			superPacket.at(acToTx).lastMPDUSeq = superPacket.at(acToTx).allSeq.at (i);
 	}
 	superPacket.at(acToTx).L = load;
 

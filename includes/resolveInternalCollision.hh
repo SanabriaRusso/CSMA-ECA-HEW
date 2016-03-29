@@ -8,6 +8,7 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 	int iterator = counters.size() - 1;
 	int acToTx;
 	int winner = -1;
+	int maxStage = 5;
 
 	recomputeBackoff.fill(0);
 
@@ -51,15 +52,19 @@ int resolveInternalCollision(std::array<double,AC> &counters, std::array<int,AC>
 					// cout << "\n(" << timer << ") STA-" << id << ": ECA Internal collision" << endl;
 					// cout << "---AC " << i << " counter: " << counters.at(i) <<  endl;
 					
-					if(scheme == 0) //EDCA
-					{
-						stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
-						stages.at(recompute) = std::min((int)stages.at(recompute) + 1, MAXSTAGE_EDCA[recompute]);
+					// if(scheme == 0) //EDCA
+					// {
+					maxStage = MAXSTAGE_EDCA[recompute];
+					if (scheme == 1)
+						maxStage = MAXSTAGE_ECA[recompute];
+					stickiness.at(recompute) = std::max((int) stickiness.at(recompute) - 1, 0);
+					if (stickiness.at(recompute) == 0)
+						stages.at(recompute) = std::min((int)stages.at(recompute) + 1, maxStage);
 
 						// cout << "\nInternal collision" << endl;
 						// cout << "\t---Changing " << recompute << endl;
-						retAttemptAC.at(recompute)++;
-					}
+						// retAttemptAC.at(recompute)++;
+					// }
 				}
 			}
 		}

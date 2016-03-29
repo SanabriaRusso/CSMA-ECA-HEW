@@ -261,7 +261,6 @@ void Channel :: EndReceptionTime(trigger_t &)
 
 void Channel :: in_packet(Packet &packet)
 {
-
 	if(packet.L > L_max) L_max = packet.L;
 	
 	aggregation = packet.aggregation;
@@ -451,7 +450,7 @@ void Channel :: in_packet(Packet &packet)
 			biggestFrameSize.at(ac) = packet.L;
 	}
 
-	// cout << "Channel, Ac-" << packet.accessCategory << ": Seq: " << packet.seq << ": Aggregation: " << aggregation << ": Load: " << L_max 
+	// cout << SimTime() << "- Channel, Ac-" << packet.accessCategory << ": first Seq: " << packet.firstMPDUSeq << ": last seq: " << packet.lastMPDUSeq << ": Aggregation: " << aggregation << ": Load: " << L_max 
 	// << ", duration: " << succ_tx_duration << endl;
 }
 

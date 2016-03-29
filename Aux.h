@@ -17,6 +17,8 @@ struct Packet
 	int startContentionStage;
 	//set in STA :: preparePacketForTransmission
 	int QoS; // 1 if variable frame size, to avoid over estimating in Channel.h
+	int firstMPDUSeq;
+	int lastMPDUSeq;
 };
 
 struct SLOT_notification
