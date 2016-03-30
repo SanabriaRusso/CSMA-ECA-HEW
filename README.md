@@ -3,15 +3,13 @@ This simulator is part of a PhD thesis. It is provided for free and without any 
 
 ============
 CSMA-ECA-HEW
-============
 
 Modelling of Carrier Sense Multiple Access with Enhanced Collision Avoidance for the upcoming High-Efficiency WLANs standard.
 
 This attempt will modify:
 
 	-Symbol times to comply with 802.11ax
-	-Sources model iLBC for voice and H.264/AVC for video ([1] and [2], 
-	respectively).
+	-Sources model iLBC for voice and H.264/AVC for video ([1] and [2], respectively).
 
 WARNING:
 The code is the result of evolutionary learning, both the subject matter and C++ itself.
@@ -25,3 +23,6 @@ Now I see clearly. Some of the proposed enhacements are:
 Please, feel free to send pull requests. I may actually take a look at them.
 
 L.
+
+[1]: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4745823
+[2]: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4689260
