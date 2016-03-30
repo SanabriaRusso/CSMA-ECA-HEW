@@ -22,7 +22,7 @@ Now I see clearly. Some of the proposed enhacements are:
 
 Please, feel free to send pull requests. I may actually take a look at them.
 
-L.
+1: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4745823
+2: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4689260
 
-[1]: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4745823
-[2]: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4689260
+L
