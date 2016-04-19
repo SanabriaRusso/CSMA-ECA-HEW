@@ -16,8 +16,8 @@ my %help = (
 die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4. Jumps 5. Bandwidth 6. Channel errors 7. EDCA share 8. ECA Code 9. numACs 10. LENGTH(Bytes)\n") 
 	if (exists $help{$ARGV[0]});
 
-my $rep = 50;
-my $time = 20;
+my $rep = 20;
+my $time = 40;
 my $Nmax = 50;
 my $Nmin = 2;
 my $jump = 1;
@@ -33,17 +33,17 @@ my $stickiness = 1;
 my $fairShare = 1;
 my $EDCA_share = 0;
 
-my $saturated = 1;
-my $mixed = 0;
+my $saturated = 0;
+my $mixed = 1;
 
 my $scenario = $ARGV[0];
 switch ($scenario){
 	case "single"{
 		print "single Test\n";
 		$rep = 1;
-		$time = 20;
-		$Nmax = 10;
-		$Nmin = 10;
+		$time = 100;
+		$Nmax = 1;
+		$Nmin = 1;
 		$EDCA_share = 0;
 		$numACs = 4;
 		$ECA = 1;
@@ -53,6 +53,9 @@ switch ($scenario){
 			if ($saturated == 0);
 		$EDCA_share = 0.5
 			if ($mixed == 1);
+		# Ensuring TXOP[VO,VI] = FairShare
+		$length = 300
+			if ($saturated == 1);
 	}
 	case "EDCA"{
 		print "EDCA\n";
@@ -62,6 +65,8 @@ switch ($scenario){
 		$EDCA_share = 1;
 		$errors = 0.1
 			if ($saturated == 0);
+		$length = 300
+			if ($saturated == 1);
 	}
 	case "ECA"{
 		print "CSMA/ECAqos: Full ECA\n";
@@ -69,14 +74,24 @@ switch ($scenario){
 			if ($saturated == 0);
 		$EDCA_share = 0.5
 			if ($mixed == 1);
+
+		# Ensuring TXOP[VO,VI] = FairShare
+		$length = 300
+			if ($saturated == 1);
 	}
 	case "ECA1"{
 		print "ECA1: HystOnly\n";
 		$fairShare = 0;
+
 		$errors = 0.1
 			if ($saturated == 0);
+
 		$EDCA_share = 0.5
 			if ($mixed == 1);
+
+		# Ensuring TXOP[VO,VI] = FairShare
+		$length = 300
+			if ($saturated == 1);
 	}
 }
 

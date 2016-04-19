@@ -173,7 +173,7 @@ void STA :: Start()
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT--------------------//
-    alwaysSaturated = true;
+    alwaysSaturated = false;
     TXOP = true;
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     changingSchedule = 1; // 0 = noSchedReset, 1 = schedReset
@@ -275,6 +275,9 @@ void STA :: Stop()
 
         totalBloked += blockedPackets.at(it);
         cout << "\t- Total Blocked due to full MAC queue for AC " << it << ": " << blockedPackets.at(it) << endl;
+
+        cout << "\t- Final backoffstage for AC " << it << ": " << backoffStagesFinal.at(it) << endl; 
+        cout << "\t- Number of schedule reductions for AC " << it << ": " << halved.at(it) << endl;
 
     }
     cout << "+ Overall successful transmissions: " << overallSentPackets << endl;
@@ -430,11 +433,13 @@ void STA :: in_slot(SLOT_notification &slot)
                         for (int e = 0; e < slot.affectedFrames.size (); e++)
                             debugErrorFrames += slot.affectedFrames.at(e);
                         assert(slot.error == debugErrorFrames);
-
+                        if (fairShare == 0)
+                            assert (packet.aggregation == 1);
                         packetsSent.at(i) += (packet.aggregation - slot.error);
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
-                        if(resetSuccessfull.at(i) == 1) resetSuccessfull.at(i); //for reversing a halving after collisions. Here, nothing.
+                        if(resetSuccessfull.at(i) == 1) 
+                            resetSuccessfull.at(i) = 0;     //for reversing a halving after collisions. Here, we reset it to zero so it does nothing.
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                         //Erasing the packet(s) that was(were) sent
@@ -445,10 +450,9 @@ void STA :: in_slot(SLOT_notification &slot)
                         /*****NEW PACKET IS PICKED************
                         **************************************/
                         if(stationStickiness.at(i) <= system_stickiness)        //Avoid resetting stickiness if schedule was reduced using dynamic stickiness
-                        {
                             stationStickiness.at(i) = system_stickiness;        //Resetting the stickiness after a successful transmission
-                        }
-                        if(ECA == 0 || system_stickiness == 0) backoffStages.at(i) = 0;                   //Resetting the backoffstage of the transmitting AC
+                        if(ECA == 0 || system_stickiness == 0) 
+                            backoffStages.at(i) = 0;                            //Resetting the backoffstage of the transmitting AC
                         retAttemptAC.at(i) = 0;                                 //Resetting the retransmission attempt counter
                         transmitted = 0;                                        //Also resetting the transmitted flag
 
@@ -557,7 +561,6 @@ void STA :: in_slot(SLOT_notification &slot)
                             }
 
                             retAttemptAC.at(i) = 0;     //Resetting the retransmission attempt counter
-
                         }else
                         {
                             stationStickiness.at(i) = max( (stationStickiness.at(i) - 1), 0 );
@@ -695,8 +698,6 @@ void STA :: in_slot(SLOT_notification &slot)
         }
 
         //Attempting transmission if any available
-        // cout << "Winner " << ACToTx << endl;
-
         if(backoffCounters.at(ACToTx) == 0)
         {
             packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, 
@@ -704,6 +705,8 @@ void STA :: in_slot(SLOT_notification &slot)
             transmissions.at(ACToTx)++;
             bitsFromSuperPacket = packet.L;
             transmitted = 1;
+            if (fairShare == 0)
+                assert (packet.aggregation == 1);
             out_packet(packet);
         }
     }

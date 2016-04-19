@@ -10,7 +10,7 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     int packetDisposal = 0;
     int aggregation = (int)packet.aggregation;
     int cat = (int)packet.accessCategory;
-    int stage = 0;
+    int frames = 1;
 
     if(cat >= 0)
     {
@@ -24,24 +24,17 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
             {
                 if (TXOP)
                 {
-                    if (ECA == 0)   
-                    {
-                        packetDisposal = std::min (aggregation, (int)Queues.at(cat).QueueSize() );
+                    packetDisposal = std::min (aggregation, (int)Queues.at(cat).QueueSize() );
 
-                    }else{
-                        if (cat > 1)
-                            stage = packet.startContentionStage;
-                        packetDisposal = std::min( (int)pow(2, stage), (int)Queues.at(cat).QueueSize() );
-                    }
                 }else
                 {
                     if (cat > 1)
-                        stage = packet.startContentionStage;
-                    packetDisposal = std::min( (int)pow(2, stage), 
-                        (int)Queues.at(cat).QueueSize() );
+                        frames = pow(2,packet.startContentionStage);
+                    packetDisposal = std::min( (int)frames, (int)Queues.at(cat).QueueSize() );
                 }
             }else
             {
+                assert (aggregation == 1);
                 packetDisposal = std::min( aggregation, (int)Queues.at(cat).QueueSize() );
             }
             dropped+= packetDisposal;

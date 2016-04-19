@@ -1,0 +1,26 @@
+#!/usr/local/bin/perl
+use warnings;
+use strict;
+
+my @test = ('ECA','ECA1','EDCA');
+my @fileNames = ('Eca+hys+FS+SH+dynStick0+aggr-unsat.dat', 'Eca+hys+SH+dynStick0+aggr-unsat.dat', 'edca-unsat.dat');
+
+
+die "Check the tests and file names\n"
+	if $#test != $#fileNames;
+
+my $silence = '> /dev/null 2>&1';
+my $outputFile = 'Results/processed_toPlot.txt';
+
+foreach my $i (0 .. $#test)
+{
+	my @command = "./sim $test[$i] $silence";
+	print ("Executing: @command\n");
+	system (@command);
+	sleep (0.5);
+
+	#Processing output file
+	my @move = "cp $outputFile Results/$fileNames[$i]";
+	print ("Moving: @move\n");
+	system (@move);
+}

@@ -14,7 +14,7 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 	int halving = 1;				//Just halving (not reseting) the schedule in each attempt
 	int dynamicStickiness = 1;		//Incresing the stickiness to a fixed value each time the schedule is modified
 	int conservativeApproach = 0;	//Determines which threshold unleashes the analysis of the scheduleMap
-	bool diffBK = false;			//Do not use SR in AC[BK] to provide differentiation with AC[BE]
+	bool diffBK = true;				//Do not use SR in AC[BK] to provide differentiation with AC[BE]
 
 	if (alwaysSaturated)
 		conservativeApproach = 1;
@@ -166,12 +166,7 @@ void analiseBetterReset(std::array<double,AC> &consecutiveSx, std::array<double,
 						stages.at(i) = newStage;
 						scheduleMap.reset();
 						// cout << "Next analysis to ocurr in slot " << (int)slot.num + (int)newDeterministicBackoff + 2 << endl;
-					}else
-					{
-						//*/DEBUG
-						// cout << "The change causes a virtual collisions. Aborting." << endl;
 					}
-
 				}
 
 				// ---------------------------

@@ -8,14 +8,14 @@
 #define AC 4
 
 //Rate of G.723.1=6.4kbps, G.711=64kbps, iLBC=15.2kbps
-#define VAF 0.443 //Voice Activity Factor
+#define VAF 0.448 //Voice Activity Factor
 
 //For G.723.1
 // #define avgVoON 11.54
 // #define avgVoOFF 11.98
 //For iLBC
-#define avgVoON 11.23
-#define avgVoOFF 11.31
+#define avgVoON 3.113
+#define avgVoOFF 3.279
 //
 #define epsilon 1e-3
 /*
@@ -134,13 +134,13 @@ void BatchPoissonSource :: Start()
 {
 	QoS = true;
 	changingFrameSize = true;
-	saturated = true;
-	sameSizeFrames = true;
+	saturated = false;
+	sameSizeFrames = false;
 	SATMULTIPLIER = 1;
 	if (saturated)
 		SATMULTIPLIER = 0.001;
 
-	//Determining on and off periods according to a Geom-APD-W2
+	//Determining on and off periods according to a Geom-APD-W2, but with VAF from W0
 	onPeriodVO = (VAF * (avgVoON + avgVoOFF)) * 1.0;
 	offPeriodVO = ((1 - VAF) * (avgVoON + avgVoOFF)) * 1.0;
 	if (saturated) onPeriodVO = 0;
@@ -246,7 +246,7 @@ void BatchPoissonSource :: new_VO_packet(trigger_t &)
 		voSeq ++;
 		out (pkt);
 		registerStatistics (pkt);
-		double lambda = (1 / vo_rate) * SATMULTIPLIER;
+		double lambda = (1.0 / vo_rate) * SATMULTIPLIER;
 		double nextVoPacket = SimTime() + Exponential(lambda);
 		
 		if (!(saturated && voSeq == MAXSEQ))
@@ -305,7 +305,7 @@ void BatchPoissonSource :: new_VI_packet(trigger_t &)
 		if (gopPos == GOPSIZE) gopPos = 0;
 		registerStatistics (pkt);
 		vi_rate = avgViRate / (pkt.L * 8);
-		double lambda = (1 / vi_rate) * SATMULTIPLIER;
+		double lambda = (1.0 / vi_rate) * SATMULTIPLIER;
 		double nextViPacket = SimTime () + Exponential (lambda);
 		if (!(saturated && viSeq == MAXSEQ))
 			source_VI.Set(nextViPacket);

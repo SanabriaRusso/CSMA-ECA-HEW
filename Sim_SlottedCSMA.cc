@@ -314,6 +314,7 @@ void SlottedCSMA :: Stop()
 	file << "#61. fractBKCollisionsECA 	62. fractBECollisionsECA 	63. fractVICollisionsECA 	64. fractVOCollisionsECA" << endl;
 	file << "#65. lastCollision			66. avgQueueingDelayBK		67. avgQueueingDelayBE		68.avgQueueingDelayVI" << endl;
 	file << "#69. avgQueueingDelayVO    70. avgBackoffStageECABK    71. avgBackoffStageDCFBK	72. percentageEDCA_" << endl;
+	file << "#73. SxSlots				74. ColSlots 				75. ErrorSlots 				76. EmptySlots" << endl;
 
 	file << Nodes << " " << totalThroughput << " ";
 	//Printing AC related metrics
@@ -516,7 +517,15 @@ void SlottedCSMA :: Stop()
     }
 
     //72
-    file << percentageEDCA_ << " ";
+    if (percentageEDCA_ > 0){
+	    file << percentageEDCA_ << " ";
+	}else{
+		file << "0 ";
+	}
+
+    //73-76
+    file << channel.succesful_slots << " " << channel.collision_slots << " " 
+	    << channel.error_slots << " " << channel.empty_slots << " ";
 
 	file << endl;
 
