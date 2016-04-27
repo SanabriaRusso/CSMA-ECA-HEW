@@ -12,11 +12,8 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	int viFrames = 0;
 	int voFrames = 0;
 	long int load = 0;
-	bool forceFairShare = false;
 	int maxViFrame = 18500;
 	int maxVoFrame = 6150;
-	if (forceFairShare)
-		maxVoFrame = maxViFrame;
 
 	superPacket.at(acToTx).source = id;
 	superPacket.at(acToTx).tx_time = txTime;
@@ -47,9 +44,6 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 						}
 					}
 					if ((viFrames > 1) && (load > maxViFrame)) viFrames --;
-					if (ECA == 1) viFrames = std::min(viFrames, superPacket.at(acToTx).aggregation);
-					if (forceFairShare)
-						assert (viFrames = std::min((int)pow(2,stages.at(acToTx)), Queues.at(acToTx).QueueSize()));
 					superPacket.at(acToTx).aggregation = std::min(viFrames, Queues.at(acToTx).QueueSize() );
 					break;
 				case 3:
@@ -58,7 +52,6 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 						if (Queues.at(acToTx).QueueSize() > voFrames)
 						{
 							load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(voFrames).L + MacDel + MacHead;
-							// cout << "frame: -" << voFrames << ", size: " << Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(voFrames).L << endl;
 							voFrames ++;
 
 						}else
@@ -67,9 +60,6 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 						}
 					}
 					if ((voFrames > 1) && (load > maxVoFrame)) voFrames --;
-					if (ECA == 1) voFrames = std::min(voFrames, superPacket.at(acToTx).aggregation);
-					if (forceFairShare)
-						assert (voFrames = std::min((int)pow(2,stages.at(acToTx)), Queues.at(acToTx).QueueSize()));
 					superPacket.at(acToTx).aggregation = std::min(voFrames, Queues.at(acToTx).QueueSize() );
 					break;
 				default:
@@ -83,7 +73,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	}
 
 	int limit = superPacket.at(acToTx).aggregation;
-	superPacket.at(acToTx).allSeq.assign (limit,0);
+	superPacket.at(acToTx).allSeq.assign (limit, 0);
 	load = 0;
 	for(int i = 0; i < limit; i++)
 	{	
@@ -95,6 +85,8 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 			superPacket.at(acToTx).lastMPDUSeq = superPacket.at(acToTx).allSeq.at (i);
 	}
 	superPacket.at(acToTx).L = load;
+
+	cout << "(" << txTime << ") AC-" << acToTx << ": frames: " << limit << ": stage: " << stages.at(acToTx) << endl;
 
 	return((Packet)(superPacket.at(acToTx)));
 }
