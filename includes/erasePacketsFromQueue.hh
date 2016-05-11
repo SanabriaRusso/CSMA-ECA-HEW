@@ -64,11 +64,9 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                 pkt.queuing_time = now;
                 Queues.at(cat).PutPacket (pkt);
                 // cout << Queues.at(cat).GetFirstPacket().seq << " " << pkt.seq << endl;
-                assert (Queues.at(cat).GetFirstPacket().seq != pkt.seq);
+                // assert (Queues.at(cat).GetFirstPacket().seq != pkt.seq);
             }
         }
-        if (alwaysSat) //No errors in saturation.
-            assert (Q.QueueSize () == 0);
 
         if (Q.QueueSize () > 0)
             Queues.at(cat).PushFront (Q);

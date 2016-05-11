@@ -434,10 +434,13 @@ void Channel :: in_packet(Packet &packet)
 			{
 				T_RTS = 0.0;
 				T_CTS = 0.0;
+				succ_tx_duration = T_RTS + SIFSHEW + T_CTS + SIFSHEW + frame + SIFSHEW + T_BAR + SIFSHEW + T_BA + DIFSHEW + SLOT;
+				collision_duration = succ_tx_duration;
+			}else
+			{
+				succ_tx_duration = T_RTS + SIFSHEW + T_CTS + SIFSHEW + frame + SIFSHEW + T_BAR + SIFSHEW + T_BA + DIFSHEW + SLOT;
+				collision_duration =  T_RTS + SIFSHEW + T_CTS + DIFSHEW + SLOT;
 			}
-
-			succ_tx_duration = T_RTS + SIFSHEW + T_CTS + SIFSHEW + frame + SIFSHEW + T_BAR + SIFSHEW + T_BA + DIFSHEW + SLOT;
-			collision_duration =  T_RTS + SIFSHEW + T_CTS + DIFSHEW + SLOT;
 			break;
 		default:
 			break;

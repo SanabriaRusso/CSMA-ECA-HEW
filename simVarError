@@ -18,9 +18,9 @@ die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4
 
 my $rep = 20;
 my $time = 40;
-my $Nmax = 50;
-my $Nmin = 2;
-my $jump = 1;
+my $Nmax = 8;
+my $Nmin = 8;
+my @jumps = (0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25);
 my $bandwidth = 65e6;
 my $errors = 0;
 my $numACs = 4;
@@ -42,15 +42,11 @@ switch ($scenario){
 		print "single Test\n";
 		$rep = 1;
 		$time = 10;
-		$Nmax = 10;
-		$Nmin = 2;
-		$EDCA_share = 0;
+		$EDCA_share = 1;
 		$numACs = 4;
-		$ECA = 1;
-		$stickiness = 1;
+		$ECA = 0;
+		$stickiness = 0;
 		$fairShare = 1;
-		$errors = 0.1
-			if ($saturated == 0);
 		$EDCA_share = 0.5
 			if ($mixed == 1);
 	}
@@ -60,23 +56,15 @@ switch ($scenario){
 		$stickiness = 0;
 		$fairShare = 1;
 		$EDCA_share = 1;
-		$errors = 0.1
-			if ($saturated == 0);
 	}
 	case "ECA"{
 		print "CSMA/ECAqos: Full ECA\n";
-		$errors = 0.1
-			if ($saturated == 0);
 		$EDCA_share = 0.5
 			if ($mixed == 1);
 	}
 	case "ECA1"{
 		print "ECA1: HystOnly\n";
 		$fairShare = 0;
-
-		$errors = 0.1
-			if ($saturated == 0);
-
 		$EDCA_share = 0.5
 			if ($mixed == 1);
 	}
@@ -87,28 +75,16 @@ print ("\tScenario: $scenario\n\n\n");
 
 my $compile = './build_local';
 my @command;
-my @jumps;
 
 system($compile);
 die "Command failed\n" if ($? != 0);
 
-#Simulating at $jump intervals
-foreach ($Nmin .. $Nmax)
-{
-	push @jumps, $_
-		if $_ % $jump == 0;
-}
-push @jumps, $Nmax
-	if $jumps[-1] != $Nmax;
-
-
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
-		my $seed = int(rand()*1000);
-		# $seed = $j;
-		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA_share $maxAggregation $numACs $seed"); 
-		print ("\n\n****Node #$i of $Nmax ($?).\n");
+		my $seed = $j;
+		@command = ("./ECA_exec $time $Nmax $length $bandwidth $batch $ECA $stickiness $fairShare $i $drift $EDCA_share $maxAggregation $numACs $seed"); 
 		print ("****Iteration #$j of $rep.\n");
+		print ("****Error: $i.\n");
 		print ("**** @command\n");
 		system(@command);
 		die "\n\n********Execution failed\n\tQuitting iterations\n" if ($? != 0); 
@@ -117,10 +93,8 @@ OUTTER: foreach my $i (@jumps){
 
 
 # #Calling the parser
-my $parserFile = 'process.pl';
-# my $parseSlots = 'analyseSlots.pl';
+my $parserFile = 'processVarError.pl';
 my $dataFile = 'Results/output.txt';
-# my $slotsFile = 'Results/slotsInTime.txt';
 my @parseCommand = ("./$parserFile $dataFile");
 system(@parseCommand);
 (print ("\n\n********Processing failed\n") and last OUTTER) if ($? != 0);

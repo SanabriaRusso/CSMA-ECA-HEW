@@ -133,9 +133,22 @@ void BatchPoissonSource :: Setup()
 void BatchPoissonSource :: Start()
 {
 	QoS = true;
-	changingFrameSize = true;
-	saturated = false;
+	saturated = true;
+
+
+
+
+
+
+	changingFrameSize = true; //randomising frame sizes for AC[VI] according to the std
 	sameSizeFrames = false;
+	if (saturated)
+	{
+		changingFrameSize = false;
+		sameSizeFrames = true;
+	}
+
+
 	SATMULTIPLIER = 1;
 	if (saturated)
 		SATMULTIPLIER = 0.001;

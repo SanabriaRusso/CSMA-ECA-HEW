@@ -62,6 +62,7 @@ component STA : public TypeII
         int ECA;
         int backoffScheme;
         bool TXOP;
+        float edcaShare;
 
         //Performance enhancement variables
         std::map<double,double> buffer;
@@ -122,6 +123,9 @@ component STA : public TypeII
         //End of simulation statistic
         std::array<int, AC> backoffStagesFinal;
 
+        //Schedule Reset public members
+        std::array<double,AC> sxResets;
+
     private:
     	/*the positions in the backoff counters and stages vectors follow the 
     	ACs priorities, meaning: 0 = BK, 1 = BE, 2 = VI, 3 = VO*/
@@ -169,11 +173,11 @@ void STA :: Setup()
 
 void STA :: Start()
 {
-	selectMACProtocol(node_id, ECA, system_stickiness, cut, fairShare);
+	selectMACProtocol(node_id, ECA, system_stickiness, fairShare, edcaShare, nodesInSim);
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT--------------------//
-    alwaysSaturated = false;
+    alwaysSaturated = true;
     TXOP = true;
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     changingSchedule = 1; // 0 = noSchedReset, 1 = schedReset
@@ -209,6 +213,7 @@ void STA :: Start()
         totalInternalACCol.at(i) = 0;
         backlogged.at(i) = 0;
         backoffStages.at(i) = 0;
+        backoffCounters.at(i) = 0;
         previousStage.at(i) = 0;
         Queues.at(i) = Q;
         overallACThroughput.at(i) = 0.0;
@@ -221,6 +226,7 @@ void STA :: Start()
         changeStage.at(i) = 0;
         halved.at(i) = 0;
         resetSuccessfull.at(i) = 0;
+        sxResets.at(i) = 0;
         lastCollision.at(i) = 0;
         bitsSent.at(i) = 0.0;
     }
@@ -438,8 +444,11 @@ void STA :: in_slot(SLOT_notification &slot)
                         packetsSent.at(i) += (packet.aggregation - slot.error);
                         sxTx.at(i)++;
                         consecutiveSx.at(i)++;
-                        if(resetSuccessfull.at(i) == 1) 
+                        if(resetSuccessfull.at(i) == 1)
+                        {
                             resetSuccessfull.at(i) = 0;     //for reversing a halving after collisions. Here, we reset it to zero so it does nothing.
+                            sxResets.at(i)++;
+                        } 
                         accumTimeBetweenSxTx.at(i) += double(SimTime() - superPacket.at(i).contention_time);
 
                         //Erasing the packet(s) that was(were) sent
@@ -701,7 +710,7 @@ void STA :: in_slot(SLOT_notification &slot)
         if(backoffCounters.at(ACToTx) == 0)
         {
             packet = preparePacketForTransmission(ACToTx, SimTime(), superPacket, node_id, backoffStages, Queues, 
-                fairShare, ECA, TXOP);
+                fairShare, ECA, TXOP, MAXSTAGE_EDCA, MAXSTAGE_ECA);
             transmissions.at(ACToTx)++;
             bitsFromSuperPacket = packet.L;
             transmitted = 1;
@@ -713,7 +722,7 @@ void STA :: in_slot(SLOT_notification &slot)
 
     //Checking if it is possible to halve the cycle length for this station
     //Limiting it to ECA with hysteresis only
-    if( (changingSchedule == 1) && (ECA == 1) && (system_stickiness > 0) )
+    if( (changingSchedule == 1) && (ECA == 1) )
     {
         analiseBetterReset(consecutiveSx, halvingCounters, backoffStages, backoffCounters, ACToTx,
         MAXSTAGE_ECA, backlogged, halvingAttempt, slot, shouldHalve, halvingThresholds, node_id, 

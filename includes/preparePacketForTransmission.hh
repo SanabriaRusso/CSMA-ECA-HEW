@@ -7,13 +7,15 @@
 #define MacHead 32
 
 Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet,AC> &superPacket, 
-	int id, std::array<int,AC> &stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare, int ECA, bool &TXOP)
+	int id, std::array<int,AC> &stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare, int ECA, bool &TXOP,
+	const int MAXSTAGE_EDCA[AC], const int MAXSTAGE_ECA[AC])
 {
 	int viFrames = 0;
 	int voFrames = 0;
 	long int load = 0;
 	int maxViFrame = 18500;
 	int maxVoFrame = 6150;
+	bool borisFairShare = false;
 
 	superPacket.at(acToTx).source = id;
 	superPacket.at(acToTx).tx_time = txTime;
@@ -29,6 +31,18 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 		superPacket.at(acToTx).QoS = 1;
 		if (TXOP)
 		{
+			if (borisFairShare == true && acToTx > 1) // Only VO and VI
+			{
+				int maxStage = MAXSTAGE_EDCA[acToTx];
+				if (ECA == 1)
+					maxStage = MAXSTAGE_ECA[acToTx];
+				if (stages.at(acToTx) > 0)
+				{
+					maxVoFrame *= pow(2,stages.at(acToTx));
+					maxViFrame *= pow(2,stages.at(acToTx));
+				}
+			}
+
 			switch (acToTx)
 			{
 				case 2:
@@ -86,7 +100,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	}
 	superPacket.at(acToTx).L = load;
 
-	cout << "(" << txTime << ") AC-" << acToTx << ": frames: " << limit << ": stage: " << stages.at(acToTx) << endl;
+	// cout << "(" << txTime << ") AC-" << acToTx << ": frames: " << limit << ": stage: " << stages.at(acToTx) << endl;
 
 	return((Packet)(superPacket.at(acToTx)));
 }
