@@ -54,17 +54,20 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                 }else{
                     bits += pkt.L * 8;
                     bitsSentByAc += pkt.L * 8;
-                    // cout << "seq: " << pkt.seq << ", AC-" << cat << ": " << pkt.L << endl;
                     qDelay += now - pkt.queuing_time;
                 }
             }
             Queues.at(cat).DelFirstPacket ();
-            if (alwaysSat)
+            if (alwaysSat) // putting the packet back at the back of the queue
             {
+                if (Queues.at(cat).QueueSize() > packetDisposal)
+                {
+                    assert (pkt.queuing_time != now);
+                    assert (Queues.at(cat).GetFirstPacket().seq != pkt.seq);
+                }
                 pkt.queuing_time = now;
                 Queues.at(cat).PutPacket (pkt);
                 // cout << Queues.at(cat).GetFirstPacket().seq << " " << pkt.seq << endl;
-                // assert (Queues.at(cat).GetFirstPacket().seq != pkt.seq);
             }
         }
 

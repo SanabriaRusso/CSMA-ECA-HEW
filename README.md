@@ -26,3 +26,5 @@ Please, feel free to send pull requests. I may actually take a look at them.
 2: http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=4689260
 
 L
+
+UPDATE 120516: for STA.h operation, ACs are navigated from higher to lower priority. Neverhteless, for display and traces, the other way is true.

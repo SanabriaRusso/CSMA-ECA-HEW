@@ -40,7 +40,7 @@ my $scenario = $ARGV[0];
 switch ($scenario){
 	case "single"{
 		print "single Test\n";
-		$rep = 1;
+		$rep = 10;
 		$time = 10;
 		$Nmax = 10;
 		$Nmin = 2;
@@ -105,7 +105,7 @@ push @jumps, $Nmax
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
-		# $seed = $j;
+		$seed = $j;
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA_share $maxAggregation $numACs $seed"); 
 		print ("\n\n****Node #$i of $Nmax ($?).\n");
 		print ("****Iteration #$j of $rep.\n");

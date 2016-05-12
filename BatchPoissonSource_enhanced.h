@@ -137,9 +137,6 @@ void BatchPoissonSource :: Start()
 
 
 
-
-
-
 	changingFrameSize = true; //randomising frame sizes for AC[VI] according to the std
 	sameSizeFrames = false;
 	if (saturated)

@@ -178,7 +178,7 @@ void STA :: Start()
 
     //--------------------IMPORTANT--------------------//
     alwaysSaturated = true;
-    TXOP = true;
+    TXOP = false;
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     changingSchedule = 1; // 0 = noSchedReset, 1 = schedReset
 
@@ -318,7 +318,7 @@ void STA :: Stop()
     for(int i = 0; i < AC; i++)
     {
         totalHalved += halved.at(i);
-        accumQueueingDelay.at(i) /= (droppedAC.at(i) + packetsSent.at(i));
+        accumQueueingDelay.at(i) /= (packetsSent.at(i));
     }
     cout << "+ Overall times some deterministic backoff was changed : " << totalHalved << endl;
     // cout << "***DEBUG: final backoff stage" << endl;
@@ -357,7 +357,7 @@ void STA :: in_slot(SLOT_notification &slot)
 		case 0:
 			//Important to remember: 0 = BK, 1 = BE, 2 = VI, 3 = VO
             //We first decrement the backoff of backlogged ACs
-			for(int i = 0; i < AC; i++)
+			for(int i = AC-1; i >= 0; i--)
 			{
                 // cout << "(" << SimTime() << ") STA-" << node_id << " AC " << i << ". Counter: " << backoffCounters.at(i)
                 //    << ". Stage: " << backoffStages.at(i) << endl;
@@ -371,7 +371,7 @@ void STA :: in_slot(SLOT_notification &slot)
 				}
             }
             //Then we treat not backlogged ACs
-            for(int i = 0; i < AC; i++)
+            for(int i = AC-1; i >= 0; i--)
             {
                 if(backlogged.at(i) == 0)
                 {
@@ -410,7 +410,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 sx = 1; //it was a successful transmission
                 /* All other stations should decrement their respective counters accouting 
                  * for the extra empty slot after DIFS */
-                for(int i = 0; i < AC; i++)
+                for(int i = AC-1; i >= 0; i--)
                 {
                     if(i != packet.accessCategory){
                         // Decremeting the backoff of all other ACs
@@ -430,7 +430,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     }
                 }
                 //Locating the AC that transmitted the last packet
-                for (int i = 0; i < AC; i++)
+                for (int i = AC-1; i >= 0; i--)
                 {
 				    if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//this category transmitted the last packet
 				    {
@@ -494,7 +494,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 }
 			}else
             {
-                for(int i = 0; i < AC; i++)
+                for(int i = AC-1; i >= 0; i--)
                 {
                     // Decremeting the backoff of all ACs
                     if(backoffCounters.at(i) > 0)
@@ -516,7 +516,7 @@ void STA :: in_slot(SLOT_notification &slot)
             {
                 sx = 0; //it was not a successful transmission
 
-                for(int i = 0; i < AC; i++)
+                for(int i = AC-1; i >= 0; i--)
                 {
                     if( (packet.accessCategory != i) && (backoffCounters.at(i) > 0) )
                     {
@@ -530,7 +530,7 @@ void STA :: in_slot(SLOT_notification &slot)
                     }
                 }
 
-                for (int i = 0; i < AC; i++)
+                for (int i = AC-1; i >= 0; i--)
                 {
                     if( (packet.accessCategory == i) && (backoffCounters.at(i) == 0) )//to modify the colliding AC(s) backoff parameters
                     {
@@ -618,7 +618,7 @@ void STA :: in_slot(SLOT_notification &slot)
                 }  
             }else
             {
-                for(int i = 0; i < AC; i++)
+                for(int i = AC-1; i >= 0; i--)
                 {
                     // Decremeting the backoff of all other ACs
                     if(backoffCounters.at(i) > 0)
@@ -685,7 +685,7 @@ void STA :: in_slot(SLOT_notification &slot)
         
         //*****Recomputing the backoff for**
         //*****internal collisions**********
-        for(int i = 0; i < ACToTx; i++)
+        for(int i = ACToTx -1; i >= 0; i--)
         {
             if(recomputeBackoff.at(i) == 1)
             {
@@ -716,6 +716,7 @@ void STA :: in_slot(SLOT_notification &slot)
             transmitted = 1;
             if (fairShare == 0)
                 assert (packet.aggregation == 1);
+            
             out_packet(packet);
         }
     }

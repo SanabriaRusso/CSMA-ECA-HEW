@@ -16,7 +16,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	double basicDetBackoff;
 	int isItPossible;
 
-	bool debug = true;
+	bool debug = false;
 
 	deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);
 	basicDetBackoff = (int) (pow(2,0) * CWmin[category]/2 - 1);
@@ -32,7 +32,7 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	}
 
 	if (debug)
-		cout << "Node-" << id << ", AC-" << category << ": is it possible: " << isItPossible << endl;
+		cout << "Node-" << id << ", AC-" << category << ": is it possible (" << deterministicBackoff << "): " << isItPossible << endl;
 
 	//If it is just a deterministic backoff, we don't have to compute the SmartBackoff
 	if(backlog.at(category) == 1)
@@ -101,10 +101,14 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 	while ( (compareBackoffs != match) || (compareCycles != match) )
 	{
 		randomBackoff = rand() % (int) ( (pow(2,stages.at(category))) * CWmin[category] - 1) + 1;
+		
 		if (debug)
+		{
 			cout << "\t***Random backoff AC-" << category << ": " << randomBackoff << endl;
+		}
+
 		//Avoiding internal collisions with the randomBackoff
-		for(int i = AC - 1; i < 0; i--)
+		for (int i = AC - 1; i >= 0; i--)
 		{
 			//Checking if the randomBackoff will collide with successful ACs
 			if(i != category)
@@ -123,45 +127,44 @@ void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, 
 		}
 
 		//Filling arrays to make a decision over the chosen random backoff
-		for(int i = AC-1; i < 0; i--)
+		for(int j = AC-1; j >= 0; j--)
 		{
-			if(randomBackoff == counters.at(i))
+			if(randomBackoff == counters.at(j))
 			{
-				compareBackoffs.at(i) = 1;	
+				compareBackoffs.at(j) = 1;	
 			}else
 			{
-				compareBackoffs.at(i) = 0;
+				compareBackoffs.at(j) = 0;
 			}
 
-			if(futureCycles.at(i) == 0)
+			if(futureCycles.at(j) == 0)
 			{
-				compareCycles.at(i) = 1;
+				compareCycles.at(j) = 1;
 			}else
 			{
-				compareCycles.at(i) = 0;
+				compareCycles.at(j) = 0;
 			}
 
 			if (debug)
 			{
-				if (compareBackoffs.at(i) == 0)
+				if (compareBackoffs.at(j) == 0)
 				{
-					cout << "\t\t- It is not equal to AC-" << i << "'s backoff." << endl;
+					cout << "\t\t- It is not equal to AC-" << j << "'s backoff." << endl;
 				}else
 				{
-					cout << "\t\t- It is the same as AC-" << i << endl;
+					cout << "\t\t- It is the same as AC-" << j << endl;
 				}
 
-				if (compareCycles.at(i) == 0)
+				if (compareCycles.at(j) == 0)
 				{
-					cout << "\t\t- Won't alter collision free operation with AC-" << i << endl;
+					cout << "\t\t- Won't alter collision free operation with AC-" << j << endl;
 				}else
 				{
-					cout << "\t\t- Will collide with AC-" << i << " future sx transmissions" << endl;
+					cout << "\t\t- Will collide with AC-" << j << " future sx transmissions" << endl;
 				}
 			}
 
 		}
 	}
-	
 	counters.at(category) = randomBackoff;
 }

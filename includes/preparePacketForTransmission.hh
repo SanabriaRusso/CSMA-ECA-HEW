@@ -5,6 +5,7 @@
 //refer to Channel.h and rate = 1000
 #define MacDel 240
 #define MacHead 32
+#define maxAMPDU 64
 
 Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet,AC> &superPacket, 
 	int id, std::array<int,AC> &stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare, int ECA, bool &TXOP,
@@ -15,7 +16,9 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	long int load = 0;
 	int maxViFrame = 18500;
 	int maxVoFrame = 6150;
-	bool borisFairShare = false;
+
+	bool txopFairShare = false;
+	bool debug = false;
 
 	superPacket.at(acToTx).source = id;
 	superPacket.at(acToTx).tx_time = txTime;
@@ -25,13 +28,17 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	if(fairShare == 1)
 	{
 		superPacket.at(acToTx).aggregation = std::min(1, Queues.at(acToTx).QueueSize() );
-		if (acToTx > 1)		
-			superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), 
-				Queues.at(acToTx).QueueSize() );
+		if (acToTx > 1)
+		{
+			int max = std::max (Queues.at(acToTx).QueueSize(), maxAMPDU);
+			superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), max);
+
+		}
 		superPacket.at(acToTx).QoS = 1;
+
 		if (TXOP)
 		{
-			if (borisFairShare == true && acToTx > 1) // Only VO and VI
+			if (txopFairShare == true && acToTx > 1) // Only VO and VI
 			{
 				int maxStage = MAXSTAGE_EDCA[acToTx];
 				if (ECA == 1)
@@ -46,11 +53,13 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 			switch (acToTx)
 			{
 				case 2:
+					load = 0;
+					viFrames = 0;
 					while (load <= maxViFrame)
 					{
 						if (Queues.at(acToTx).QueueSize() > viFrames)
 						{
-							load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(viFrames).L + MacDel + MacHead;
+							load += (Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(viFrames).L) + MacDel + MacHead;
 							viFrames ++;
 						}else
 						{
@@ -61,11 +70,13 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 					superPacket.at(acToTx).aggregation = std::min(viFrames, Queues.at(acToTx).QueueSize() );
 					break;
 				case 3:
+					load = 0;
+					voFrames = 0;
 					while (load <= maxVoFrame)
 					{
 						if (Queues.at(acToTx).QueueSize() > voFrames)
 						{
-							load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(voFrames).L + MacDel + MacHead;
+							load += (Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(voFrames).L) + MacDel + MacHead;
 							voFrames ++;
 
 						}else
@@ -100,7 +111,8 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	}
 	superPacket.at(acToTx).L = load;
 
-	// cout << "(" << txTime << ") AC-" << acToTx << ": frames: " << limit << ": stage: " << stages.at(acToTx) << endl;
+	if (debug)
+		cout << "(" << txTime << ") AC-" << acToTx << ": frames: " << limit << ": stage: " << stages.at(acToTx) << endl;
 
 	return((Packet)(superPacket.at(acToTx)));
 }

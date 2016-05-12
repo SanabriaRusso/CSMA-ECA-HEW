@@ -21,7 +21,7 @@ int isThisNewBackoffPossible_copy(double test, std::array<int,AC> &stages, std::
 	int deterministicBackoff = (int) (pow(2,(stages.at(category))) * CWmin[category]/2 - 1);
 
 	
-	for(int i = AC-1; i < 0; i--)
+	for(int i = AC-1; i >= 0; i--)
 	{
 		//Checking if the test will collide with successful ACs
 		if(i != category)
@@ -40,7 +40,7 @@ int isThisNewBackoffPossible_copy(double test, std::array<int,AC> &stages, std::
 	}
 
 	//Filling arrays to make a decision over the test
-	for(int i = AC-1; i < 0; i--)
+	for(int i = AC-1; i >= 0; i--)
 	{
 		if(test == counters.at(i))
 		{
