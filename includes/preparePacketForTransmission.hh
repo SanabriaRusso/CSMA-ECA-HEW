@@ -59,7 +59,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 					{
 						if (Queues.at(acToTx).QueueSize() > viFrames)
 						{
-							load += (Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(viFrames).L) + MacDel + MacHead;
+							load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(viFrames).L + MacDel + MacHead;
 							viFrames ++;
 						}else
 						{
@@ -76,7 +76,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 					{
 						if (Queues.at(acToTx).QueueSize() > voFrames)
 						{
-							load += (Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(voFrames).L) + MacDel + MacHead;
+							load += Queues.at(superPacket.at(acToTx).accessCategory).GetPacket(voFrames).L + MacDel + MacHead;
 							voFrames ++;
 
 						}else

@@ -6,7 +6,8 @@ using namespace std;
 
 void computeBackoff_enhanced(std::array<int,AC> &backlog, FIFO <Packet> &Queue, int &category, int &stickiness, std::array<int,AC> &stages, 
 	std::array<double,AC> &counters, int &system_stickiness, int &id, int &sx, int &ECA, std::map<double,double> &buffer, 
-	std::array<double,AC> &AIFS, const int defaultAIFS[AC]){
+	std::array<double,AC> &AIFS, const int defaultAIFS[AC])
+{
 
 	//CWmin values extracted from Perahia & Stacey's: Next Generation Wireless LANs (p. 240)
 	//In number of slots
