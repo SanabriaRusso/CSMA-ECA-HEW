@@ -18,9 +18,9 @@ die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4
 
 my $rep = 20;
 my $time = 40;
-my $Nmax = 8;
-my $Nmin = 8;
-my @jumps = (0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25);
+my $Nmax = 1;
+my $Nmin = 1;
+my @jumps = (0, 0.05, 0.1, 0.15);
 my $bandwidth = 65e6;
 my $errors = 0;
 my $numACs = 4;
@@ -33,7 +33,7 @@ my $stickiness = 1;
 my $fairShare = 1;
 my $EDCA_share = 0;
 
-my $saturated = 1;
+my $saturated = 0;
 my $mixed = 0;
 
 my $scenario = $ARGV[0];

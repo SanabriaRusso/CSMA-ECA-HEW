@@ -133,7 +133,7 @@ void BatchPoissonSource :: Setup()
 void BatchPoissonSource :: Start()
 {
 	QoS = true;
-	saturated = true;
+	saturated = false;
 
 
 

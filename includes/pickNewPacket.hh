@@ -8,6 +8,8 @@ void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC>
 	const int MAXSTAGE_EDCA[AC], const int MAXSTAGE_ECA[AC], int ECA)
 
 {
+	const bool debug = false;
+
 	Packet packet = Queues.at(accessCategory).GetFirstPacket();
 	packet.contention_time = pickupTime;
 	superPacket.at(accessCategory).contention_time = packet.contention_time;
@@ -29,4 +31,10 @@ void pickNewPacket(int &accessCategory, double pickupTime, std::array<Packet,AC>
 	}
 
 	superPacket.at(accessCategory).aggregation = packets;
+
+
+	if (debug)
+	{
+		cout << "Getting: " << packets << ". Queue is: " << Queues.at(accessCategory).QueueSize() << endl;
+	}
 }

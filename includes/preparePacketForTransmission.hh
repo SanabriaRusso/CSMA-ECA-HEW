@@ -5,7 +5,7 @@
 //refer to Channel.h and rate = 1000
 #define MacDel 240
 #define MacHead 32
-#define maxAMPDU 64
+
 
 Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet,AC> &superPacket, 
 	int id, std::array<int,AC> &stages, std::array<FIFO <Packet>, AC> &Queues, int fairShare, int ECA, bool &TXOP,
@@ -20,6 +20,8 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 	bool txopFairShare = false;
 	bool debug = false;
 
+	const int maxAMPDU = 64;
+
 	superPacket.at(acToTx).source = id;
 	superPacket.at(acToTx).tx_time = txTime;
 	superPacket.at(acToTx).accessCategory = acToTx;
@@ -30,7 +32,7 @@ Packet preparePacketForTransmission(int acToTx, double txTime, std::array<Packet
 		superPacket.at(acToTx).aggregation = std::min(1, Queues.at(acToTx).QueueSize() );
 		if (acToTx > 1)
 		{
-			int max = std::max (Queues.at(acToTx).QueueSize(), maxAMPDU);
+			int max = std::min (Queues.at(acToTx).QueueSize(), maxAMPDU);
 			superPacket.at(acToTx).aggregation = std::min( (int)pow(2,stages.at(acToTx)), max);
 
 		}

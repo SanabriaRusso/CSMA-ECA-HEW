@@ -853,6 +853,7 @@ int main(int argc, char *argv[])
 
 	// test.Seed=(long int)6*rand();
 	
+	srand (simSeed);
 	test.Seed = simSeed;
 	cout << "#######################SEED: " << simSeed << endl;
 		

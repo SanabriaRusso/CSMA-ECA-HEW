@@ -177,7 +177,9 @@ void STA :: Start()
     setAIFS(AIFS, ECA, defaultAIFS, ECA_AIFS);
 
     //--------------------IMPORTANT--------------------//
-    alwaysSaturated = true;
+    alwaysSaturated = false;
+
+
     TXOP = false;
     backoffScheme = 1; // 0 = oldScheme, 1 = newScheme
     changingSchedule = 1; // 0 = noSchedReset, 1 = schedReset
@@ -185,6 +187,7 @@ void STA :: Start()
     if(ECA == 0){
         backoffScheme = 0;
         changingSchedule = 0; // 0 = no, 1 = yes.
+        TXOP = true;
     }
     //-------------------------------------------------//
 	

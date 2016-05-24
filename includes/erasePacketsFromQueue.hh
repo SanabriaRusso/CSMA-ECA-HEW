@@ -12,6 +12,8 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
     int cat = (int)packet.accessCategory;
     int frames = 1;
 
+
+
     if(cat >= 0)
     {
         if(sx == 1)
@@ -58,22 +60,20 @@ void erasePacketsFromQueue(std::array<FIFO <Packet>, AC> &Queues, Packet &packet
                 }
             }
             Queues.at(cat).DelFirstPacket ();
+
             if (alwaysSat) // putting the packet back at the back of the queue
             {
-                // if (Queues.at(cat).QueueSize() > packetDisposal)
-                // {
-                //     assert (pkt.queuing_time != now);
-                //     assert (Queues.at(cat).GetFirstPacket().seq != pkt.seq);
-                // }
+                // assert (pkt.queuing_time != now);
                 pkt.queuing_time = now;
                 Queues.at(cat).PutPacket (pkt);
-                // cout << Queues.at(cat).GetFirstPacket().seq << " " << pkt.seq << endl;
             }
-        }
 
+        }
+        
         if (Q.QueueSize () > 0)
             Queues.at(cat).PushFront (Q);
         assert(Q.QueueSize () == 0);
+
 
         if (Queues.at(cat).QueueSize() > 0)
         {   

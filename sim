@@ -18,7 +18,7 @@ die ("******Help\n", "ARGV. field:\n", "0. Repetitions 1. Time 2. Nmax 3. Nmin 4
 
 my $rep = 20;
 my $time = 40;
-my $Nmax = 50;
+my $Nmax = 100;
 my $Nmin = 2;
 my $jump = 1;
 my $bandwidth = 65e6;
@@ -33,16 +33,16 @@ my $stickiness = 1;
 my $fairShare = 1;
 my $EDCA_share = 0;
 
-my $saturated = 1;
+my $saturated = 0;
 my $mixed = 0;
 
 my $scenario = $ARGV[0];
 switch ($scenario){
 	case "single"{
 		print "single Test\n";
-		$rep = 10;
-		$time = 10;
-		$Nmax = 10;
+		$rep = 100;
+		$time = 40;
+		$Nmax = 16;
 		$Nmin = 2;
 		$EDCA_share = 0;
 		$numACs = 4;
@@ -105,7 +105,7 @@ push @jumps, $Nmax
 OUTTER: foreach my $i (@jumps){
 	INNER: foreach my $j (1 .. $rep){
 		my $seed = int(rand()*1000);
-		$seed = $j;
+		# $seed = $j;
 		@command = ("./ECA_exec $time $i $length $bandwidth $batch $ECA $stickiness $fairShare $errors $drift $EDCA_share $maxAggregation $numACs $seed"); 
 		print ("\n\n****Node #$i of $Nmax ($?).\n");
 		print ("****Iteration #$j of $rep.\n");
@@ -130,8 +130,8 @@ system(@parseCommand);
 
 my $simulation = "$scenario";
 my @mail = ("./sendMail $simulation");
-system(@mail)
-	if ($simulation ne "single");
+system(@mail);
+	# if ($simulation ne "single");
 
 
 

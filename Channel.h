@@ -133,7 +133,7 @@ void Channel :: Start()
 	biggestTxDuration.assign (AC, 0.0);
 
 	rate = 1000; // mark 100 for 802.11ac and 1000 for 802.11ax
-	QoS = true;
+	QoS = false;
 	channelWidth = 20; // MHz
 
 	slot_time.Set(SimTime()); // Let's go!	
